@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { ParquetReader } from '@dvirtz/parquets';
+import { read } from 'fs';
 
 const cats = {
 	'Coding Cat': 'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif',
@@ -41,7 +42,10 @@ function getWebviewOptions(extensionUri: vscode.Uri): vscode.WebviewOptions {
 		enableScripts: true,
 
 		// And restrict the webview to only loading content from our extension's `media` directory.
-		localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')]
+		localResourceRoots: [
+			vscode.Uri.joinPath(extensionUri, 'media'),
+			vscode.Uri.joinPath(extensionUri, 'data')
+		]
 	};
 }
 
@@ -71,6 +75,9 @@ class CatCodingPanel {
 			return;
 		}
 
+		CatCodingPanel.readParquet(extensionUri).catch(err => {
+			console.error(err);
+		});
 		// Otherwise, create a new panel.
 		const panel = vscode.window.createWebviewPanel(
 			CatCodingPanel.viewType,
@@ -120,6 +127,20 @@ class CatCodingPanel {
 			null,
 			this._disposables
 		);
+	}
+
+	private static async readParquet(uri: vscode.Uri) {
+		const smallParquetPath = vscode.Uri.joinPath(uri, 'data', 'small.parquet');
+		console.log(smallParquetPath.fsPath);
+		let reader = await ParquetReader.openFile(smallParquetPath.fsPath);
+
+		let cursor = reader.getCursor();
+		// read all records from the file and print them
+		let record = null;
+		while (record = await cursor.next()) {
+			console.log(record);
+		}
+		await reader.close();
 	}
 
 	public doRefactor() {
