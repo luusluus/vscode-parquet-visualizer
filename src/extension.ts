@@ -75,9 +75,6 @@ class CatCodingPanel {
 			return;
 		}
 
-		CatCodingPanel.readParquet(extensionUri).catch(err => {
-			console.error(err);
-		});
 		// Otherwise, create a new panel.
 		const panel = vscode.window.createWebviewPanel(
 			CatCodingPanel.viewType,
@@ -96,6 +93,8 @@ class CatCodingPanel {
 	private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
 		this._panel = panel;
 		this._extensionUri = extensionUri;
+
+		this.readParquet();
 
 		// Set the webview's initial html content
 		this._update();
@@ -129,16 +128,17 @@ class CatCodingPanel {
 		);
 	}
 
-	private static async readParquet(uri: vscode.Uri) {
-		const smallParquetPath = vscode.Uri.joinPath(uri, 'data', 'small.parquet');
+	private async readParquet() {
+		const smallParquetPath = vscode.Uri.joinPath(this._extensionUri, 'data', 'small.parquet');
 		console.log(smallParquetPath.fsPath);
 		let reader = await ParquetReader.openFile(smallParquetPath.fsPath);
+		console.log(reader.getRowCount());
 
 		let cursor = reader.getCursor();
 		// read all records from the file and print them
 		let record = null;
 		while (record = await cursor.next()) {
-			console.log(record);
+			// console.log(record);
 		}
 		await reader.close();
 	}
