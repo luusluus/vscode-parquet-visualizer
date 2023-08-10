@@ -12,10 +12,37 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "menus": {
+      "webview/context": [
+        {
+          "command": "parquet-visualizer.yarn",
+          "when": "webviewId == 'parquet-visualizer'"
+        },
+        {
+          "command": "parquet-visualizer.insertLion",
+          "when": "webviewId == 'parquet-visualizer' && webviewSection == 'editor'"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "parquet-visualizer.start",
         "title": "Start new cat coding session",
+        "category": "Cat Coding"
+      },
+      {
+        "command": "parquet-visualizer.doRefactor",
+        "title": "Do some refactoring",
+        "category": "Cat Coding"
+      },
+      {
+        "command": "parquet-visualizer.yarn",
+        "title": "Yarn 🧶",
+        "category": "Cat Coding"
+      },
+      {
+        "command": "parquet-visualizer.insertLion",
+        "title": "Insert 🦁",
         "category": "Cat Coding"
       }
     ]
