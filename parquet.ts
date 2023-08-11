@@ -1,3 +1,7 @@
+// Run this script as follows from command line
+// https://stackoverflow.com/questions/33535879/how-to-run-typescript-files-from-command-line
+// npx ts-node parquet.ts 
+
 import { ParquetReader } from '@dvirtz/parquets';
 
 class ParquetPaginator {

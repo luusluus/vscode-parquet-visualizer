@@ -1,4 +1,7 @@
 "use strict";
+// Run this script as follows from command line
+// https://stackoverflow.com/questions/33535879/how-to-run-typescript-files-from-command-line
+// npx ts-node parquet.ts 
 Object.defineProperty(exports, "__esModule", { value: true });
 const parquets_1 = require("@dvirtz/parquets");
 class ParquetPaginator {
