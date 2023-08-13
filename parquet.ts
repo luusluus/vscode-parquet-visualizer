@@ -51,7 +51,6 @@ class ParquetPaginator {
   public numPages() {
     return this.pageCount;
   }
-
 }
 
 
@@ -82,46 +81,3 @@ class ParquetPaginator {
     }
   }
 })();
-
-
-(async () => {
-    let reader = await ParquetReader.openFile("data/large.parquet");
-    
-    let cursor = reader.getCursor();
-    const pageSize = 20;
-    const currentPage = 66;
-
-    const numRows = await reader.getRowCount();
-    const numPages = Math.ceil(numRows / pageSize);
-    console.log(`Number of rows:  ${numRows}`);
-    console.log(`Number of pages: ${numPages}`);
-    // read all records from the file and print them
-    
-    let startIndex = (currentPage - 1) * pageSize;
-    let endIndex = Math.min(startIndex + pageSize - 1, numRows);
-    console.log(`start index: ${startIndex}`);
-    console.log(`end index ${endIndex}`);
-    // console.log(reader.metadata.row_groups[0]);
-
-    let rows = [];
-    for (let i = 0; i < numRows; i++) {
-      // get subset of rows based on startindex and endindex
-      const row = await cursor.next();
-      if (i >= startIndex && i <= endIndex) {
-        rows.push(row);
-      }
-      if (i > endIndex) {
-        break;
-      }
-
-    }
-
-    console.log(rows.length);
-    // console.log(cursor.envelopeReader.readRowGroup());
-    // console.log(await cursor.next());
-    // let record = null;
-    // while (record = await cursor.next()) {
-    //     // console.log(record);
-    // }
-    await reader.close();
-});
