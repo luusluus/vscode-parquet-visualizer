@@ -3,6 +3,7 @@ import { ParquetReader } from '@dvirtz/parquets';
 import { read } from 'fs';
 
 import { ParquetPaginator } from './parquet-paginator';
+import { Disposable } from "./dispose";
 
 const cats = {
 	'Coding Cat': 'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif',
@@ -51,6 +52,64 @@ function getWebviewOptions(extensionUri: vscode.Uri): vscode.WebviewOptions {
 	};
 }
 
+class CustomParquetDocument extends Disposable implements vscode.CustomDocument {
+	uri: vscode.Uri;
+	path: string;
+  
+	constructor(uri: vscode.Uri) {
+	  super();
+	  this.uri = uri;
+	  this.path = uri.fsPath;
+	}
+  
+	public async open() {
+	  await vscode.window.showTextDocument(
+		this.uri.with({ scheme: 'parquet', path: this.path })
+	  );
+	}
+  }
+
+export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvider<CustomParquetDocument> {
+
+	private static readonly viewType = 'parquet-visualizer.parquetVisualizer';
+
+	public static register(context: vscode.ExtensionContext): vscode.Disposable {
+		const provider = new ParquetEditorProvider(context);
+		const providerRegistration = vscode.window.registerCustomEditorProvider(ParquetEditorProvider.viewType, provider);
+		return providerRegistration;
+	}
+
+	constructor(
+		private readonly context: vscode.ExtensionContext
+	) { }
+
+	async openCustomDocument(uri: vscode.Uri): Promise<CustomParquetDocument> {
+		return new CustomParquetDocument(uri);
+	  }
+	
+	/**
+	 * Called when our custom editor is opened.
+	 * 
+	 * 
+	 */
+	async resolveCustomEditor(
+		document: CustomParquetDocument,
+		webviewPanel: vscode.WebviewPanel,
+		_token: vscode.CancellationToken
+	): Promise<void> {
+		// Setup initial content for the webview
+		webviewPanel.webview.options = {
+			enableScripts: true,
+		};
+
+		webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
+		
+		await document.open();
+	}
+
+}
+
+
 /**
  * Manages cat coding webview panels
  */
@@ -96,9 +155,12 @@ class CatCodingPanel {
 		this._panel = panel;
 		this._extensionUri = extensionUri;
 
-		this.readParquet();
+		// this.readParquet();
 
-		const paginator = ParquetPaginator.createAsync("data/large.parquet", 10);
+		const path = vscode.Uri.joinPath(this._extensionUri, 'data', 'large.parquet');
+
+		// const paginator = await ParquetPaginator.createAsync(path.fsPath, 10);
+
 
 		// Set the webview's initial html content
 		this._update();
