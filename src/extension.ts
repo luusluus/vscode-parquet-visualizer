@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { ParquetReader } from '@dvirtz/parquets';
 import { read } from 'fs';
 
+import { ParquetPaginator } from './parquet-paginator';
+
 const cats = {
 	'Coding Cat': 'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif',
 	'Compiling Cat': 'https://media.giphy.com/media/mlvseq9yvZhba/giphy.gif',
@@ -95,6 +97,8 @@ class CatCodingPanel {
 		this._extensionUri = extensionUri;
 
 		this.readParquet();
+
+		const paginator = ParquetPaginator.createAsync("data/large.parquet", 10);
 
 		// Set the webview's initial html content
 		this._update();

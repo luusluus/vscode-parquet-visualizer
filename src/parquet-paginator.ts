@@ -5,7 +5,7 @@ import * as readline from 'readline/promises';
 
 import { ParquetReader } from '@dvirtz/parquets';
 
-class ParquetPaginator {
+export class ParquetPaginator {
   private reader: ParquetReader<unknown>;
   private pageSize: number;
   private rowCount: number;
