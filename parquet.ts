@@ -1,30 +1,88 @@
 // Run this script as follows from command line
 // https://stackoverflow.com/questions/33535879/how-to-run-typescript-files-from-command-line
 // npx ts-node parquet.ts 
+import * as readline from 'readline/promises';
 
 import { ParquetReader } from '@dvirtz/parquets';
 
 class ParquetPaginator {
-  private reader: any;
+  private reader: ParquetReader<unknown>;
   private pageSize: number;
+  private rowCount: number;
 
-  constructor(filePath: string, pageSize: number = 10) {
+  private constructor(reader: ParquetReader<unknown>, pageSize: number) {
+    this.reader = reader;
     this.pageSize = pageSize;
-    this.reader = this.init(filePath);
+    this.rowCount = this.reader.getRowCount();
+
   }
 
-  async init (filePath: string) : Promise<ParquetReader<unknown>> {
-    return await ParquetReader.openFile(filePath);
+  public static async createAsync (filePath: string, pageSize: number = 20) {
+    const reader = await ParquetReader.openFile(filePath);
+    return new ParquetPaginator(reader, pageSize);
   }
 
+  public async getPage(pageNumber: number) {
+    const numPages = Math.ceil(this.rowCount / this.pageSize);
+    
+    if (pageNumber > numPages) {
+      throw new RangeError(`Page Number ${pageNumber} is out of range. Total number of pages are ${numPages}`);
+    }
+    // read all records from the file and print them
+    
+    let startIndex = (pageNumber - 1) * this.pageSize;
+    let endIndex = Math.min(startIndex + this.pageSize - 1, this.rowCount);
 
-  async numPages() {
-    const numRows = await this.reader.getRowCount();
-    return Math.ceil(numRows / this.pageSize);
+    let rows = [];
+    const cursor = this.reader.getCursor();
+    for (let i = 0; i < this.rowCount; i++) {
+      // get subset of rows based on startindex and endindex
+      const row = await cursor.next();
+      if (i >= startIndex && i <= endIndex) {
+        rows.push(row);
+      }
+      if (i > endIndex) {
+        break;
+      }
+    }
+
+    return rows;
+  }
+
+  public numPages() {
+    return Math.ceil(this.rowCount / this.pageSize);
   }
 
 }
 
+
+(async () => {
+  const paginator = await ParquetPaginator.createAsync("data/large.parquet", 10);
+  const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+  });
+
+  for (;;) {
+    try {
+      const pageNumber = await rl.question('page number: ');
+      console.log(pageNumber);
+      if (pageNumber === 'q') {
+        console.log("exiting...");
+        rl.close();
+        return;
+      };
+      console.log(await paginator.getPage(+pageNumber));
+    }
+    catch (e) { 
+      if (e instanceof RangeError){
+        console.log(e);
+      } else {
+        throw (e);
+      }
+    }
+  }
+})();
 
 
 (async () => {
@@ -67,5 +125,4 @@ class ParquetPaginator {
     //     // console.log(record);
     // }
     await reader.close();
-})();
-    
+});
