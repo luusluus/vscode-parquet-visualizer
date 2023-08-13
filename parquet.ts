@@ -9,12 +9,13 @@ class ParquetPaginator {
   private reader: ParquetReader<unknown>;
   private pageSize: number;
   private rowCount: number;
+  private pageCount: number;
 
   private constructor(reader: ParquetReader<unknown>, pageSize: number) {
     this.reader = reader;
     this.pageSize = pageSize;
     this.rowCount = this.reader.getRowCount();
-
+    this.pageCount = Math.ceil(this.rowCount / this.pageSize);
   }
 
   public static async createAsync (filePath: string, pageSize: number = 20) {
@@ -23,10 +24,8 @@ class ParquetPaginator {
   }
 
   public async getPage(pageNumber: number) {
-    const numPages = Math.ceil(this.rowCount / this.pageSize);
-    
-    if (pageNumber > numPages) {
-      throw new RangeError(`Page Number ${pageNumber} is out of range. Total number of pages are ${numPages}`);
+    if (pageNumber > this.pageCount) {
+      throw new RangeError(`Page Number ${pageNumber} is out of range. Total number of pages are ${this.pageCount}`);
     }
     // read all records from the file and print them
     
@@ -50,7 +49,7 @@ class ParquetPaginator {
   }
 
   public numPages() {
-    return Math.ceil(this.rowCount / this.pageSize);
+    return this.pageCount;
   }
 
 }
