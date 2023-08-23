@@ -12,40 +12,18 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
-    "menus": {
-      "webview/context": [
-        {
-          "command": "parquet-visualizer.yarn",
-          "when": "webviewId == 'parquet-visualizer'"
-        },
-        {
-          "command": "parquet-visualizer.insertLion",
-          "when": "webviewId == 'parquet-visualizer' && webviewSection == 'editor'"
-        }
-      ]
-    },
-    "commands": [
+    "customEditors": [
       {
-        "command": "parquet-visualizer.start",
-        "title": "Start new cat coding session",
-        "category": "Cat Coding"
-      },
-      {
-        "command": "parquet-visualizer.doRefactor",
-        "title": "Do some refactoring",
-        "category": "Cat Coding"
-      },
-      {
-        "command": "parquet-visualizer.yarn",
-        "title": "Yarn 🧶",
-        "category": "Cat Coding"
-      },
-      {
-        "command": "parquet-visualizer.insertLion",
-        "title": "Insert 🦁",
-        "category": "Cat Coding"
+        "viewType": "parquet-visualizer.parquetVisualizer",
+        "displayName": "Parquet Visualizer",
+        "selector": [
+          {
+            "filenamePattern": "*.parquet"
+          }
+        ]
       }
-    ]
+    ],
+    "commands": []
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -69,6 +47,8 @@
     "typescript": "^5.1.3"
   },
   "dependencies": {
-    "@dvirtz/parquets": "^0.11.6"
+    "@dvirtz/parquets": "^0.11.6",
+    "@vscode-logging/logger": "^1.2.3",
+    "@vscode-logging/wrapper": "^1.0.1"
   }
 }

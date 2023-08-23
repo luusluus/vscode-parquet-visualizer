@@ -3,6 +3,7 @@ import { getNonce } from './util';
 import { Disposable } from "./dispose";
 
 import { ParquetPaginator } from './parquet-paginator';
+import { getLogger } from './logger';
 
 
 class CustomParquetDocument extends Disposable implements vscode.CustomDocument {
@@ -11,15 +12,16 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
   
     constructor(uri: vscode.Uri) {
       super();
+      console.log(uri.fsPath);
       this.uri = uri;
       this.path = uri.fsPath;
     }
   
-    public async open() {
-      await vscode.window.showTextDocument(
-        this.uri.with({ scheme: 'parquet', path: this.path })
-      );
-    }
+    // public async open() {
+    //   await vscode.window.showTextDocument(
+    //     this.uri.with({ scheme: 'parquet', path: this.path })
+    //   );
+    // }
   }
 
 export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvider<CustomParquetDocument> {
@@ -84,18 +86,18 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             changeDocumentSubscription.dispose();
           });
 
-        const path = vscode.Uri.joinPath(this.context.extensionUri, 'data', 'large.parquet');
-
-        const paginator = await ParquetPaginator.createAsync(path.fsPath, 10);
+        const path = vscode.Uri.joinPath(this.context.extensionUri, 'data', 'small.parquet');
+        console.log(path.fsPath);
+        // const paginator = await ParquetPaginator.createAsync(path.fsPath, 10);
         
 
-        await document.open();
+        // await document.open();
     }
 
     private async onMessage(document: CustomParquetDocument, message: string) {
         switch (message) {
           case 'clicked':
-            await document.open();
+            // await document.open();
             break;
         }
       }

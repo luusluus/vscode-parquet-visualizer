@@ -1,7 +1,7 @@
 // Run this script as follows from command line
 // https://stackoverflow.com/questions/33535879/how-to-run-typescript-files-from-command-line
 // npx ts-node parquet.ts 
-import * as readline from 'readline/promises';
+// import * as readline from 'readline/promises';
 
 import { ParquetReader } from '@dvirtz/parquets';
 
@@ -54,30 +54,30 @@ export class ParquetPaginator {
 }
 
 
-(async () => {
-  const paginator = await ParquetPaginator.createAsync("data/large.parquet", 10);
-  const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout
-  });
+// (async () => {
+//   const paginator = await ParquetPaginator.createAsync("data/large.parquet", 10);
+//   const rl = readline.createInterface({
+//       input: process.stdin,
+//       output: process.stdout
+//   });
 
-  for (;;) {
-    try {
-      const pageNumber = await rl.question('page number: ');
-      console.log(pageNumber);
-      if (pageNumber === 'q') {
-        console.log("exiting...");
-        rl.close();
-        return;
-      };
-      console.log(await paginator.getPage(+pageNumber));
-    }
-    catch (e) { 
-      if (e instanceof RangeError){
-        console.log(e);
-      } else {
-        throw (e);
-      }
-    }
-  }
-})();
+//   for (;;) {
+//     try {
+//       const pageNumber = await rl.question('page number: ');
+//       console.log(pageNumber);
+//       if (pageNumber === 'q') {
+//         console.log("exiting...");
+//         rl.close();
+//         return;
+//       };
+//       console.log(await paginator.getPage(+pageNumber));
+//     }
+//     catch (e) { 
+//       if (e instanceof RangeError){
+//         console.log(e);
+//       } else {
+//         throw (e);
+//       }
+//     }
+//   }
+// })();
