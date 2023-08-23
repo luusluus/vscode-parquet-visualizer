@@ -8,13 +8,25 @@ import { getLogger } from './logger';
 
 class CustomParquetDocument extends Disposable implements vscode.CustomDocument {
     uri: vscode.Uri;
-    path: string;
-  
-    constructor(uri: vscode.Uri) {
-      super();
+    paginator: ParquetPaginator;
+
+    static async create(
+      uri: vscode.Uri,
+      backupId: string | undefined,
+    ): Promise<CustomParquetDocument | PromiseLike<CustomParquetDocument>> {
       console.log(uri.fsPath);
+      // If we have a backup, read that. Otherwise read the resource from the workspace
+      const paginator = await ParquetPaginator.createAsync(uri.fsPath);
+      return new CustomParquetDocument(uri, paginator);
+    }
+
+    private constructor(
+      uri: vscode.Uri,
+      paginator: ParquetPaginator
+    ) {
+      super();
       this.uri = uri;
-      this.path = uri.fsPath;
+      this.paginator = paginator;
     }
   
     // public async open() {
