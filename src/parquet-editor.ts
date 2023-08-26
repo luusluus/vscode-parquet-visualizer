@@ -9,12 +9,11 @@ import { getLogger } from './logger';
 class CustomParquetDocument extends Disposable implements vscode.CustomDocument {
     uri: vscode.Uri;
     paginator: ParquetPaginator;
+    currentPage: number;
 
     static async create(
-      uri: vscode.Uri,
-      backupId: string | undefined,
+      uri: vscode.Uri
     ): Promise<CustomParquetDocument | PromiseLike<CustomParquetDocument>> {
-      console.log(uri.fsPath);
       // If we have a backup, read that. Otherwise read the resource from the workspace
       const paginator = await ParquetPaginator.createAsync(uri.fsPath);
       return new CustomParquetDocument(uri, paginator);
@@ -27,18 +26,25 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       super();
       this.uri = uri;
       this.paginator = paginator;
+      this.currentPage = 1;
     }
-  
-    // public async open() {
-    //   await vscode.window.showTextDocument(
-    //     this.uri.with({ scheme: 'parquet', path: this.path })
-    //   );
-    // }
+
+    nextPage() {
+      this.currentPage++;
+      return this.getCurrentPage();
+    }
+
+    getCurrentPage() {
+      return this.paginator.getPage(this.currentPage);
+    }
   }
 
 export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvider<CustomParquetDocument> {
 
     private static readonly viewType = 'parquet-visualizer.parquetVisualizer';
+
+    private readonly _onDidChangeCustomDocument = new vscode.EventEmitter<vscode.CustomDocumentEditEvent<CustomParquetDocument>>();
+	  public readonly onDidChangeCustomDocument = this._onDidChangeCustomDocument.event;
 
     public static register(context: vscode.ExtensionContext): vscode.Disposable {
         const provider = new ParquetEditorProvider(context);
@@ -50,8 +56,10 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
     ) { }
 
     async openCustomDocument(uri: vscode.Uri): Promise<CustomParquetDocument> {
-        return new CustomParquetDocument(uri);
-      }
+        const document: CustomParquetDocument = await CustomParquetDocument.create(uri);
+
+        return document;
+    }
     
     /**
      * Called when our custom editor is opened.
@@ -68,12 +76,16 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             enableScripts: true,
         };
 
-        webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
+        const data = {
+          'headers': document.paginator.getFieldList(),
+          'body': await document.getCurrentPage()
+        };
+
+        webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview, data);
 
         function updateWebview() {
             webviewPanel.webview.postMessage({
               type: 'update',
-              // text: document.getText(),
             });
           }
       
@@ -92,45 +104,66 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           });
       
           webviewPanel.webview.onDidReceiveMessage(e => this.onMessage(document, e));
+
+          // Wait for the webview to be properly ready before we init
+          // NOTE: Why is onDidReceiveMessage called twice?
+          webviewPanel.webview.onDidReceiveMessage(e => {
+            if (e.type === 'ready') {
+              if (document.uri.scheme === 'untitled') {
+                this.postMessage(webviewPanel, 'init', {
+                  untitled: true,
+                  editable: true,
+                });
+              } else {
+                const editable = vscode.workspace.fs.isWritableFileSystem(document.uri.scheme);
+
+                this.postMessage(webviewPanel, 'init', {
+                  value: "",
+                  editable,
+                });
+              }
+            }
+          });
       
           // Make sure we get rid of the listener when our editor is closed.
           webviewPanel.onDidDispose(() => {
             changeDocumentSubscription.dispose();
           });
 
-        const path = vscode.Uri.joinPath(this.context.extensionUri, 'data', 'small.parquet');
-        console.log(path.fsPath);
-        // const paginator = await ParquetPaginator.createAsync(path.fsPath, 10);
-        
 
-        // await document.open();
     }
 
-    private async onMessage(document: CustomParquetDocument, message: string) {
-        switch (message) {
-          case 'clicked':
-            // await document.open();
+    private async onMessage(document: CustomParquetDocument, message: any) {
+        switch (message.type) {
+          case 'nextPage':
+            const page = await document.nextPage();
+            console.log(page);
             break;
         }
-      }
+    }
 
-    private getHtmlForWebview(webview: vscode.Webview): string {
+    private postMessage(panel: vscode.WebviewPanel, type: string, body: any): void {
+      panel.webview.postMessage({ type, body });
+    }
+
+    private getHtmlForWebview(webview: vscode.Webview, table: any): string {
         // Local path to script and css for the webview
         const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(
-            this.context.extensionUri, 'media', 'main.js'));
+            this.context.extensionUri, 'media', 'scripts', 'main.js'));
 
         const styleResetUri = webview.asWebviewUri(vscode.Uri.joinPath(
-            this.context.extensionUri, 'media', 'reset.css'));
+            this.context.extensionUri, 'media', 'styles', 'reset.css'));
 
         const styleVSCodeUri = webview.asWebviewUri(vscode.Uri.joinPath(
-            this.context.extensionUri, 'media', 'vscode.css'));
+            this.context.extensionUri, 'media', 'styles', 'vscode.css'));
 
-        // const styleMainUri = webview.asWebviewUri(vscode.Uri.joinPath(
-        // 	this.context.extensionUri, 'media', 'catScratch.css'));
+        const styleMainUri = webview.asWebviewUri(vscode.Uri.joinPath(
+        	this.context.extensionUri, 'media', 'styles', 'parquet-visualizer.css'));
 
         // Use a nonce to whitelist which scripts can be run
         const nonce = getNonce();
 
+        const tableHTML = this.getTableHTMLFromData(table);
         return /* html */`
             <!DOCTYPE html>
             <html lang="en">
@@ -147,13 +180,64 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
                 <link href="${styleResetUri}" rel="stylesheet" />
                 <link href="${styleVSCodeUri}" rel="stylesheet" />
+                <link href="${styleMainUri}" rel="stylesheet" />
 
                 <title>Parquet Visualizer</title>
             </head>
             <body>
-                
+              <div class="data-view">
+                <div class="add-button">
+                  <button>Next Page</button>
+                </div>
+                <div class="table"></div>
+              </div>
+                <!-- ${tableHTML} -->
+
                 <script nonce="${nonce}" src="${scriptUri}"></script>
             </body>
             </html>`;
+    }
+
+    private getTableHTMLFromData(table: any) {
+      const {headers, body} = table;
+
+      const headerTableHTML = this.getTableHeaderHTMLFromData(headers);
+      const bodyTableHTML = this.getTableBodyHTMLFromData(body);
+
+      return `
+        <table>
+        ${headerTableHTML}
+        ${bodyTableHTML}
+        </table>
+      `;
+    }
+
+    private getTableHeaderHTMLFromData(headers: any) {
+      // header
+      let formattedCells = [];
+      for (let i = 0; i < headers.length; i++) {
+        let row = headers[i];
+        
+        let formattedCell = `<th>${row.name}</th>`;
+        formattedCells.push(formattedCell);
+      }
+      return `<tr>${formattedCells.join('')}</tr>`;
+    }
+
+    private getTableBodyHTMLFromData(body: any) {
+      // body
+      let formattedRows = [];
+      for (let i = 0; i < body.length; i++) {
+        let row = body[i];
+        let formattedCells = [];
+        for (let j = 0; j < row.length; j++) {
+          let formattedCell = `<td>${row[j]}</td>`;
+          formattedCells.push(formattedCell);
+        }
+        let formattedRow = `<tr>${formattedCells.join('')}</tr>`;
+        formattedRows.push(formattedRow);
+      }
+
+      return `${formattedRows.join('')}`;
     }
 }

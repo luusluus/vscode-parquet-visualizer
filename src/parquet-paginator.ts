@@ -3,17 +3,19 @@
 // npx ts-node parquet.ts 
 // import * as readline from 'readline/promises';
 
-import { ParquetReader } from '@dvirtz/parquets';
+import { ParquetReader, ParquetSchema } from '@dvirtz/parquets';
 
 export class ParquetPaginator {
   private reader: ParquetReader<unknown>;
   private pageSize: number;
   private rowCount: number;
   private pageCount: number;
+  private schema: ParquetSchema;
 
   private constructor(reader: ParquetReader<unknown>, pageSize: number) {
     this.reader = reader;
     this.pageSize = pageSize;
+    this.schema = this.reader.getSchema();
     this.rowCount = this.reader.getRowCount();
     this.pageCount = Math.ceil(this.rowCount / this.pageSize);
   }
@@ -38,7 +40,10 @@ export class ParquetPaginator {
       // get subset of rows based on startindex and endindex
       const row = await cursor.next();
       if (i >= startIndex && i <= endIndex) {
-        rows.push(row);
+
+        // map object to array
+        const values = Object.keys(row).map(key => row[key]);
+        rows.push(values);
       }
       if (i > endIndex) {
         break;
@@ -50,6 +55,18 @@ export class ParquetPaginator {
 
   public numPages() {
     return this.pageCount;
+  }
+
+  public getSchema() {
+    return this.schema.schema;
+  }
+
+  public getFieldList() {
+    return this.schema.fieldList;
+  }
+
+  public getFields() {
+    return this.schema.fields;
   }
 }
 
