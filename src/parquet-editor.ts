@@ -29,9 +29,20 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       this.currentPage = 1;
     }
 
-    nextPage() {
+    private readonly _onDidChangeDocument = this._register(new vscode.EventEmitter<{
+      readonly rowData?: any;
+    }>());
+    /**
+     * Fired to notify webviews that the document has changed.
+     */
+    public readonly onDidChangeContent = this._onDidChangeDocument.event;
+
+    async nextPage() {
       this.currentPage++;
-      return this.getCurrentPage();
+      const currentPage = await this.getCurrentPage();
+      this._onDidChangeDocument.fire({
+        rowData: currentPage 
+      });
     }
 
     getCurrentPage() {
@@ -43,6 +54,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
     private static readonly viewType = 'parquet-visualizer.parquetVisualizer';
 
+    private readonly webviewPanel: vscode.WebviewPanel;
     private readonly _onDidChangeCustomDocument = new vscode.EventEmitter<vscode.CustomDocumentEditEvent<CustomParquetDocument>>();
 	  public readonly onDidChangeCustomDocument = this._onDidChangeCustomDocument.event;
 
@@ -58,6 +70,15 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
     async openCustomDocument(uri: vscode.Uri): Promise<CustomParquetDocument> {
         const document: CustomParquetDocument = await CustomParquetDocument.create(uri);
 
+        const listeners: vscode.Disposable[] = [];
+
+        listeners.push(document.onDidChangeContent(e => {
+          // Update all webviews when the document changes
+          console.log(e);
+          this.postMessage(this.webviewPanel, 'update', {
+            
+          });
+        }));
         return document;
     }
     
@@ -77,15 +98,16 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         };
 
         const data = {
-          'headers': document.paginator.getFieldList(),
-          'body': await document.getCurrentPage()
+          headers: document.paginator.getFieldList(),
+          body: await document.getCurrentPage()
         };
 
-        webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview, data);
+        webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-        function updateWebview() {
+        async function updateWebview() {
             webviewPanel.webview.postMessage({
               type: 'update',
+              body: data
             });
           }
       
@@ -129,7 +151,8 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           webviewPanel.onDidDispose(() => {
             changeDocumentSubscription.dispose();
           });
-
+          
+          updateWebview();
 
     }
 
@@ -146,7 +169,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
       panel.webview.postMessage({ type, body });
     }
 
-    private getHtmlForWebview(webview: vscode.Webview, table: any): string {
+    private getHtmlForWebview(webview: vscode.Webview): string {
         // Local path to script and css for the webview
         const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(
             this.context.extensionUri, 'media', 'scripts', 'main.js'));
@@ -163,7 +186,6 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         // Use a nonce to whitelist which scripts can be run
         const nonce = getNonce();
 
-        const tableHTML = this.getTableHTMLFromData(table);
         return /* html */`
             <!DOCTYPE html>
             <html lang="en">
@@ -191,53 +213,10 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
                 </div>
                 <div class="table"></div>
               </div>
-                <!-- ${tableHTML} -->
 
                 <script nonce="${nonce}" src="${scriptUri}"></script>
             </body>
             </html>`;
     }
 
-    private getTableHTMLFromData(table: any) {
-      const {headers, body} = table;
-
-      const headerTableHTML = this.getTableHeaderHTMLFromData(headers);
-      const bodyTableHTML = this.getTableBodyHTMLFromData(body);
-
-      return `
-        <table>
-        ${headerTableHTML}
-        ${bodyTableHTML}
-        </table>
-      `;
-    }
-
-    private getTableHeaderHTMLFromData(headers: any) {
-      // header
-      let formattedCells = [];
-      for (let i = 0; i < headers.length; i++) {
-        let row = headers[i];
-        
-        let formattedCell = `<th>${row.name}</th>`;
-        formattedCells.push(formattedCell);
-      }
-      return `<tr>${formattedCells.join('')}</tr>`;
-    }
-
-    private getTableBodyHTMLFromData(body: any) {
-      // body
-      let formattedRows = [];
-      for (let i = 0; i < body.length; i++) {
-        let row = body[i];
-        let formattedCells = [];
-        for (let j = 0; j < row.length; j++) {
-          let formattedCell = `<td>${row[j]}</td>`;
-          formattedCells.push(formattedCell);
-        }
-        let formattedRow = `<tr>${formattedCells.join('')}</tr>`;
-        formattedRows.push(formattedRow);
-      }
-
-      return `${formattedRows.join('')}`;
-    }
 }
