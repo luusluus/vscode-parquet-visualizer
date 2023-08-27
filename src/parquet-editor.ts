@@ -3,7 +3,7 @@ import { getNonce } from './util';
 import { Disposable } from "./dispose";
 
 import { ParquetPaginator } from './parquet-paginator';
-import { getLogger } from './logger';
+// import { getLogger } from './logger';
 
 
 class CustomParquetDocument extends Disposable implements vscode.CustomDocument {
@@ -45,7 +45,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       });
     }
 
-    getCurrentPage() {
+    async getCurrentPage() {
       return this.paginator.getPage(this.currentPage);
     }
   }
@@ -54,7 +54,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
     private static readonly viewType = 'parquet-visualizer.parquetVisualizer';
 
-    private readonly webviewPanel: vscode.WebviewPanel;
+    private webviewPanel: vscode.WebviewPanel;
     private readonly _onDidChangeCustomDocument = new vscode.EventEmitter<vscode.CustomDocumentEditEvent<CustomParquetDocument>>();
 	  public readonly onDidChangeCustomDocument = this._onDidChangeCustomDocument.event;
 
@@ -74,9 +74,12 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
         listeners.push(document.onDidChangeContent(e => {
           // Update all webviews when the document changes
-          console.log(e);
-          this.postMessage(this.webviewPanel, 'update', {
-            
+          this.webviewPanel.webview.postMessage({
+            type: 'update',
+            body: {
+              headers : [],
+              body: e.rowData
+            }
           });
         }));
         return document;
@@ -93,6 +96,8 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         _token: vscode.CancellationToken
     ): Promise<void> {
         // Setup initial content for the webview
+        console.log('resolveCustomEditor');
+        this.webviewPanel = webviewPanel;
         webviewPanel.webview.options = {
             enableScripts: true,
         };
@@ -103,70 +108,67 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         };
 
         webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
-
-        async function updateWebview() {
+      
+        // Hook up event handlers so that we can synchronize the webview with the text document.
+        //
+        // The text document acts as our model, so we have to sync change in the document to our
+        // editor and sync changes in the editor back to the document.
+        // 
+        // Remember that a single text document can also be shared between multiple custom
+        // editors (this happens for example when you split a custom editor)
+    
+        const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(e => {
+          if (e.document.uri.toString() === document.uri.toString()) {
             webviewPanel.webview.postMessage({
               type: 'update',
               body: data
             });
           }
-      
-          // Hook up event handlers so that we can synchronize the webview with the text document.
-          //
-          // The text document acts as our model, so we have to sync change in the document to our
-          // editor and sync changes in the editor back to the document.
-          // 
-          // Remember that a single text document can also be shared between multiple custom
-          // editors (this happens for example when you split a custom editor)
-      
-          const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(e => {
-            if (e.document.uri.toString() === document.uri.toString()) {
-              updateWebview();
-            }
-          });
-      
-          webviewPanel.webview.onDidReceiveMessage(e => this.onMessage(document, e));
+        });
+    
+        webviewPanel.webview.onDidReceiveMessage(e => this.onMessage(document, e));
 
-          // Wait for the webview to be properly ready before we init
-          // NOTE: Why is onDidReceiveMessage called twice?
-          webviewPanel.webview.onDidReceiveMessage(e => {
-            if (e.type === 'ready') {
-              if (document.uri.scheme === 'untitled') {
-                this.postMessage(webviewPanel, 'init', {
-                  untitled: true,
-                  editable: true,
-                });
-              } else {
-                const editable = vscode.workspace.fs.isWritableFileSystem(document.uri.scheme);
+        // Wait for the webview to be properly ready before we init
+        // NOTE: Why is onDidReceiveMessage called twice?
+        webviewPanel.webview.onDidReceiveMessage(e => {
+          if (e.type === 'ready') {
+            if (document.uri.scheme === 'untitled') {
+              this.postMessage(webviewPanel, 'init', {
+                untitled: true,
+                editable: true,
+              });
+            } else {
+              const editable = vscode.workspace.fs.isWritableFileSystem(document.uri.scheme);
 
-                this.postMessage(webviewPanel, 'init', {
-                  value: "",
-                  editable,
-                });
-              }
+              this.postMessage(webviewPanel, 'init', {
+                value: "",
+                editable,
+              });
             }
-          });
-      
-          // Make sure we get rid of the listener when our editor is closed.
-          webviewPanel.onDidDispose(() => {
-            changeDocumentSubscription.dispose();
-          });
-          
-          updateWebview();
+          }
+        });
+    
+        // Make sure we get rid of the listener when our editor is closed.
+        webviewPanel.onDidDispose(() => {
+          changeDocumentSubscription.dispose();
+        });
+        
+        webviewPanel.webview.postMessage({
+          type: 'update',
+          body: data
+        });
 
     }
 
     private async onMessage(document: CustomParquetDocument, message: any) {
         switch (message.type) {
           case 'nextPage':
-            const page = await document.nextPage();
-            console.log(page);
-            break;
+            await document.nextPage();
         }
     }
 
-    private postMessage(panel: vscode.WebviewPanel, type: string, body: any): void {
-      panel.webview.postMessage({ type, body });
+    private postMessage(panel: vscode.WebviewPanel, type: string, data: any): void {
+      panel.webview.postMessage({ type, data });
     }
 
     private getHtmlForWebview(webview: vscode.Webview): string {

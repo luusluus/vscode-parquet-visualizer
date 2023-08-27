@@ -8,17 +8,30 @@
 
     const tableContainer = /** @type {HTMLElement} */ (document.querySelector('.table'));
 
-    function updateTable( /** @type {undefined} */  tableData) {
-        const tableElement = document.createElement('table');
-        const tableRowElement = document.createElement('tr');
-        tableElement.appendChild(tableRowElement);
-        for (const header of tableData.headers || []) {
-            const tableHeaderElement = document.createElement('th');
-            tableHeaderElement.innerText = header.name;
-            tableRowElement.appendChild(tableHeaderElement);
+    function updateTable( /** @type {any} */  tableData) {
+        console.log("updateTable");
+        let tableElement = document.querySelector('table');
+        if (tableElement?.parentElement !== tableContainer) {
+            tableElement = document.createElement('table');
+            const tableHeaderElement = document.createElement('thead');
+            const tableRowElement = document.createElement('tr');
+            tableHeaderElement.appendChild(tableRowElement);
+    
+            for (const header of tableData.headers || []) {
+                const tableHeaderColumnElement = document.createElement('th');
+                tableHeaderColumnElement.innerText = header.name;
+                tableRowElement.appendChild(tableHeaderColumnElement);
+            }
+            tableElement.appendChild(tableHeaderElement);
         }
 
-        tableContainer.appendChild(tableRowElement);
+        let tbody = document.querySelector('tbody');
+
+        if (tbody) {
+            tbody.innerHTML = '';
+        } else {
+            tbody = document.createElement('tbody');
+        }
 
         for (const row of tableData.body || []) {
             const tableRowElement = document.createElement('tr');
@@ -27,8 +40,11 @@
                 tableCellElement.innerText = cell;
                 tableRowElement.appendChild(tableCellElement);
             }
-            tableContainer.appendChild(tableRowElement);
+            tbody.appendChild(tableRowElement);
         }
+
+        tableElement.appendChild(tbody);
+        tableContainer.appendChild(tableElement);
     }
     
     const buttonContainer = /** @type {HTMLElement} */ (document.querySelector('button'));
@@ -44,16 +60,17 @@
     // Handle messages from the extension
     window.addEventListener('message', async e => {
         const { type, body, requestId } = e.data;
-        console.log(type);
         switch (type) {
             case 'init':
                 {
                     console.log('init');
-                    console.log(body);
                 }
             case 'update':
                 {
-                    updateTable(body);
+                    console.log('update');
+                    if (body) {
+                        updateTable(body);
+                    }
                 }
             
         }
