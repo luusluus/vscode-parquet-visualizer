@@ -47,13 +47,18 @@
         tableContainer.appendChild(tableElement);
     }
     
-    const buttonContainer = /** @type {HTMLElement} */ (document.querySelector('button'));
+    const nextButtonContainer = /** @type {HTMLElement} */ (document.querySelector('#btn-next'));
+    const prevButtonContainer = /** @type {HTMLElement} */ (document.querySelector('#btn-prev'));
 
-    // const editor = new PawDrawEditor(document.querySelector('.drawing-canvas'));
-
-    buttonContainer.addEventListener('click', () => {
+    nextButtonContainer.addEventListener('click', () => {
         vscode.postMessage({
             type: 'nextPage'
+        });
+    });
+
+    prevButtonContainer.addEventListener('click', () => {
+        vscode.postMessage({
+            type: 'prevPage'
         });
     });
 

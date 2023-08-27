@@ -38,7 +38,19 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
     public readonly onDidChangeContent = this._onDidChangeDocument.event;
 
     async nextPage() {
+      console.log("nextPage");
       this.currentPage++;
+      console.log(this.currentPage);
+      const currentPage = await this.getCurrentPage();
+      this._onDidChangeDocument.fire({
+        rowData: currentPage 
+      });
+    }
+
+    async prevPage() {
+      console.log("prevPage");
+      this.currentPage--;
+      console.log(this.currentPage);
       const currentPage = await this.getCurrentPage();
       this._onDidChangeDocument.fire({
         rowData: currentPage 
@@ -161,10 +173,17 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
     }
 
     private async onMessage(document: CustomParquetDocument, message: any) {
-        switch (message.type) {
-          case 'nextPage':
-            await document.nextPage();
+      console.log(message.type);
+      switch (message.type) {
+        case 'nextPage': {
+          await document.nextPage();
+          break;
         }
+        case 'prevPage': {
+          await document.prevPage();
+          break;
+        }
+      }
     }
 
     private postMessage(panel: vscode.WebviewPanel, type: string, data: any): void {
@@ -210,9 +229,8 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             </head>
             <body>
               <div class="data-view">
-                <div class="add-button">
-                  <button>Next Page</button>
-                </div>
+                <button id="btn-next">Next Page</button>
+                <button id="btn-prev">Previous Page</button>
                 <div class="table"></div>
               </div>
 
