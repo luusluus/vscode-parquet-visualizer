@@ -6,10 +6,28 @@
 
     const oldState = /** @type {{ count: number} | undefined} */ (vscode.getState());
 
-    const tableContainer = /** @type {HTMLElement} */ (document.querySelector('.table'));
+    let currentPage = 1;
+    let pagesCount = 0;
+
+    const tableContainer = /** @type {HTMLElement} */ (document.querySelector('#table'));
+    const pageCounterContainer = /** @type {HTMLElement} */ (document.querySelector('#page-counter'));
+
+    function updatePageCounter( /** @type {any} */  pageCounterData) {
+        // pageCounterContainer
+        console.log(pageCounterData);
+        let pageRangeElement = pageCounterContainer.querySelector('#page-range');
+        if (pageRangeElement){
+            pageRangeElement.innerHTML = `${pageCounterData.startRow}-${pageCounterData.endRow}`;
+        }
+
+        let rowCountElement = pageCounterContainer.querySelector('#row-count');
+        if (rowCountElement){
+            rowCountElement.innerHTML = pageCounterData.rowCount;
+        }
+
+    }
 
     function updateTable( /** @type {any} */  tableData) {
-        console.log("updateTable");
         let tableElement = document.querySelector('table');
         if (tableElement?.parentElement !== tableContainer) {
             tableElement = document.createElement('table');
@@ -49,32 +67,95 @@
     
     const nextButtonContainer = /** @type {HTMLElement} */ (document.querySelector('#btn-next'));
     const prevButtonContainer = /** @type {HTMLElement} */ (document.querySelector('#btn-prev'));
+    const firstButtonContainer = /** @type {HTMLElement} */ (document.querySelector('#btn-first'));
+    const lastButtonContainer = /** @type {HTMLElement} */ (document.querySelector('#btn-last'));
+
+    function checkButtonState(){
+        if (currentPage === pagesCount){
+            nextButtonContainer.setAttribute('disabled', '');
+        }
+
+        if (currentPage > 1){
+            prevButtonContainer.removeAttribute('disabled');
+        }
+
+        if (currentPage < pagesCount ) {
+            nextButtonContainer.removeAttribute('disabled');
+        }
+
+        if (currentPage === 1){
+            prevButtonContainer.setAttribute('disabled', '');
+        }
+    }
 
     nextButtonContainer.addEventListener('click', () => {
+        if (currentPage < pagesCount){
+            currentPage++;
+        }
+
+        checkButtonState();
+        
         vscode.postMessage({
             type: 'nextPage'
         });
     });
 
     prevButtonContainer.addEventListener('click', () => {
+        if (currentPage > 1){
+            currentPage--;
+        }
+
+        checkButtonState();
+        
         vscode.postMessage({
             type: 'prevPage'
         });
     });
 
+    firstButtonContainer.addEventListener('click', () => {
+        currentPage = 1;
+
+        checkButtonState();
+
+        vscode.postMessage({
+            type: 'firstPage'
+        });
+    });
+
+    lastButtonContainer.addEventListener('click', () => {
+        currentPage = pagesCount;
+        
+        checkButtonState();
+
+        vscode.postMessage({
+            type: 'lastPage'
+        });
+    });
+
+
+
     // Handle messages from the extension
     window.addEventListener('message', async e => {
-        const { type, body, requestId } = e.data;
+        console.log(e);
+        const { type, tableData, requestId } = e.data;
         switch (type) {
             case 'init':
                 {
                     console.log('init');
+                    if (tableData) {
+                        const {headers, body, rowCount, startRow, endRow, pageCount } = tableData;
+                        pagesCount = pageCount;
+                        updateTable({headers, body});
+                        updatePageCounter({rowCount, startRow, endRow});
+                    }
                 }
             case 'update':
                 {
                     console.log('update');
-                    if (body) {
-                        updateTable(body);
+                    if (tableData) {
+                        const {headers, body, rowCount, startRow, endRow } = tableData;
+                        updateTable({headers, body});
+                        updatePageCounter({rowCount, startRow, endRow});
                     }
                 }
             

@@ -20,7 +20,7 @@ export class ParquetPaginator {
     this.pageCount = Math.ceil(this.rowCount / this.pageSize);
   }
 
-  public static async createAsync (filePath: string, pageSize: number = 20) {
+  public static async createAsync (filePath: string, pageSize: number = 5) {
     const reader = await ParquetReader.openFile(filePath);
     return new ParquetPaginator(reader, pageSize);
   }
@@ -53,10 +53,6 @@ export class ParquetPaginator {
     return rows;
   }
 
-  public numPages() {
-    return this.pageCount;
-  }
-
   public getSchema() {
     return this.schema.schema;
   }
@@ -68,33 +64,17 @@ export class ParquetPaginator {
   public getFields() {
     return this.schema.fields;
   }
+
+  public getPageSize() {
+    return this.pageSize;
+  }
+
+  public getPageCount() {
+    return this.pageCount;
+  }
+
+  public getRowCount() {
+    return this.rowCount;
+  }
+
 }
-
-
-// (async () => {
-//   const paginator = await ParquetPaginator.createAsync("data/large.parquet", 10);
-//   const rl = readline.createInterface({
-//       input: process.stdin,
-//       output: process.stdout
-//   });
-
-//   for (;;) {
-//     try {
-//       const pageNumber = await rl.question('page number: ');
-//       console.log(pageNumber);
-//       if (pageNumber === 'q') {
-//         console.log("exiting...");
-//         rl.close();
-//         return;
-//       };
-//       console.log(await paginator.getPage(+pageNumber));
-//     }
-//     catch (e) { 
-//       if (e instanceof RangeError){
-//         console.log(e);
-//       } else {
-//         throw (e);
-//       }
-//     }
-//   }
-// })();

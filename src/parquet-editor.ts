@@ -31,34 +31,65 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
 
     private readonly _onDidChangeDocument = this._register(new vscode.EventEmitter<{
       readonly rowData?: any;
+      readonly rowCount?: number;
+      readonly startRow?: number;
+      readonly endRow?: number;
     }>());
     /**
      * Fired to notify webviews that the document has changed.
      */
     public readonly onDidChangeContent = this._onDidChangeDocument.event;
 
-    async nextPage() {
-      console.log("nextPage");
-      this.currentPage++;
-      console.log(this.currentPage);
-      const currentPage = await this.getCurrentPage();
+    fireChangedDocumentEvent(page: any) {
+
+      const startRow = this.getPageSize() * this.currentPage - this.getPageSize() + 1;
       this._onDidChangeDocument.fire({
-        rowData: currentPage 
+        rowData: page,
+        rowCount: this.getRowCount(),
+        startRow: startRow,
+        endRow: startRow + page.length - 1
       });
+    }
+    async nextPage() {
+      this.currentPage++;
+      const page = await this.getCurrentPage();
+
+      this.fireChangedDocumentEvent(page);
     }
 
     async prevPage() {
-      console.log("prevPage");
       this.currentPage--;
-      console.log(this.currentPage);
-      const currentPage = await this.getCurrentPage();
-      this._onDidChangeDocument.fire({
-        rowData: currentPage 
-      });
+      const page = await this.getCurrentPage();
+      this.fireChangedDocumentEvent(page);
+    }
+
+    async firstPage(){
+      this.currentPage = 1;
+      const page = await this.getCurrentPage();
+      this.fireChangedDocumentEvent(page);
+    }
+
+    async lastPage() {
+      this.currentPage = this.getPageCount();
+      const page = await this.getCurrentPage();
+
+      this.fireChangedDocumentEvent(page);
     }
 
     async getCurrentPage() {
       return this.paginator.getPage(this.currentPage);
+    }
+
+    getPageSize() {
+      return this.paginator.getPageSize();
+    }
+
+    getPageCount() {
+      return this.paginator.getPageCount();
+    }
+
+    getRowCount() {
+      return this.paginator.getRowCount();
     }
   }
 
@@ -86,12 +117,18 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
         listeners.push(document.onDidChangeContent(e => {
           // Update all webviews when the document changes
+          const dataChange = {
+            headers : [],
+            body: e.rowData,
+            rowCount: e.rowCount,
+            startRow: e.startRow,
+            endRow: e.endRow,
+          };
+
+          console.log(dataChange);
           this.webviewPanel.webview.postMessage({
             type: 'update',
-            body: {
-              headers : [],
-              body: e.rowData
-            }
+            tableData: dataChange
           });
         }));
         return document;
@@ -108,7 +145,6 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         _token: vscode.CancellationToken
     ): Promise<void> {
         // Setup initial content for the webview
-        console.log('resolveCustomEditor');
         this.webviewPanel = webviewPanel;
         webviewPanel.webview.options = {
             enableScripts: true,
@@ -116,7 +152,11 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
         const data = {
           headers: document.paginator.getFieldList(),
-          body: await document.getCurrentPage()
+          body: await document.getCurrentPage(),
+          rowCount: document.getRowCount(),
+          startRow: document.getPageSize() * document.currentPage - document.getPageSize() + 1,
+          endRow: document.getPageSize() * document.currentPage,
+          pageCount: document.getPageCount(),
         };
 
         webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
@@ -133,7 +173,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           if (e.document.uri.toString() === document.uri.toString()) {
             webviewPanel.webview.postMessage({
               type: 'update',
-              body: data
+              tableData: data
             });
           }
         });
@@ -141,20 +181,18 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         webviewPanel.webview.onDidReceiveMessage(e => this.onMessage(document, e));
 
         // Wait for the webview to be properly ready before we init
-        // NOTE: Why is onDidReceiveMessage called twice?
         webviewPanel.webview.onDidReceiveMessage(e => {
           if (e.type === 'ready') {
             if (document.uri.scheme === 'untitled') {
-              this.postMessage(webviewPanel, 'init', {
-                untitled: true,
-                editable: true,
+              this.webviewPanel.webview.postMessage({
+                type: 'init',
+                tableData: data,
               });
             } else {
-              const editable = vscode.workspace.fs.isWritableFileSystem(document.uri.scheme);
-
-              this.postMessage(webviewPanel, 'init', {
-                value: "",
-                editable,
+              // const editable = vscode.workspace.fs.isWritableFileSystem(document.uri.scheme);
+              this.webviewPanel.webview.postMessage({
+                type: 'init',
+                tableData: data,
               });
             }
           }
@@ -165,15 +203,9 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           changeDocumentSubscription.dispose();
         });
         
-        webviewPanel.webview.postMessage({
-          type: 'update',
-          body: data
-        });
-
     }
 
     private async onMessage(document: CustomParquetDocument, message: any) {
-      console.log(message.type);
       switch (message.type) {
         case 'nextPage': {
           await document.nextPage();
@@ -183,11 +215,15 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           await document.prevPage();
           break;
         }
+        case 'firstPage': {
+          await document.firstPage();
+          break;
+        }
+        case 'lastPage': {
+          await document.lastPage();
+          break;
+        }
       }
-    }
-
-    private postMessage(panel: vscode.WebviewPanel, type: string, data: any): void {
-      panel.webview.postMessage({ type, data });
     }
 
     private getHtmlForWebview(webview: vscode.Webview): string {
@@ -229,9 +265,20 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             </head>
             <body>
               <div class="data-view">
-                <button id="btn-next">Next Page</button>
-                <button id="btn-prev">Previous Page</button>
-                <div class="table"></div>
+                <div id="page-counter">
+                  <span>
+                    <span>Showing</span>
+                    <span id="page-range"></span>
+                    <span>of</span>
+                    <span id="row-count"></span>
+                    <span>rows</span>
+                  </span>
+                </div>
+                <button id="btn-first" class="btn">First Page</button>
+                <button id="btn-next" class="btn">Next Page</button>
+                <button id="btn-prev" class="btn" disabled>Previous Page</button>
+                <button id="btn-last" class="btn">Last Page</button>
+                <div id="table"></div>
               </div>
 
                 <script nonce="${nonce}" src="${scriptUri}"></script>
