@@ -41,14 +41,14 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
     public readonly onDidChangeContent = this._onDidChangeDocument.event;
 
     fireChangedDocumentEvent(page: any) {
-
       const startRow = this.getPageSize() * this.currentPage - this.getPageSize() + 1;
-      this._onDidChangeDocument.fire({
+      const tableData = {
         rowData: page,
         rowCount: this.getRowCount(),
         startRow: startRow,
         endRow: startRow + page.length - 1
-      });
+      };
+      this._onDidChangeDocument.fire(tableData);
     }
     async nextPage() {
       this.currentPage++;
@@ -80,6 +80,12 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       return this.paginator.getPage(this.currentPage);
     }
 
+    async getPageByNumber(pageNumber: number) {
+      const page = await this.paginator.getPage(pageNumber);
+
+      this.fireChangedDocumentEvent(page);
+    }
+
     getPageSize() {
       return this.paginator.getPageSize();
     }
@@ -90,6 +96,10 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
 
     getRowCount() {
       return this.paginator.getRowCount();
+    }
+
+    setPageSize(value: number){
+      this.paginator.setPageSize(value);
     }
   }
 
@@ -131,6 +141,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             tableData: dataChange
           });
         }));
+
         return document;
     }
     
@@ -171,6 +182,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
     
         const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(e => {
           if (e.document.uri.toString() === document.uri.toString()) {
+            console.log('onDidChangeTextDocument');
             webviewPanel.webview.postMessage({
               type: 'update',
               tableData: data
@@ -223,6 +235,32 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           await document.lastPage();
           break;
         }
+        case 'changePageSize': {
+          // Check if value is 'All'
+          console.log(message.data);
+          if (isNaN(+(message.data.newPageSize))) {
+            console.log(message.data.newPageSize);
+            document.setPageSize(document.getRowCount());
+            await document.firstPage();
+            break;
+          }
+
+          const newPageSize: number = +(message.data.newPageSize);
+          const prevStartRow: number = message.data.prevStartRow;
+          let pageNumber = 1;
+          let startRow = 1;
+          let endRow = newPageSize;
+          while (startRow < prevStartRow || prevStartRow > endRow) {
+            startRow += newPageSize;
+            endRow += newPageSize;
+            pageNumber++;
+          }
+          console.log(`New page number: ${pageNumber}`);
+
+          document.setPageSize(newPageSize);
+          await document.getPageByNumber(pageNumber);
+          break;
+        }
       }
     }
 
@@ -273,6 +311,15 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
                     <span id="row-count"></span>
                     <span>rows</span>
                   </span>
+                  <label for="num-records">Num records:</label>
+                  <select name="num-records" id="dropdown-num-records">
+                    <option value="10">10</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="500">500</option>
+                    <option value="1000">1000</option>
+                    <option value="all">All</option>
+                  </select>
                 </div>
                 <button id="btn-first" class="btn">First Page</button>
                 <button id="btn-next" class="btn">Next Page</button>

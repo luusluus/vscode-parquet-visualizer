@@ -8,6 +8,7 @@
 
     let currentPage = 1;
     let pagesCount = 0;
+    let startingRow = 0;
 
     const tableContainer = /** @type {HTMLElement} */ (document.querySelector('#table'));
     const pageCounterContainer = /** @type {HTMLElement} */ (document.querySelector('#page-counter'));
@@ -124,7 +125,7 @@
 
     lastButtonContainer.addEventListener('click', () => {
         currentPage = pagesCount;
-        
+
         checkButtonState();
 
         vscode.postMessage({
@@ -132,33 +133,46 @@
         });
     });
 
-
+    const numRecordsDropdownContainer = /** @type {HTMLSelectElement} */ (document.querySelector('#dropdown-num-records'));
+    numRecordsDropdownContainer.addEventListener('change', (e) => {
+        const selectedIndex = numRecordsDropdownContainer.selectedIndex;
+        const selectedOption = numRecordsDropdownContainer.options[selectedIndex];
+        console.log(startingRow);
+        vscode.postMessage({
+            type: 'changePageSize',
+            data: {
+                newPageSize: selectedOption.innerText,
+                prevStartRow: startingRow
+            }
+        });
+    });
 
     // Handle messages from the extension
     window.addEventListener('message', async e => {
         console.log(e);
         const { type, tableData, requestId } = e.data;
         switch (type) {
-            case 'init':
-                {
-                    console.log('init');
-                    if (tableData) {
-                        const {headers, body, rowCount, startRow, endRow, pageCount } = tableData;
-                        pagesCount = pageCount;
-                        updateTable({headers, body});
-                        updatePageCounter({rowCount, startRow, endRow});
-                    }
+            case 'init':{
+                console.log('init');
+                if (tableData) {
+                    const {headers, body, rowCount, startRow, endRow, pageCount } = tableData;
+                    console.log(startRow);
+                    pagesCount = pageCount;
+                    startingRow = startRow;
+                    updateTable({headers, body});
+                    updatePageCounter({rowCount, startRow, endRow});
                 }
-            case 'update':
-                {
-                    console.log('update');
-                    if (tableData) {
-                        const {headers, body, rowCount, startRow, endRow } = tableData;
-                        updateTable({headers, body});
-                        updatePageCounter({rowCount, startRow, endRow});
-                    }
+            }
+            case 'update': {
+                console.log('update');
+                console.log(tableData);
+                if (tableData) {
+                    const {headers, body, rowCount, startRow, endRow } = tableData;
+                    startingRow = startRow;
+                    updateTable({headers, body});
+                    updatePageCounter({rowCount, startRow, endRow});
                 }
-            
+            }
         }
     });
 

@@ -20,7 +20,7 @@ export class ParquetPaginator {
     this.pageCount = Math.ceil(this.rowCount / this.pageSize);
   }
 
-  public static async createAsync (filePath: string, pageSize: number = 5) {
+  public static async createAsync (filePath: string, pageSize: number = 10) {
     const reader = await ParquetReader.openFile(filePath);
     return new ParquetPaginator(reader, pageSize);
   }
@@ -75,6 +75,10 @@ export class ParquetPaginator {
 
   public getRowCount() {
     return this.rowCount;
+  }
+
+  public setPageSize(value: number) {
+    this.pageSize = value;
   }
 
 }
