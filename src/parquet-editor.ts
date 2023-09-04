@@ -34,6 +34,8 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       readonly rowCount?: number;
       readonly startRow?: number;
       readonly endRow?: number;
+      readonly pageCount?: number;
+      readonly pageSize?: number;
     }>());
     /**
      * Fired to notify webviews that the document has changed.
@@ -46,7 +48,9 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         rowData: page,
         rowCount: this.getRowCount(),
         startRow: startRow,
-        endRow: startRow + page.length - 1
+        endRow: startRow + page.length - 1,
+        pageCount: this.getPageCount(),
+        pageSize: this.getPageSize()
       };
       this._onDidChangeDocument.fire(tableData);
     }
@@ -168,6 +172,8 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             rowCount: e.rowCount,
             startRow: e.startRow,
             endRow: e.endRow,
+            pageCount: e.pageCount,
+            pageSize: e.pageSize
           };
 
           this.webviewPanel.webview.postMessage({

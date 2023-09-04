@@ -7,7 +7,7 @@
     const oldState = /** @type {{ count: number} | undefined} */ (vscode.getState());
 
     let currentPage = 1;
-    let pagesCount = 0;
+    let amountOfPages = 0;
     let startingRow = 0;
 
     const tableContainer = /** @type {HTMLElement} */ (document.querySelector('#table'));
@@ -72,8 +72,7 @@
     const lastButtonContainer = /** @type {HTMLElement} */ (document.querySelector('#btn-last'));
 
     function checkButtonState(){
-        // FIXME: check if starting row - num records < 0 to disable 
-        if (currentPage === pagesCount){
+        if (currentPage === amountOfPages){
             nextButtonContainer.setAttribute('disabled', '');
         }
 
@@ -81,7 +80,7 @@
             prevButtonContainer.removeAttribute('disabled');
         }
 
-        if (currentPage < pagesCount ) {
+        if (currentPage < amountOfPages ) {
             nextButtonContainer.removeAttribute('disabled');
         }
 
@@ -91,7 +90,7 @@
     }
 
     nextButtonContainer.addEventListener('click', () => {
-        if (currentPage < pagesCount){
+        if (currentPage < amountOfPages){
             currentPage++;
         }
 
@@ -125,7 +124,7 @@
     });
 
     lastButtonContainer.addEventListener('click', () => {
-        currentPage = pagesCount;
+        currentPage = amountOfPages;
 
         checkButtonState();
 
@@ -155,9 +154,8 @@
             case 'init':{
                 console.log('init');
                 if (tableData) {
-                    const {headers, body, rowCount, startRow, endRow, pageCount } = tableData;
-                    console.log(startRow);
-                    pagesCount = pageCount;
+                    const {headers, body, rowCount, startRow, endRow, pageSize } = tableData;
+                    amountOfPages = pageSize;
                     startingRow = startRow;
                     updateTable({headers, body});
                     updatePageCounter({rowCount, startRow, endRow});
@@ -167,7 +165,8 @@
                 console.log('update');
                 console.log(tableData);
                 if (tableData) {
-                    const {headers, body, rowCount, startRow, endRow } = tableData;
+                    const {headers, body, rowCount, startRow, endRow, pageSize } = tableData;
+                    amountOfPages = pageSize;
                     startingRow = startRow;
                     updateTable({headers, body});
                     updatePageCounter({rowCount, startRow, endRow});
