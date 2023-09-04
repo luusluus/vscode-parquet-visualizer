@@ -40,8 +40,8 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
      */
     public readonly onDidChangeContent = this._onDidChangeDocument.event;
 
-    fireChangedDocumentEvent(page: any) {
-      const startRow = this.getPageSize() * this.currentPage - this.getPageSize() + 1;
+    fireChangedDocumentEvent(page: any, startRow: number) {
+      // FIXME: somehow remember prevRowNumber
       const tableData = {
         rowData: page,
         rowCount: this.getRowCount(),
@@ -50,30 +50,67 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       };
       this._onDidChangeDocument.fire(tableData);
     }
+
+    getStartRowNumber() {
+      return this.getPageSize() * this.currentPage - this.getPageSize() + 1;
+    }
+
     async nextPage() {
       this.currentPage++;
-      const page = await this.getCurrentPage();
 
-      this.fireChangedDocumentEvent(page);
+      const page = await this.getCurrentPage();
+      const startRow = this.getStartRowNumber();
+      this.fireChangedDocumentEvent(page, startRow);
     }
 
     async prevPage() {
       this.currentPage--;
+      
       const page = await this.getCurrentPage();
-      this.fireChangedDocumentEvent(page);
+      const startRow = this.getStartRowNumber();
+      this.fireChangedDocumentEvent(page, startRow);
+
     }
 
     async firstPage(){
       this.currentPage = 1;
+      
       const page = await this.getCurrentPage();
-      this.fireChangedDocumentEvent(page);
+      const startRow = this.getStartRowNumber();
+      this.fireChangedDocumentEvent(page, startRow);
     }
 
     async lastPage() {
-      this.currentPage = this.getPageCount();
-      const page = await this.getCurrentPage();
+      this.currentPage = Math.ceil(this.getRowCount() / this.getPageSize());
 
-      this.fireChangedDocumentEvent(page);
+      const page = await this.getCurrentPage();
+      const startRow = this.getStartRowNumber();
+      this.fireChangedDocumentEvent(page, startRow);
+    }
+
+    async changePageSize(data: any) {
+      // Check if value is 'All'
+      if (isNaN(+(data.newPageSize))) {
+        this.setPageSize(this.getRowCount());
+        await this.firstPage();
+        return;
+      }
+
+      const newPageSize: number = +(data.newPageSize);
+      const prevStartRow: number = data.prevStartRow;
+      let pageNumber = 1;
+      let endRow = newPageSize;
+      while (true) {
+        endRow += newPageSize;
+        if (prevStartRow <= endRow){
+          break;
+        }
+        pageNumber++;
+      }
+
+      this.setPageSize(newPageSize);
+      const page = await this.getPageByNumber(pageNumber);
+      this.fireChangedDocumentEvent(page, prevStartRow);
     }
 
     async getCurrentPage() {
@@ -81,9 +118,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
     }
 
     async getPageByNumber(pageNumber: number) {
-      const page = await this.paginator.getPage(pageNumber);
-
-      this.fireChangedDocumentEvent(page);
+      return await this.paginator.getPage(pageNumber);
     }
 
     getPageSize() {
@@ -135,7 +170,6 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             endRow: e.endRow,
           };
 
-          console.log(dataChange);
           this.webviewPanel.webview.postMessage({
             type: 'update',
             tableData: dataChange
@@ -236,29 +270,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           break;
         }
         case 'changePageSize': {
-          // Check if value is 'All'
-          console.log(message.data);
-          if (isNaN(+(message.data.newPageSize))) {
-            console.log(message.data.newPageSize);
-            document.setPageSize(document.getRowCount());
-            await document.firstPage();
-            break;
-          }
-
-          const newPageSize: number = +(message.data.newPageSize);
-          const prevStartRow: number = message.data.prevStartRow;
-          let pageNumber = 1;
-          let startRow = 1;
-          let endRow = newPageSize;
-          while (startRow < prevStartRow || prevStartRow > endRow) {
-            startRow += newPageSize;
-            endRow += newPageSize;
-            pageNumber++;
-          }
-          console.log(`New page number: ${pageNumber}`);
-
-          document.setPageSize(newPageSize);
-          await document.getPageByNumber(pageNumber);
+          await document.changePageSize(message.data);
           break;
         }
       }

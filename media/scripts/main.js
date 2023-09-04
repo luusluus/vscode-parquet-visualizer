@@ -72,6 +72,7 @@
     const lastButtonContainer = /** @type {HTMLElement} */ (document.querySelector('#btn-last'));
 
     function checkButtonState(){
+        // FIXME: check if starting row - num records < 0 to disable 
         if (currentPage === pagesCount){
             nextButtonContainer.setAttribute('disabled', '');
         }
@@ -137,7 +138,6 @@
     numRecordsDropdownContainer.addEventListener('change', (e) => {
         const selectedIndex = numRecordsDropdownContainer.selectedIndex;
         const selectedOption = numRecordsDropdownContainer.options[selectedIndex];
-        console.log(startingRow);
         vscode.postMessage({
             type: 'changePageSize',
             data: {
