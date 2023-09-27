@@ -1,3 +1,34 @@
-.btn {
-    
+table, th, td {
+    border: 1px solid;
 }
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+th {
+    background-color: #45484A;
+}
+
+.container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dropdown {
+    flex-grow: 1;
+}
+
+.buttons {
+    display: flex;
+    gap: 10px; /* Adjust the spacing between buttons as needed */
+}
+

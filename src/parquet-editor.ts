@@ -321,31 +321,34 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             </head>
             <body>
               <div class="data-view">
-                <div id="page-counter">
-                  <span>
-                    <span>Showing</span>
-                    <span id="page-range"></span>
-                    <span>of</span>
-                    <span id="row-count"></span>
-                    <span>rows</span>
-                  </span>
-                  <label for="num-records">Num records:</label>
-                  <select name="num-records" id="dropdown-num-records">
-                    <option value="10">10</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                    <option value="500">500</option>
-                    <option value="1000">1000</option>
-                    <option value="all">All</option>
-                  </select>
-                </div>
-                <button id="btn-first" class="btn">First Page</button>
-                <button id="btn-next" class="btn">Next Page</button>
-                <button id="btn-prev" class="btn" disabled>Previous Page</button>
-                <button id="btn-last" class="btn">Last Page</button>
                 <div id="table"></div>
+                <div class="container">
+                  <div class="dropdown">
+                    <label for="num-records">Num records:</label>
+                    <select name="num-records" id="dropdown-num-records">
+                      <option value="10">10</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                      <option value="500">500</option>
+                      <option value="1000">1000</option>
+                      <option value="all">All</option>
+                    </select>
+                  </div>
+                  <div class="buttons">
+                      <button id="btn-first" type="button">First</button>
+                      <button id="btn-prev" type="button" disabled>Previous</button>
+                      <div id="page-counter">
+                        <span>
+                          <span id="page-range"></span>
+                          <span>of</span>
+                          <span id="row-count"></span>
+                        </span>
+                      </div>
+                      <button id="btn-next" type="button">Next</button>
+                      <button id="btn-last" type="button">Last</button>
+                  </div>
+                </div>
               </div>
-
                 <script nonce="${nonce}" src="${scriptUri}"></script>
             </body>
             </html>`;
