@@ -30,6 +30,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
     }
 
     private readonly _onDidChangeDocument = this._register(new vscode.EventEmitter<{
+      readonly rawData?: any;
       readonly rowData?: any;
       readonly rowCount?: number;
       readonly startRow?: number;
@@ -42,13 +43,13 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
      */
     public readonly onDidChangeContent = this._onDidChangeDocument.event;
 
-    fireChangedDocumentEvent(page: any, startRow: number) {
-      // FIXME: somehow remember prevRowNumber
+    fireChangedDocumentEvent(rowData: any, rawData: any, startRow: number) {
       const tableData = {
-        rowData: page,
+        rowData: rowData,
+        rawData: rawData,
         rowCount: this.getRowCount(),
         startRow: startRow,
-        endRow: startRow + page.length - 1,
+        endRow: startRow + rowData.length - 1,
         pageCount: this.getPageCount(),
         pageSize: this.getPageSize()
       };
@@ -61,35 +62,39 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
 
     async nextPage() {
       this.currentPage++;
-
-      const page = await this.getCurrentPage();
       const startRow = this.getStartRowNumber();
-      this.fireChangedDocumentEvent(page, startRow);
+
+      const rawData = await this.getCurrentPage();
+      const rowData = rawData.map(p => Object.keys(p).map(key => p[key]));
+      this.fireChangedDocumentEvent(rowData, rawData, startRow);
     }
 
     async prevPage() {
       this.currentPage--;
-      
-      const page = await this.getCurrentPage();
       const startRow = this.getStartRowNumber();
-      this.fireChangedDocumentEvent(page, startRow);
+      
+      const rawData = await this.getCurrentPage();
+      const rowData = rawData.map(p => Object.keys(p).map(key => p[key]));
+      this.fireChangedDocumentEvent(rowData, rawData, startRow);
 
     }
 
     async firstPage(){
       this.currentPage = 1;
-      
-      const page = await this.getCurrentPage();
       const startRow = this.getStartRowNumber();
-      this.fireChangedDocumentEvent(page, startRow);
+      
+      const rawData = await this.getCurrentPage();
+      const rowData = rawData.map(p => Object.keys(p).map(key => p[key]));
+      this.fireChangedDocumentEvent(rowData, rawData, startRow);
     }
 
     async lastPage() {
       this.currentPage = Math.ceil(this.getRowCount() / this.getPageSize());
-
-      const page = await this.getCurrentPage();
       const startRow = this.getStartRowNumber();
-      this.fireChangedDocumentEvent(page, startRow);
+
+      const rawData = await this.getCurrentPage();
+      const rowData = rawData.map(p => Object.keys(p).map(key => p[key]));
+      this.fireChangedDocumentEvent(rowData, rawData, startRow);
     }
 
     async changePageSize(data: any) {
@@ -113,8 +118,9 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       }
 
       this.setPageSize(newPageSize);
-      const page = await this.getPageByNumber(pageNumber);
-      this.fireChangedDocumentEvent(page, prevStartRow);
+      const rawData = await this.getPageByNumber(pageNumber);
+      const rowData = rawData.map(p => Object.keys(p).map(key => p[key]));
+      this.fireChangedDocumentEvent(rowData, rawData, prevStartRow);
     }
 
     async getCurrentPage() {
@@ -168,7 +174,8 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           // Update all webviews when the document changes
           const dataChange = {
             headers : [],
-            body: e.rowData,
+            values: e.rowData,
+            rawData: e.rawData,
             rowCount: e.rowCount,
             startRow: e.startRow,
             endRow: e.endRow,
@@ -201,9 +208,13 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             enableScripts: true,
         };
 
+        const currentPage = await document.getCurrentPage();
+        const values = currentPage.map(p => Object.keys(p).map(key => p[key]));
+
         const data = {
           headers: document.paginator.getFieldList(),
-          body: await document.getCurrentPage(),
+          values: values,
+          rawData: currentPage,
           rowCount: document.getRowCount(),
           startRow: document.getPageSize() * document.currentPage - document.getPageSize() + 1,
           endRow: document.getPageSize() * document.currentPage,
@@ -284,7 +295,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
     private getHtmlForWebview(webview: vscode.Webview): string {
         // Local path to script and css for the webview
-        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(
+        const mainScriptUri = webview.asWebviewUri(vscode.Uri.joinPath(
             this.context.extensionUri, 'media', 'scripts', 'main.js'));
 
         const styleResetUri = webview.asWebviewUri(vscode.Uri.joinPath(
@@ -322,7 +333,18 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             <body>
               <div class="data-view">
                 <div id="table"></div>
+                <div id="raw">
+                  <pre id="json"></pre>
+                </div>
                 <div class="container">
+                  <div class="container">
+                    <!-- Radio buttons require the same name to be mutually exclusive. -->
+                    <input type="radio" id="radio-table" name="display" value="table" checked/>
+                    <label for="always">Table</label>
+                    <input type="radio" id="radio-raw" name="display" value="raw"/>
+                    <label for="never">Raw</label>
+                  </div>
+
                   <div class="dropdown">
                     <label for="num-records">Num records:</label>
                     <select name="num-records" id="dropdown-num-records">
@@ -349,7 +371,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
                   </div>
                 </div>
               </div>
-                <script nonce="${nonce}" src="${scriptUri}"></script>
+                <script nonce="${nonce}" src="${mainScriptUri}"></script>
             </body>
             </html>`;
     }

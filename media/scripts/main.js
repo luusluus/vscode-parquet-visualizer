@@ -11,7 +11,16 @@
     let startingRow = 0;
 
     const tableContainer = /** @type {HTMLElement} */ (document.querySelector('#table'));
+    const rawContainer = /** @type {HTMLElement} */ (document.querySelector('#raw'));
+    rawContainer.style.display = "none";
+    
     const pageCounterContainer = /** @type {HTMLElement} */ (document.querySelector('#page-counter'));
+
+    const dataJsonContainer = /** @type {HTMLElement} */ (document.querySelector('#json'));
+    
+    function updateRawData( /** @type {any} */ data){
+        dataJsonContainer.textContent = JSON.stringify(data, undefined, 2);
+    }
 
     function updatePageCounter( /** @type {any} */  pageCounterData) {
         // pageCounterContainer
@@ -33,7 +42,8 @@
         if (tableElement?.parentElement !== tableContainer) {
             tableElement = document.createElement('table');
             const tableHeaderElement = document.createElement('thead');
-            const tableRowElement = document.createElement('tr');
+            let tableRowElement = document.createElement('tr');
+            tableRowElement.className = 'header-sticky';
             tableHeaderElement.appendChild(tableRowElement);
     
             for (const header of tableData.headers || []) {
@@ -52,7 +62,7 @@
             tbody = document.createElement('tbody');
         }
 
-        for (const row of tableData.body || []) {
+        for (const row of tableData.values || []) {
             const tableRowElement = document.createElement('tr');
             for (const cell of row) {
                 const tableCellElement = document.createElement('td');
@@ -66,30 +76,30 @@
         tableContainer.appendChild(tableElement);
     }
     
-    const nextButtonContainer = /** @type {HTMLElement} */ (document.querySelector('#btn-next'));
-    const prevButtonContainer = /** @type {HTMLElement} */ (document.querySelector('#btn-prev'));
-    const firstButtonContainer = /** @type {HTMLElement} */ (document.querySelector('#btn-first'));
-    const lastButtonContainer = /** @type {HTMLElement} */ (document.querySelector('#btn-last'));
+    const nextButton = /** @type {HTMLElement} */ (document.querySelector('#btn-next'));
+    const prevButton = /** @type {HTMLElement} */ (document.querySelector('#btn-prev'));
+    const firstButton = /** @type {HTMLElement} */ (document.querySelector('#btn-first'));
+    const lastButton = /** @type {HTMLElement} */ (document.querySelector('#btn-last'));
 
     function checkButtonState(){
         if (currentPage === amountOfPages){
-            nextButtonContainer.setAttribute('disabled', '');
+            nextButton.setAttribute('disabled', '');
         }
 
         if (currentPage > 1){
-            prevButtonContainer.removeAttribute('disabled');
+            prevButton.removeAttribute('disabled');
         }
 
         if (currentPage < amountOfPages ) {
-            nextButtonContainer.removeAttribute('disabled');
+            nextButton.removeAttribute('disabled');
         }
 
         if (currentPage === 1){
-            prevButtonContainer.setAttribute('disabled', '');
+            prevButton.setAttribute('disabled', '');
         }
     }
 
-    nextButtonContainer.addEventListener('click', () => {
+    nextButton.addEventListener('click', () => {
         if (currentPage < amountOfPages){
             currentPage++;
         }
@@ -101,7 +111,7 @@
         });
     });
 
-    prevButtonContainer.addEventListener('click', () => {
+    prevButton.addEventListener('click', () => {
         if (currentPage > 1){
             currentPage--;
         }
@@ -113,7 +123,7 @@
         });
     });
 
-    firstButtonContainer.addEventListener('click', () => {
+    firstButton.addEventListener('click', () => {
         currentPage = 1;
 
         checkButtonState();
@@ -123,7 +133,7 @@
         });
     });
 
-    lastButtonContainer.addEventListener('click', () => {
+    lastButton.addEventListener('click', () => {
         currentPage = amountOfPages;
 
         checkButtonState();
@@ -133,10 +143,10 @@
         });
     });
 
-    const numRecordsDropdownContainer = /** @type {HTMLSelectElement} */ (document.querySelector('#dropdown-num-records'));
-    numRecordsDropdownContainer.addEventListener('change', (e) => {
-        const selectedIndex = numRecordsDropdownContainer.selectedIndex;
-        const selectedOption = numRecordsDropdownContainer.options[selectedIndex];
+    const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector('#dropdown-num-records'));
+    numRecordsDropdown.addEventListener('change', (e) => {
+        const selectedIndex = numRecordsDropdown.selectedIndex;
+        const selectedOption = numRecordsDropdown.options[selectedIndex];
         vscode.postMessage({
             type: 'changePageSize',
             data: {
@@ -144,6 +154,23 @@
                 prevStartRow: startingRow
             }
         });
+    });
+
+    const rawRadioInput = /** @type {HTMLInputElement} */ (document.querySelector('#radio-raw'));
+    const tableRadioInput = /** @type {HTMLInputElement} */ (document.querySelector('#radio-table'));
+
+    rawRadioInput.addEventListener('change', () => {
+        if (rawRadioInput.checked) {
+            tableContainer.style.display = 'none';
+            rawContainer.style.display = 'block';
+        }
+    });
+
+    tableRadioInput.addEventListener('change', () => {
+        if (tableRadioInput.checked) {
+            tableContainer.style.display = 'block';
+            rawContainer.style.display = 'none';
+        }
     });
 
     // Handle messages from the extension
@@ -154,22 +181,24 @@
             case 'init':{
                 console.log('init');
                 if (tableData) {
-                    const {headers, body, rowCount, startRow, endRow, pageSize } = tableData;
+                    const {headers, values, rawData, rowCount, startRow, endRow, pageSize } = tableData;
                     amountOfPages = pageSize;
                     startingRow = startRow;
-                    updateTable({headers, body});
+                    updateTable({headers, values});
                     updatePageCounter({rowCount, startRow, endRow});
+                    updateRawData(rawData);
                 }
             }
             case 'update': {
                 console.log('update');
                 console.log(tableData);
                 if (tableData) {
-                    const {headers, body, rowCount, startRow, endRow, pageSize } = tableData;
+                    const {headers, values, rawData, rowCount, startRow, endRow, pageSize } = tableData;
                     amountOfPages = pageSize;
                     startingRow = startRow;
-                    updateTable({headers, body});
+                    updateTable({headers, values});
                     updatePageCounter({rowCount, startRow, endRow});
+                    updateRawData(rawData);
                 }
             }
         }

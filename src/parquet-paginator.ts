@@ -25,6 +25,7 @@ export class ParquetPaginator {
     return new ParquetPaginator(reader, pageSize);
   }
 
+  // TODO: return a complex type called Page, with a method to get only values, not keys
   public async getPage(pageNumber: number) {
     if (pageNumber > this.pageCount) {
       throw new RangeError(`Page Number ${pageNumber} is out of range. Total number of pages are ${this.pageCount}`);
@@ -40,10 +41,7 @@ export class ParquetPaginator {
       // get subset of rows based on startindex and endindex
       const row = await cursor.next();
       if (i >= startIndex && i <= endIndex) {
-
-        // map object to array
-        const values = Object.keys(row).map(key => row[key]);
-        rows.push(values);
+        rows.push(row);
       }
       if (i > endIndex) {
         break;
