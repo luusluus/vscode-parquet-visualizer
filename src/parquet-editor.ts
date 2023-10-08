@@ -143,6 +143,10 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       return this.paginator.getRowCount();
     }
 
+    getSchema() {
+      return this.paginator.getSchema();
+    }
+
     setPageSize(value: number){
       this.paginator.setPageSize(value);
     }
@@ -213,6 +217,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
         const data = {
           headers: document.paginator.getFieldList(),
+          schema: document.getSchema(),
           values: values,
           rawData: currentPage,
           rowCount: document.getRowCount(),
@@ -252,7 +257,6 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
                 tableData: data,
               });
             } else {
-              // const editable = vscode.workspace.fs.isWritableFileSystem(document.uri.scheme);
               this.webviewPanel.webview.postMessage({
                 type: 'init',
                 tableData: data,
@@ -343,8 +347,8 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
                   <section id="data" class="tab-panel">
                     <div class="data-view">
                       <div id="table"></div>
-                      <div id="raw">
-                        <pre id="json"></pre>
+                      <div id="data-raw" class="raw">
+                        <pre id="data-json"></pre>
                       </div>
                       <div class="container">
                         <div class="container">
@@ -384,8 +388,9 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
                   </section>
 
                   <section id="schema" class="tab-panel">
-                    <p><strong>Overall Impression:</strong> An elegant, malty German amber lager with a clean, rich, toasty and bready malt flavor, restrained bitterness, and a dry finish that encourages another drink. The overall malt impression is soft, elegant, and complex, with a rich aftertaste that is never cloying or heavy.</p>
-                    <p><strong>History:</strong> As the name suggests, brewed as a stronger “March beer” in March and lagered in cold caves over the summer. Modern versions trace back to the lager developed by Spaten in 1841, contemporaneous to the development of Vienna lager. However, the Märzen name is much older than 1841; the early ones were dark brown, and in Austria the name implied a strength band (14 °P) rather than a style. The German amber lager version (in the Viennese style of the time) was first served at Oktoberfest in 1872, a tradition that lasted until 1990 when the golden Festbier was adopted as the standard festival beer.</p>
+                    <div id="schema-raw" class="raw">
+                      <pre id="schema-json"></pre>
+                    </div>
                   </section>
                 </div>
               </div>

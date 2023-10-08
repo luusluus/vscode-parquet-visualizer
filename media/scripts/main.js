@@ -11,20 +11,21 @@
     let startingRow = 0;
 
     const tableContainer = /** @type {HTMLElement} */ (document.querySelector('#table'));
-    const rawContainer = /** @type {HTMLElement} */ (document.querySelector('#raw'));
-    rawContainer.style.display = "none";
+    const rawDataContainer = /** @type {HTMLElement} */ (document.querySelector('#data-raw'));
+    rawDataContainer.style.display = "none";
+    
+    const rawDataJsonContainer = /** @type {HTMLElement} */ (document.querySelector('#data-json'));
+    const rawSchemaJsonContainer = /** @type {HTMLElement} */ (document.querySelector('#schema-json'));
     
     const pageCounterContainer = /** @type {HTMLElement} */ (document.querySelector('#page-counter'));
 
-    const dataJsonContainer = /** @type {HTMLElement} */ (document.querySelector('#json'));
     
     function updateRawData( /** @type {any} */ data){
-        dataJsonContainer.textContent = JSON.stringify(data, undefined, 2);
+        rawDataJsonContainer.textContent = JSON.stringify(data, undefined, 2);
     }
 
     function updatePageCounter( /** @type {any} */  pageCounterData) {
         // pageCounterContainer
-        console.log(pageCounterData);
         let pageRangeElement = pageCounterContainer.querySelector('#page-range');
         if (pageRangeElement){
             pageRangeElement.innerHTML = `${pageCounterData.startRow}-${pageCounterData.endRow}`;
@@ -37,6 +38,10 @@
 
     }
 
+    function updateSchema (/** @type {any} */  data) {
+        rawSchemaJsonContainer.textContent = JSON.stringify(data, undefined, 2);
+    }
+    
     function updateTable( /** @type {any} */  tableData) {
         let tableElement = document.querySelector('table');
         if (tableElement?.parentElement !== tableContainer) {
@@ -162,36 +167,36 @@
     rawRadioInput.addEventListener('change', () => {
         if (rawRadioInput.checked) {
             tableContainer.style.display = 'none';
-            rawContainer.style.display = 'block';
+            rawDataContainer.style.display = 'block';
         }
     });
 
     tableRadioInput.addEventListener('change', () => {
         if (tableRadioInput.checked) {
             tableContainer.style.display = 'block';
-            rawContainer.style.display = 'none';
+            rawDataContainer.style.display = 'none';
         }
     });
 
     // Handle messages from the extension
     window.addEventListener('message', async e => {
-        console.log(e);
         const { type, tableData, requestId } = e.data;
         switch (type) {
             case 'init':{
                 console.log('init');
                 if (tableData) {
-                    const {headers, values, rawData, rowCount, startRow, endRow, pageSize } = tableData;
+                    const {headers, schema, values, rawData, rowCount, startRow, endRow, pageSize } = tableData;
+                    console.log(schema);
                     amountOfPages = pageSize;
                     startingRow = startRow;
                     updateTable({headers, values});
                     updatePageCounter({rowCount, startRow, endRow});
                     updateRawData(rawData);
+                    updateSchema(schema);
                 }
             }
             case 'update': {
                 console.log('update');
-                console.log(tableData);
                 if (tableData) {
                     const {headers, values, rawData, rowCount, startRow, endRow, pageSize } = tableData;
                     amountOfPages = pageSize;

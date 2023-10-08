@@ -13,7 +13,7 @@ table {
     height: 35em;
 }
 
-#raw {
+.raw {
     width: 100%;
     display: block;
     overflow-x: auto;
@@ -100,10 +100,18 @@ input:focus-visible + label {
     border-radius: 3px;
 }
 
-
-
 .tabset > label:hover::after,
 .tabset > input:focus + label::after,
 .tabset > input:checked + label::after {
   background: #06c;
+}
+
+
+.json-display {
+    background-color: #f2f2f2;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-family: monospace;
+    color: #333;
 }
