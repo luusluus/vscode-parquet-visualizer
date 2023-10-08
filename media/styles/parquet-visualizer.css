@@ -54,3 +54,56 @@ th {
     gap: 10px; /* Adjust the spacing between buttons as needed */
 }
 
+/* https://codepen.io/markcaron/pen/MvGRYV */
+/* CSS for the main interaction */
+.tabset > input[type="radio"] {
+    position: absolute;
+    left: -200vw;
+}
+
+.tabset .tab-panel {
+    display: none;
+}
+
+.tabset > input:first-child:checked ~ .tab-panels > .tab-panel:first-child,
+.tabset > input:nth-child(3):checked ~ .tab-panels > .tab-panel:nth-child(2),
+.tabset > input:nth-child(5):checked ~ .tab-panels > .tab-panel:nth-child(3),
+.tabset > input:nth-child(7):checked ~ .tab-panels > .tab-panel:nth-child(4),
+.tabset > input:nth-child(9):checked ~ .tab-panels > .tab-panel:nth-child(5),
+.tabset > input:nth-child(11):checked ~ .tab-panels > .tab-panel:nth-child(6) {
+    display: block;
+}
+
+
+/* Tab Styling */
+.tabset > label {
+    position: relative;
+    display: inline-block;
+    padding-right: 15px;
+    padding-bottom: 15px;
+    padding-top: 15px;
+    font-weight: 600;
+}
+
+.tabset > label::after {
+    content: "";
+    position: absolute;
+    left: 0px;
+    bottom: 10px;
+    width: 100%;
+    height: 2px;
+    background: #8d8d8d;
+}
+
+input:focus-visible + label {
+    outline: 2px solid rgba(0,102,204,1);
+    border-radius: 3px;
+}
+
+
+
+.tabset > label:hover::after,
+.tabset > input:focus + label::after,
+.tabset > input:checked + label::after {
+  background: #06c;
+}

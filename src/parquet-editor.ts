@@ -331,47 +331,65 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
                 <title>Parquet Visualizer</title>
             </head>
             <body>
-              <div class="data-view">
-                <div id="table"></div>
-                <div id="raw">
-                  <pre id="json"></pre>
-                </div>
-                <div class="container">
-                  <div class="container">
-                    <!-- Radio buttons require the same name to be mutually exclusive. -->
-                    <input type="radio" id="radio-table" name="display" value="table" checked/>
-                    <label for="always">Table</label>
-                    <input type="radio" id="radio-raw" name="display" value="raw"/>
-                    <label for="never">Raw</label>
-                  </div>
-
-                  <div class="dropdown">
-                    <label for="num-records">Num records:</label>
-                    <select name="num-records" id="dropdown-num-records">
-                      <option value="10">10</option>
-                      <option value="50">50</option>
-                      <option value="100">100</option>
-                      <option value="500">500</option>
-                      <option value="1000">1000</option>
-                      <option value="all">All</option>
-                    </select>
-                  </div>
-                  <div class="buttons">
-                      <button id="btn-first" type="button">First</button>
-                      <button id="btn-prev" type="button" disabled>Previous</button>
-                      <div id="page-counter">
-                        <span>
-                          <span id="page-range"></span>
-                          <span>of</span>
-                          <span id="row-count"></span>
-                        </span>
+              <div class="tabset">
+                <!-- Tab 1 -->
+                <input type="radio" name="tabset" id="tab1" aria-controls="data" checked>
+                <label for="tab1">Data</label>
+                <!-- Tab 2 -->
+                <input type="radio" name="tabset" id="tab2" aria-controls="schema">
+                <label for="tab2">Schema</label>
+                
+                <div class="tab-panels">
+                  <section id="data" class="tab-panel">
+                    <div class="data-view">
+                      <div id="table"></div>
+                      <div id="raw">
+                        <pre id="json"></pre>
                       </div>
-                      <button id="btn-next" type="button">Next</button>
-                      <button id="btn-last" type="button">Last</button>
-                  </div>
+                      <div class="container">
+                        <div class="container">
+                          <!-- Radio buttons require the same name to be mutually exclusive. -->
+                          <input type="radio" id="radio-table" name="display" value="table" checked/>
+                          <label for="always">Table</label>
+                          <input type="radio" id="radio-raw" name="display" value="raw"/>
+                          <label for="never">Raw</label>
+                        </div>
+      
+                        <div class="dropdown">
+                          <label for="num-records">Num records:</label>
+                          <select name="num-records" id="dropdown-num-records">
+                            <option value="10">10</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="500">500</option>
+                            <option value="1000">1000</option>
+                            <option value="all">All</option>
+                          </select>
+                        </div>
+                        <div class="buttons">
+                            <button id="btn-first" type="button">First</button>
+                            <button id="btn-prev" type="button" disabled>Previous</button>
+                            <div id="page-counter">
+                              <span>
+                                <span id="page-range"></span>
+                                <span>of</span>
+                                <span id="row-count"></span>
+                              </span>
+                            </div>
+                            <button id="btn-next" type="button">Next</button>
+                            <button id="btn-last" type="button">Last</button>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section id="schema" class="tab-panel">
+                    <p><strong>Overall Impression:</strong> An elegant, malty German amber lager with a clean, rich, toasty and bready malt flavor, restrained bitterness, and a dry finish that encourages another drink. The overall malt impression is soft, elegant, and complex, with a rich aftertaste that is never cloying or heavy.</p>
+                    <p><strong>History:</strong> As the name suggests, brewed as a stronger “March beer” in March and lagered in cold caves over the summer. Modern versions trace back to the lager developed by Spaten in 1841, contemporaneous to the development of Vienna lager. However, the Märzen name is much older than 1841; the early ones were dark brown, and in Austria the name implied a strength band (14 °P) rather than a style. The German amber lager version (in the Viennese style of the time) was first served at Oktoberfest in 1872, a tradition that lasted until 1990 when the golden Festbier was adopted as the standard festival beer.</p>
+                  </section>
                 </div>
               </div>
-                <script nonce="${nonce}" src="${mainScriptUri}"></script>
+              <script nonce="${nonce}" src="${mainScriptUri}"></script>
             </body>
             </html>`;
     }
