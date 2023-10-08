@@ -185,9 +185,8 @@
             case 'init':{
                 console.log('init');
                 if (tableData) {
-                    const {headers, schema, values, rawData, rowCount, startRow, endRow, pageSize } = tableData;
-                    console.log(schema);
-                    amountOfPages = pageSize;
+                    const {headers, schema, values, rawData, rowCount, startRow, endRow, pageCount, pageSize } = tableData;
+                    amountOfPages = pageCount;
                     startingRow = startRow;
                     updateTable({headers, values});
                     updatePageCounter({rowCount, startRow, endRow});
@@ -198,8 +197,8 @@
             case 'update': {
                 console.log('update');
                 if (tableData) {
-                    const {headers, values, rawData, rowCount, startRow, endRow, pageSize } = tableData;
-                    amountOfPages = pageSize;
+                    const {headers, values, rawData, rowCount, startRow, endRow, pageCount, pageSize } = tableData;
+                    amountOfPages = pageCount;
                     startingRow = startRow;
                     updateTable({headers, values});
                     updatePageCounter({rowCount, startRow, endRow});

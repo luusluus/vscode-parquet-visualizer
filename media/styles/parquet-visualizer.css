@@ -9,7 +9,7 @@ table {
     display: block;
     overflow-x: auto;
     white-space: nowrap;
-    max-height: 35em;
+    max-height: 35em; /* FIXME: How to make this adaptable to screen size?*/
     height: 35em;
 }
 

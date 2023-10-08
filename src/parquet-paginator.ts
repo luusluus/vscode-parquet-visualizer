@@ -52,8 +52,6 @@ export class ParquetPaginator {
   }
 
   public getSchema() {
-    console.log(this.schema.fields);
-    console.log(this.schema.fieldList);
     return this.schema.schema;
   }
 
