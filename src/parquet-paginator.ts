@@ -59,15 +59,11 @@ export class ParquetPaginator {
   }
 
   public getSchema() {
-    // return this.schema.schema;
-  }
-
-  public getFieldList() {
-    // return this.schema.fieldList;
+    return this.schema;
   }
 
   public getFields() {
-    // return this.schema.fields;
+    return this.schema.fields;
   }
 
   public getPageSize() {
