@@ -216,7 +216,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         const values = currentPage.map(p => Object.keys(p).map(key => p[key]));
 
         const data = {
-          headers: document.paginator.getFieldList(),
+          headers: document.paginator.getFields(),
           schema: document.getSchema(),
           values: values,
           rawData: currentPage,
