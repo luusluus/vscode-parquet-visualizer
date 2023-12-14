@@ -47,24 +47,13 @@ export class ParquetPaginator {
 
     const subTable = this.table.slice(startIndex, endIndex);
     
-    const input = subTable.toArray();
-
-    console.log(input[0]);
-    
-    const rows: string[][] = [];
-    for (const obj of input) {
-      const values: string[] = [];
-      for (const key in obj) {
-        let value = obj[key];
-        if (typeof value === 'bigint') {
-          value = value.toString();
-        }
-        values.push(value);
+    const rows = subTable.toArray().map(obj => {
+      const newObj = {};
+      for (const [key, value] of Object.entries(obj)) {
+        newObj[key] = String(value); // Convert value to string
       }
-      rows.push(values);
-    }
-
-    console.log(rows[0]);
+      return newObj;
+    });
 
     return rows;
   }
