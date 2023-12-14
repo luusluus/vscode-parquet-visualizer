@@ -9,6 +9,7 @@ import {tableFromIPC, Table, Schema} from "apache-arrow";
 import {
     readParquet,
 } from "parquet-wasm/node/arrow1";
+import { subtle } from 'crypto';
 
 
 export class ParquetPaginator {
@@ -31,8 +32,6 @@ export class ParquetPaginator {
     const arrowUint8Array = readParquet(byteArray);
     const arrowTable = tableFromIPC(arrowUint8Array.intoIPCStream());
 
-    console.log(arrowTable);
-
     return new ParquetPaginator(arrowTable, pageSize);
   }
 
@@ -46,27 +45,26 @@ export class ParquetPaginator {
     let startIndex = (pageNumber - 1) * this.pageSize;
     let endIndex = Math.min(startIndex + this.pageSize - 1, this.rowCount);
 
-    // let rows = [];
-    // console.log(this.table.toArray());
     const subTable = this.table.slice(startIndex, endIndex);
-    const rows = subTable.toArray().map(r => Object.values(r));
-    console.log(subTable.toArray()[0]);
-    console.log(Object.values(rows[0]));
-    // console.log(rows[0]);
     
-    // console.log(rows[0].values());
-    // console.log(this.table.slice(startIndex, endIndex).data);
-    // const cursor = this.reader.getCursor();
-    // for (let i = 0; i < this.rowCount; i++) {
-    //   // get subset of rows based on startindex and endindex
-    //   const row = await cursor.next();
-    //   if (i >= startIndex && i <= endIndex) {
-    //     rows.push(row);
-    //   }
-    //   if (i > endIndex) {
-    //     break;
-    //   }
-    // }
+    const input = subTable.toArray();
+
+    console.log(input[0]);
+    
+    const rows: string[][] = [];
+    for (const obj of input) {
+      const values: string[] = [];
+      for (const key in obj) {
+        let value = obj[key];
+        if (typeof value === 'bigint') {
+          value = value.toString();
+        }
+        values.push(value);
+      }
+      rows.push(values);
+    }
+
+    console.log(rows[0]);
 
     return rows;
   }
