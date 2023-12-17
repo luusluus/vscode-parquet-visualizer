@@ -324,6 +324,9 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         const styleMainUri = webview.asWebviewUri(vscode.Uri.joinPath(
         	this.context.extensionUri, 'media', 'styles', 'parquet-visualizer.css'));
 
+        const styleTabulatorUri = webview.asWebviewUri(vscode.Uri.joinPath(
+        	this.context.extensionUri, 'media', 'styles', 'tabulator', 'tabulator.min.css'));
+
         const htmlUri = vscode.Uri.joinPath(
           this.context.extensionUri, 'media', 'index.html'
         );
@@ -338,6 +341,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           styleResetUri: styleResetUri.toString(true),
           styleVSCodeUri: styleVSCodeUri.toString(true),
           styleMainUri: styleMainUri.toString(true),
+          styleTabulatorUri: styleTabulatorUri.toString(true),
           nonce: nonce,
       };
 
