@@ -31,10 +31,6 @@
         ],
     });
 
-    //trigger an alert message when the row is clicked
-    table.on("rowClick", function(e, row){ 
-    alert("Row " + row.getData().id + " Clicked!!!!");
-    });
 
     // Handle messages from the extension
     window.addEventListener('message', async e => {
