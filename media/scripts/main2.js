@@ -3,10 +3,12 @@
 
 // import Tabulator from 'tabulator-tables/dist/js/tabulator';
 
-// import {TabulatorFull as Tabulator} from 'tabulator-tables';
+// import {Tabulator} from 'https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator_esm.min.js';
 (function () {
 
     const vscode = acquireVsCodeApi();
+
+    const oldState = /** @type {{ count: number} | undefined} */ (vscode.getState());
 
     var tabledata = [
         {id:1, name:"Oli Bob", age:"12", col:"red", dob:""},
@@ -15,8 +17,6 @@
         {id:4, name:"Brendon Philips", age:"125", col:"orange", dob:"01/08/1980"},
         {id:5, name:"Margret Marmajuke", age:"16", col:"yellow", dob:"31/01/1999"},
     ];
-
-    const oldState = /** @type {{ count: number} | undefined} */ (vscode.getState());
 
     //create Tabulator on DOM element with id "example-table"
     var table = new Tabulator("#example-table", {
@@ -33,7 +33,7 @@
 
     //trigger an alert message when the row is clicked
     table.on("rowClick", function(e, row){ 
-        alert("Row " + row.getData().id + " Clicked!!!!");
+    alert("Row " + row.getData().id + " Clicked!!!!");
     });
 
     // Handle messages from the extension

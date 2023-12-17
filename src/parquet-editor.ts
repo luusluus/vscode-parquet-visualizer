@@ -307,11 +307,12 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
     private getHtmlForWebview(webview: vscode.Webview): string {
         // Local path to script and css for the webview
-        const mainScriptUri = webview.asWebviewUri(vscode.Uri.joinPath(
-            this.context.extensionUri, 'media', 'scripts', 'main2.js'));
+        const scripts = webview.asWebviewUri(vscode.Uri.joinPath(
+            this.context.extensionUri, 'media', 'scripts')
+        );
 
         const libraryScriptUri = webview.asWebviewUri(vscode.Uri.joinPath(
-          this.context.extensionUri, 'node_modules', 'tabulator-tables', 'dist', 'js', 'tabulator.min.js'
+          this.context.extensionUri, 'node_modules', 'tabulator-tables', 'dist', 'js', 'tabulator_esm.min.js'
         ));
 
         const styleResetUri = webview.asWebviewUri(vscode.Uri.joinPath(
@@ -332,7 +333,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
         let vars = {
           cspSource: webview.cspSource,
-          mainScriptUri: mainScriptUri.toString(true),
+          scripts: scripts.toString(true),
           libraryScriptUri: libraryScriptUri.toString(true),
           styleResetUri: styleResetUri.toString(true),
           styleVSCodeUri: styleVSCodeUri.toString(true),
