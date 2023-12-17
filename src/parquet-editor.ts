@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+
 import * as vscode from 'vscode';
 import { getNonce } from './util';
 import { Disposable } from "./dispose";
@@ -297,10 +299,20 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
       }
     }
 
+    private fillTemplate(template: string, variables: { [key: string]: string | number }): string {
+        return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+            return String(variables[key] || '');
+        });
+    }
+
     private getHtmlForWebview(webview: vscode.Webview): string {
         // Local path to script and css for the webview
         const mainScriptUri = webview.asWebviewUri(vscode.Uri.joinPath(
-            this.context.extensionUri, 'media', 'scripts', 'main.js'));
+            this.context.extensionUri, 'media', 'scripts', 'main2.js'));
+
+        const libraryScriptUri = webview.asWebviewUri(vscode.Uri.joinPath(
+          this.context.extensionUri, 'node_modules', 'tabulator-tables', 'dist', 'js', 'tabulator.min.js'
+        ));
 
         const styleResetUri = webview.asWebviewUri(vscode.Uri.joinPath(
             this.context.extensionUri, 'media', 'styles', 'reset.css'));
@@ -311,92 +323,25 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         const styleMainUri = webview.asWebviewUri(vscode.Uri.joinPath(
         	this.context.extensionUri, 'media', 'styles', 'parquet-visualizer.css'));
 
-        // Use a nonce to whitelist which scripts can be run
+        const htmlUri = vscode.Uri.joinPath(
+          this.context.extensionUri, 'media', 'index.html'
+        );
         const nonce = getNonce();
 
-        return /* html */`
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
+        const html = fs.readFileSync(htmlUri.fsPath, 'utf-8');
 
-                <!--
-                Use a content security policy to only allow loading images from https or from our extension directory,
-                and only allow scripts that have a specific nonce.
-                -->
-                <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource}; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+        let vars = {
+          cspSource: webview.cspSource,
+          mainScriptUri: mainScriptUri.toString(true),
+          libraryScriptUri: libraryScriptUri.toString(true),
+          styleResetUri: styleResetUri.toString(true),
+          styleVSCodeUri: styleVSCodeUri.toString(true),
+          styleMainUri: styleMainUri.toString(true),
+          nonce: nonce,
+      };
 
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-                <link href="${styleResetUri}" rel="stylesheet" />
-                <link href="${styleVSCodeUri}" rel="stylesheet" />
-                <link href="${styleMainUri}" rel="stylesheet" />
-
-                <title>Parquet Visualizer</title>
-            </head>
-            <body>
-              <div class="tabset">
-                <!-- Tab 1 -->
-                <input type="radio" name="tabset" id="tab1" aria-controls="data" checked>
-                <label for="tab1">Data</label>
-                <!-- Tab 2 -->
-                <input type="radio" name="tabset" id="tab2" aria-controls="schema">
-                <label for="tab2">Schema</label>
-                
-                <div class="tab-panels">
-                  <section id="data" class="tab-panel">
-                    <div class="data-view">
-                      <div id="table"></div>
-                      <div id="data-raw" class="raw">
-                        <pre id="data-json"></pre>
-                      </div>
-                      <div class="container">
-                        <div class="container">
-                          <!-- Radio buttons require the same name to be mutually exclusive. -->
-                          <input type="radio" id="radio-table" name="display" value="table" checked/>
-                          <label for="always">Table</label>
-                          <input type="radio" id="radio-raw" name="display" value="raw"/>
-                          <label for="never">Raw</label>
-                        </div>
-      
-                        <div class="dropdown">
-                          <label for="num-records">Num records:</label>
-                          <select name="num-records" id="dropdown-num-records">
-                            <option value="10">10</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                            <option value="500">500</option>
-                            <option value="1000">1000</option>
-                            <option value="all">All</option>
-                          </select>
-                        </div>
-                        <div class="buttons">
-                            <button id="btn-first" type="button">First</button>
-                            <button id="btn-prev" type="button" disabled>Previous</button>
-                            <div id="page-counter">
-                              <span>
-                                <span id="page-range"></span>
-                                <span>of</span>
-                                <span id="row-count"></span>
-                              </span>
-                            </div>
-                            <button id="btn-next" type="button">Next</button>
-                            <button id="btn-last" type="button">Last</button>
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-
-                  <section id="schema" class="tab-panel">
-                    <div id="schema-raw" class="raw">
-                      <pre id="schema-json"></pre>
-                    </div>
-                  </section>
-                </div>
-              </div>
-              <script nonce="${nonce}" src="${mainScriptUri}"></script>
-            </body>
-            </html>`;
+      return this.fillTemplate(html, vars);
+        // Use a nonce to whitelist which scripts can be run
     }
 
 }
