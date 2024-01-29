@@ -63,7 +63,14 @@ export class ParquetPaginator {
   }
 
   public getFields() {
-    return this.schema.fields;
+    const fields = this.schema.fields;
+    const headers = fields.map(f => {
+      return {
+        title: f.name,
+        field: f.name
+      };
+    });
+    return headers;
   }
 
   public getPageSize() {

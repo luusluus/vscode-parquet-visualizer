@@ -1,6 +1,24 @@
 # parquet-visualizer README
 
-This is the README for your extension "parquet-visualizer". After writing up a brief description, we recommend including the following sections.
+- How to load frameworks?
+    - Should support vanilla javascript/browser. Load as UMD module 
+
+- Which frameworks?
+    - GridJS -> works, but limited features
+    - Tabulator -> works
+    - Tanstak doesn't support vanillaJS
+
+- How to handle pagination -> 
+    - implement yourself. Use other table features of framework
+
+- How to handle wide tables?
+    - Columns should have min-width 110px
+    - can also use CSS value `calc(100% - 15px)`
+- How to handle nested objects?
+- How to handle long values?
+
+
+<!-- This is the README for your extension "parquet-visualizer". After writing up a brief description, we recommend including the following sections.
 
 ## Features
 
@@ -68,4 +86,4 @@ You can author your README using Visual Studio Code. Here are some useful editor
 * [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
 * [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
 
-**Enjoy!**
+**Enjoy!** -->
