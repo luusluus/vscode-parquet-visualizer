@@ -58,6 +58,16 @@ export class ParquetPaginator {
     return rows;
   }
 
+  public async getAllRows() {
+    return this.table.toArray().map(obj => {
+      const newObj = {};
+      for (const [key, value] of Object.entries(obj)) {
+        newObj[key] = String(value); // Convert value to string
+      }
+      return newObj;
+    });
+  }
+
   public getSchema() {
     return this.schema;
   }

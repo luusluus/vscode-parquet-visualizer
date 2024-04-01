@@ -49,12 +49,16 @@
                 ...c, 
                 cellClick:function(e, cell){
                     const val = cell.getValue();
-                    const obj = JSON.parse(val);
-                    const json = JSON.stringify(obj, undefined, 4);
-                    console.log(json);
-                    cell.popup(val, "center");
-                    //e - the click event object
-                    //cell - cell component
+
+                    let popupValue = '';
+                    try{
+                        const obj = JSON.parse(val);
+                        popupValue = `<pre id>${JSON.stringify(obj, undefined, 4)}</pre>`;
+                    } catch(e) {
+                        popupValue = val;
+                    }
+
+                    cell.popup(popupValue, "center");
                 },
             }
         ));
@@ -63,14 +67,39 @@
                 width:150, //set the width on all columns to 200px
             },
             placeholder:"No Data Available", //display message to user on empty table
-            footerElement:"<div id='footer' class='tabulator-footer'> <div class='dropdown'> <label for='num-records'>Num records:</label> <select name='num-records' id='dropdown-num-records'> <option value='10'>10</option> <option value='50'>50</option> <option value='100'>100</option> <option value='500'>500</option> <option value='1000'>1000</option> <option value='all'>All</option> </select> </div> <div class='buttons'> <button id='btn-first' type='button'>First</button> <button id='btn-prev' type='button' disabled>Previous</button> <div id='page-counter'> <span> <span id='page-range'></span> <span>of</span> <span id='row-count'></span> </span> </div> <button id='btn-next' type='button'>Next</button> <button id='btn-last' type='button'>Last</button> </div> </div>",
+            // footerElement:"<div id='footer' class='tabulator-footer'> <div class='dropdown'> <label for='num-records'>Num records:</label> <select name='num-records' id='dropdown-num-records'> <option value='10'>10</option> <option value='50'>50</option> <option value='100'>100</option> <option value='500'>500</option> <option value='1000'>1000</option> <option value='all'>All</option> </select> </div> <div class='buttons'> <button id='btn-first' type='button'>First</button> <button id='btn-prev' type='button' disabled>Previous</button> <div id='page-counter'> <span> <span id='page-range'></span> <span>of</span> <span id='row-count'></span> </span> </div> <button id='btn-next' type='button'>Next</button> <button id='btn-last' type='button'>Last</button> </div> </div>",
             data: data,
-            columns: columns
+            columns: columns,
+            pagination: true,
+            paginationSize: 10,
+            paginationSizeSelector:[10, 25, 50, 100, true],
+            paginationCounter:"pages", 
         });
 
         table.on("tableBuilt", () => {
-            initializeFooter();
+            // initializeFooter();
         });
+
+        table.on("popupOpened", function(component){
+            const element = document.getElementsByClassName("tabulator-popup tabulator-popup-container")[0];
+            let style = element.style;
+            if (style.top[0] === '-') { // negative top
+                style.top = '0px';
+            }
+            style.maxHeight = '400px';
+            style.width = '400px';
+            style.overflowX  = 'auto';
+            style.backgroundColor = '#101010';
+            style.color = '#d4d4d4';
+        });
+
+        // const filters = columns = columns.map(c => ({
+        //     field: c.field,
+        //     headerFilter: true,
+        //     type: 'like',
+        //     value: 'searchValue'
+        // }));
+        // table.setFilter([filters]);
     }
 
     function updateTable(/** @type {any} */ data) {

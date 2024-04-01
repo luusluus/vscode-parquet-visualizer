@@ -129,6 +129,10 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       return this.paginator.getPage(this.currentPage);
     }
 
+    async getAllRows() {
+      return this.paginator.getAllRows();
+    }
+
     async getPageByNumber(pageNumber: number) {
       return await this.paginator.getPage(pageNumber);
     }
@@ -214,14 +218,17 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             enableScripts: true,
         };
 
-        const currentPage = await document.getCurrentPage();
-        const values = currentPage.map(p => Object.keys(p).map(key => p[key]));
+
+        // const currentPage = await document.getCurrentPage();
+        // const values = currentPage.map(p => Object.keys(p).map(key => p[key]));
+
+        const values = await document.getAllRows();
 
         const data = {
           headers: document.paginator.getFields(),
           schema: document.getSchema(),
           values: values,
-          rawData: currentPage,
+          rawData: values,
           rowCount: document.getRowCount(),
           startRow: document.getPageSize() * document.currentPage - document.getPageSize() + 1,
           endRow: document.getPageSize() * document.currentPage,
@@ -318,7 +325,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             this.context.extensionUri, 'media', 'styles', 'vscode.css'));
 
         const styleMainUri = webview.asWebviewUri(vscode.Uri.joinPath(
-        	this.context.extensionUri, 'media', 'styles', 'parquet-visualizer_v2.css'));
+        	this.context.extensionUri, 'media', 'styles', 'parquet-visualizer.css'));
 
         const styleTabulatorUri = webview.asWebviewUri(vscode.Uri.joinPath(
         	this.context.extensionUri, 'media', 'styles', 'tabulator', 'tabulator.min.css'));
