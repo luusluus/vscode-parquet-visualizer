@@ -168,7 +168,19 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
     public static register(context: vscode.ExtensionContext): vscode.Disposable {
         const provider = new ParquetEditorProvider(context);
-        return vscode.window.registerCustomEditorProvider(ParquetEditorProvider.viewType, provider);
+        return vscode.window.registerCustomEditorProvider(
+          ParquetEditorProvider.viewType, 
+          provider,
+          {
+            // For this demo extension, we enable `retainContextWhenHidden` which keeps the
+            // webview alive even when it is not visible. You should avoid using this setting
+            // unless is absolutely required as it does have memory overhead.
+            webviewOptions: {
+              retainContextWhenHidden: true
+            },
+            supportsMultipleEditorsPerDocument: false
+          }
+        );
     }
 
     constructor(
