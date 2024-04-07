@@ -4,6 +4,7 @@
     font-size: var(--vscode-font-size);
 	font-weight: var(--vscode-font-weight);
 	font-family: var(--vscode-font-family);
+    height: 100vh;
 }
 
 #table .tabulator-header .tabulator-col {
