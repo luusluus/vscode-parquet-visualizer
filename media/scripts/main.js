@@ -3,7 +3,6 @@
 
 (function () {
     const vscode = acquireVsCodeApi();
-    const oldState = /** @type {{ count: number} | undefined} */ (vscode.getState());
 
     let table;
 
@@ -53,7 +52,7 @@
                     let popupValue = '';
                     try{
                         const obj = JSON.parse(val);
-                        popupValue = `<pre id>${JSON.stringify(obj, undefined, 4)}</pre>`;
+                        popupValue = `<pre>${JSON.stringify(obj, undefined, 4)}</pre>`;
                     } catch(e) {
                         popupValue = val;
                     }
@@ -71,8 +70,8 @@
             data: data,
             columns: columns,
             pagination: true,
-            paginationSize: 10,
-            paginationSizeSelector:[10, 25, 50, 100, true],
+            paginationSize: 25,
+            paginationSizeSelector:[25, 50, 100, true],
             paginationCounter:"pages", 
         });
 
@@ -82,13 +81,19 @@
 
         table.on("popupOpened", function(component){
             const element = document.getElementsByClassName("tabulator-popup tabulator-popup-container")[0];
+            
+            let innerHTML = element.innerHTML;
+
             let style = element.style;
+            // Check if html contains JSON. Make it a little bit wider and horizontally scrollable
+            if (innerHTML.includes('pre')) {
+                style.width = '400px';
+                style.overflowX  = 'auto';
+            }
+            style.maxHeight = '400px';
             if (style.top[0] === '-') { // negative top
                 style.top = '0px';
             }
-            style.maxHeight = '400px';
-            style.width = '400px';
-            style.overflowX  = 'auto';
             style.backgroundColor = '#101010';
             style.color = '#d4d4d4';
         });
