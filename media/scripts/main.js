@@ -15,7 +15,7 @@
     // rawDataContainer.style.display = "none";
     
     // const rawDataJsonContainer = /** @type {HTMLElement} */ (document.querySelector('#data-json'));
-    // const rawSchemaJsonContainer = /** @type {HTMLElement} */ (document.querySelector('#schema-json'));
+    const rawSchemaJsonContainer = /** @type {HTMLElement} */ (document.querySelector('#schema'));
     
     const pageCounterContainer = /** @type {HTMLElement} */ (document.querySelector('#page-counter'));
 
@@ -39,7 +39,7 @@
     }
 
     function updateSchema (/** @type {any} */  data) {
-        // rawSchemaJsonContainer.textContent = JSON.stringify(data, undefined, 2);
+        rawSchemaJsonContainer.textContent = JSON.stringify(data, undefined, 2);
     }
     
     function initTable( /** @type {any} */  columns, /** @type {any} */ data) {
@@ -223,21 +223,21 @@
                     amountOfPages = pageCount;
                     startingRow = startRow;
                     initTable(headers, rawData);
-                    updatePageCounter({rowCount, startRow, endRow});
+                    // updatePageCounter({rowCount, startRow, endRow});
                     updateRawData(rawData);
                     updateSchema(schema);
                 }
             }
             case 'update': {
                 console.log('update');
-                if (tableData) {
-                    const {headers, values, rawData, rowCount, startRow, endRow, pageCount, pageSize } = tableData;
-                    amountOfPages = pageCount;
-                    startingRow = startRow;
-                    updateTable(rawData);
-                    updatePageCounter({rowCount, startRow, endRow});
-                    updateRawData(rawData);
-                }
+                // if (tableData) {
+                //     const {headers, values, rawData, rowCount, startRow, endRow, pageCount, pageSize } = tableData;
+                //     amountOfPages = pageCount;
+                //     startingRow = startRow;
+                //     updateTable(rawData);
+                //     updatePageCounter({rowCount, startRow, endRow});
+                //     updateRawData(rawData);
+                // }
             }
         }
     });

@@ -16,16 +16,33 @@
     <link href="{{styleResetUri}}" rel="stylesheet" />
     <link href="{{styleMainUri}}" rel="stylesheet" />
     <link href="{{styleTabulatorUri}}" rel="stylesheet" />
+    <link href="{{styleTabsUri}}" rel="stylesheet" />
 
     <title>Parquet Visualizer</title>
-    <script nonce="{{nonce}}" type="text/javascript" src="{{scripts}}/tabulator.min.js"></script>
+    <script nonce="{{nonce}}" type="text/javascript" src="{{scripts}}/tabulator/tabulator.min.js"></script>
 
 </head>
 
 <body>
-    <div id="table"></div>
+    <div class="tab-frame">
+        <input type="radio" checked name="tab" id="tab1">
+        <label for="tab1">Data</label>
+        
+        <input type="radio" name="tab" id="tab2">
+        <label for="tab2">Schema</label>
+        
+        <div class="tab">
+            <div id="table"></div>
+        </div>
+        
+        <div class="tab">
+            <pre>
+                <div id="schema"></div>
+            </pre>
+        </div>
     </div>
     <script nonce="{{nonce}}" src="{{scripts}}/main.js"></script>
 </body>
+
 
 </html>
