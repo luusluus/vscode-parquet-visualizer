@@ -51,7 +51,7 @@
   "dependencies": {
     "@vscode-logging/logger": "^1.2.3",
     "@vscode-logging/wrapper": "^1.0.1",
-    "apache-arrow": "^14.0.1",
+    "apache-arrow": "^15.0.1",
     "parcel": "^2.10.3",
     "parquet-wasm": "^0.5.0"
   }
