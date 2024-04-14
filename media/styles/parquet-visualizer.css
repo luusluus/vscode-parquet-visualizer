@@ -1,117 +1,32 @@
-table, th, td {
-    border: 1px solid;
+#table {
+    font-size: var(--vscode-font-size);
+	font-weight: var(--vscode-font-weight);
+	font-family: var(--vscode-font-family);
+    /* height: 100vh; */
 }
 
-/* TODO: put some of these duplicate rules in a new class in a root DIV element*/
-table {
-    border-collapse: collapse;
-    width: 100%;
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
-    max-height: 35em; /* FIXME: How to make this adaptable to screen size?*/
-    height: 35em;
+#table .tabulator-header .tabulator-col {
+    background-color:#080808;
+    color: #d4d4d4;
 }
 
-.raw {
-    width: 100%;
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
-    height: 35em;
-    max-height: 35em;
+#table .tabulator-row {
+    color: #d4d4d4;
 }
 
-td {
-    max-width: 20em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+#table .tabulator-row-odd {
+    background-color: #151515;
+}
+#table .tabulator-row-even {
+    background-color: #202020;
 }
 
-th {
-    background-color: #45484A;
+#table .tabulator-footer * {
+    background-color: #101010;
+    color: #d4d4d4;
 }
 
-.header-sticky {
-    position: sticky; 
-    top: 0;
-}
-
-.container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.dropdown {
-    flex-grow: 1;
-    padding-left: 1em;
-}
-
-.buttons {
-    display: flex;
-    gap: 10px; /* Adjust the spacing between buttons as needed */
-}
-
-/* https://codepen.io/markcaron/pen/MvGRYV */
-/* CSS for the main interaction */
-.tabset > input[type="radio"] {
-    position: absolute;
-    left: -200vw;
-}
-
-.tabset .tab-panel {
-    display: none;
-}
-
-.tabset > input:first-child:checked ~ .tab-panels > .tab-panel:first-child,
-.tabset > input:nth-child(3):checked ~ .tab-panels > .tab-panel:nth-child(2),
-.tabset > input:nth-child(5):checked ~ .tab-panels > .tab-panel:nth-child(3),
-.tabset > input:nth-child(7):checked ~ .tab-panels > .tab-panel:nth-child(4),
-.tabset > input:nth-child(9):checked ~ .tab-panels > .tab-panel:nth-child(5),
-.tabset > input:nth-child(11):checked ~ .tab-panels > .tab-panel:nth-child(6) {
-    display: block;
-}
-
-
-/* Tab Styling */
-.tabset > label {
-    position: relative;
-    display: inline-block;
-    padding-right: 15px;
-    padding-bottom: 15px;
-    padding-top: 15px;
-    font-weight: 600;
-}
-
-.tabset > label::after {
-    content: "";
-    position: absolute;
-    left: 0px;
-    bottom: 10px;
-    width: 100%;
-    height: 2px;
-    background: #8d8d8d;
-}
-
-input:focus-visible + label {
-    outline: 2px solid rgba(0,102,204,1);
-    border-radius: 3px;
-}
-
-.tabset > label:hover::after,
-.tabset > input:focus + label::after,
-.tabset > input:checked + label::after {
-  background: #06c;
-}
-
-
-.json-display {
-    background-color: #f2f2f2;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-family: monospace;
-    color: #333;
+#table .tabulator-popup {
+    background-color: #101010;
+    color: #d4d4d4;
 }

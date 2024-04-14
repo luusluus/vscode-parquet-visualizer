@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <!--
+    Use a content security policy to only allow loading images from https or from our extension directory,
+    and only allow scripts that have a specific nonce.
+    -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; img-src {{cspSource}}; style-src {{cspSource}}; script-src 'nonce-{{nonce}}';">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="{{styleResetUri}}" rel="stylesheet" />
+    <link href="{{styleMainUri}}" rel="stylesheet" />
+    <link href="{{styleTabulatorUri}}" rel="stylesheet" />
+    <link href="{{styleTabsUri}}" rel="stylesheet" />
+
+    <title>Parquet Visualizer</title>
+    <script nonce="{{nonce}}" type="text/javascript" src="{{scripts}}/tabulator/tabulator.min.js"></script>
+
+</head>
+
+<body>
+    <div class="tab-frame">
+        <input type="radio" checked name="tab" id="tab1">
+        <label for="tab1">Data</label>
+        
+        <input type="radio" name="tab" id="tab2">
+        <label for="tab2">Schema</label>
+        
+        <div class="tab">
+            <div id="table"></div>
+        </div>
+        
+        <div class="tab">
+            <pre>
+                <div id="schema"></div>
+            </pre>
+        </div>
+    </div>
+    <script nonce="{{nonce}}" src="{{scripts}}/main.js"></script>
+</body>
+
+
+</html>

@@ -58,12 +58,29 @@ export class ParquetPaginator {
     return rows;
   }
 
+  public async getAllRows() {
+    return this.table.toArray().map(obj => {
+      const newObj = {};
+      for (const [key, value] of Object.entries(obj)) {
+        newObj[key] = String(value); // Convert value to string
+      }
+      return newObj;
+    });
+  }
+
   public getSchema() {
     return this.schema;
   }
 
   public getFields() {
-    return this.schema.fields;
+    const fields = this.schema.fields;
+    const headers = fields.map(f => {
+      return {
+        title: f.name,
+        field: f.name
+      };
+    });
+    return headers;
   }
 
   public getPageSize() {
