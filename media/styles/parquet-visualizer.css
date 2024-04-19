@@ -1,8 +1,24 @@
-#table {
+html, body {
+    height: 100%; /* Ensures that the body takes the full height of the viewport */
+    margin: 0;    /* Removes default margin */
+    padding: 0;   /* Removes default padding */
+}
+
+#container {
+    height: 100vh; /* Sets the height of the container to be 100% of the viewport height */
+    display: flex; /* Using flexbox for easy alignment and distribution of children */
+    flex-direction: column; /* Aligns children vertically */
+}
+
+#table, #schema {
     font-size: var(--vscode-font-size);
 	font-weight: var(--vscode-font-weight);
 	font-family: var(--vscode-font-family);
-    /* height: 100vh; */
+    height: 100%; /* Sets the height of the table and schema to be 100% of their parent */
+}
+
+#schema {
+    padding-left:20px;
 }
 
 #table .tabulator-header .tabulator-col {

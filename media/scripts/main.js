@@ -19,7 +19,36 @@
     
     const pageCounterContainer = /** @type {HTMLElement} */ (document.querySelector('#page-counter'));
 
-    
+    document.getElementById("data-tab").addEventListener("click", handleTabChange);
+    document.getElementById("schema-tab").addEventListener("click", handleTabChange);
+
+
+    function handleTabChange(/** @type {any} */ e) {
+        var i, tabcontent, tablinks;
+
+        // Get all elements with class="tabcontent" and hide them
+        tabcontent = document.getElementsByClassName("tab");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+        }
+
+        // Get all elements with class="tablinks" and remove the class "active"
+        tablinks = document.getElementsByClassName("tablinks");
+        for (i = 0; i < tablinks.length; i++) {
+            // tablinks[i].className = tablinks[i].className.replace(" active", "");
+            tablinks[i].checked = false;
+        }
+
+        // Show the current tab, and add an "active" class to the button that opened the tab
+        const id = e.currentTarget.id;
+        if (id === 'data-tab') {
+            document.getElementById('data-tab-panel').style.display = "block";
+        } else {
+            document.getElementById('schema-tab-panel').style.display = "block";
+        }
+        e.currentTarget.checked = true;
+    }
+
     function updateRawData( /** @type {any} */ data){
         // rawDataJsonContainer.textContent = JSON.stringify(data, undefined, 2);
     }
@@ -224,7 +253,7 @@
                     startingRow = startRow;
                     initTable(headers, rawData);
                     // updatePageCounter({rowCount, startRow, endRow});
-                    updateRawData(rawData);
+                    // updateRawData(rawData);
                     updateSchema(schema);
                 }
             }

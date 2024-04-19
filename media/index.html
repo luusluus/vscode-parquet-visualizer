@@ -24,21 +24,26 @@
 </head>
 
 <body>
-    <div class="tab-frame">
-        <input type="radio" checked name="tab" id="tab1">
-        <label for="tab1">Data</label>
-        
-        <input type="radio" name="tab" id="tab2">
-        <label for="tab2">Schema</label>
-        
-        <div class="tab">
-            <div id="table"></div>
-        </div>
-        
-        <div class="tab">
-            <pre>
-                <div id="schema"></div>
-            </pre>
+    <!-- <button id="btn">btn</button> -->
+    <div id="container">
+        <div class="tab-frame">
+            <div class="tab-buttons">
+                <input type="radio" checked name="data-tab" id="data-tab" class="tablinks">
+                <label for="data-tab">Data</label>
+                
+                <input type="radio" name="schema-tab" id="schema-tab" class="tablinks" >
+                <label for="schema-tab">Schema</label>
+            </div>
+            
+            <div class="tab" id="data-tab-panel">
+                <div id="table"></div>
+            </div>
+            
+            <div class="tab" id="schema-tab-panel">
+                <pre>
+                    <div id="schema"></div>
+                </pre>
+            </div>
         </div>
     </div>
     <script nonce="{{nonce}}" src="{{scripts}}/main.js"></script>
