@@ -11,14 +11,9 @@
     let startingRow = 0;
 
     const tableContainer = /** @type {HTMLElement} */ (document.querySelector('#table'));
-    // const rawDataContainer = /** @type {HTMLElement} */ (document.querySelector('#data-raw'));
-    // rawDataContainer.style.display = "none";
     
-    // const rawDataJsonContainer = /** @type {HTMLElement} */ (document.querySelector('#data-json'));
     const rawSchemaJsonContainer = /** @type {HTMLElement} */ (document.querySelector('#schema'));
     
-    const pageCounterContainer = /** @type {HTMLElement} */ (document.querySelector('#page-counter'));
-
     document.getElementById("data-tab").addEventListener("click", handleTabChange);
     document.getElementById("schema-tab").addEventListener("click", handleTabChange);
 
@@ -49,30 +44,12 @@
         e.currentTarget.checked = true;
     }
 
-    function updateRawData( /** @type {any} */ data){
-        // rawDataJsonContainer.textContent = JSON.stringify(data, undefined, 2);
-    }
-
-    function updatePageCounter( /** @type {any} */  pageCounterData) {
-        // pageCounterContainer
-        let pageRangeElement = pageCounterContainer.querySelector('#page-range');
-        if (pageRangeElement){
-            pageRangeElement.innerHTML = `${pageCounterData.startRow}-${pageCounterData.endRow}`;
-        }
-
-        let rowCountElement = pageCounterContainer.querySelector('#row-count');
-        if (rowCountElement){
-            rowCountElement.innerHTML = pageCounterData.rowCount;
-        }
-
-    }
-
-    function updateSchema (/** @type {any} */  data) {
+    function initSchema (/** @type {any} */  data) {
         rawSchemaJsonContainer.textContent = JSON.stringify(data, undefined, 2);
     }
     
-    function initTable( /** @type {any} */  columns, /** @type {any} */ data) {
-        columns = columns.map(c => (
+    function initTable(/** @type {any} */ data) {
+        const columns = data.headers.map(c => (
             {
                 ...c, 
                 cellClick:function(e, cell){
@@ -95,17 +72,45 @@
                 width:150, //set the width on all columns to 200px
             },
             placeholder:"No Data Available", //display message to user on empty table
-            // footerElement:"<div id='footer' class='tabulator-footer'> <div class='dropdown'> <label for='num-records'>Num records:</label> <select name='num-records' id='dropdown-num-records'> <option value='10'>10</option> <option value='50'>50</option> <option value='100'>100</option> <option value='500'>500</option> <option value='1000'>1000</option> <option value='all'>All</option> </select> </div> <div class='buttons'> <button id='btn-first' type='button'>First</button> <button id='btn-prev' type='button' disabled>Previous</button> <div id='page-counter'> <span> <span id='page-range'></span> <span>of</span> <span id='row-count'></span> </span> </div> <button id='btn-next' type='button'>Next</button> <button id='btn-last' type='button'>Last</button> </div> </div>",
-            data: data,
+            footerElement:`<span class="tabulator-page-counter">
+                        <span>
+                            <span>Showing</span>
+                            <span id="page-current"> 1 </span>
+                            <span>of</span>
+                            <span id="page-count"> ${data.pageCount} </span>
+                            <span>pages</span>
+                            <span> | </span>
+                            <span> ${data.rowCount} records </span>
+
+                        </span>
+                    </span>
+                    <span class="tabulator-paginator">
+                        <label>Page Size</label>
+                        <select class="tabulator-page-size" id="dropdown-page-size" aria-label="Page Size" title="Page Size">
+                            <option value="25">10</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="500">500</option>
+                            <option value="1000">1000</option>
+                            <option value="true">All</option>
+                        </select>
+                        <button class="tabulator-page" disabled id="btn-first" type="button" role="button" aria-label="First Page" title="First Page" data-page="first">First</button>
+                        <button class="tabulator-page" disabled id="btn-prev" type="button" role="button" aria-label="Prev Page" title="Prev Page" data-page="prev">Prev</button>
+                        <span class="tabulator-pages" id="tabulator-pages">
+                        </span>
+                        <button class="tabulator-page" id="btn-next" type="button" role="button" aria-label="Next Page" title="Next Page" data-page="next">Next</button>
+                        <button class="tabulator-page" id="btn-last" type="button" role="button" aria-label="Last Page" title="Last Page" data-page="last">Last</button>
+                    </span>
+            `,
+            data: data.rawData,
             columns: columns,
-            pagination: true,
-            paginationSize: 25,
-            paginationSizeSelector:[25, 50, 100, true],
-            paginationCounter:"pages", 
+            pagination: false,
         });
 
         table.on("tableBuilt", () => {
-            // initializeFooter();
+            console.log("tableBuilt");
+            initializeFooter();
+            updateNavigationNumberButtons(currentPage, amountOfPages);
         });
 
         table.on("popupOpened", function(component){
@@ -140,75 +145,132 @@
         table.replaceData(data);
     }
 
-    function initializeFooter() {
+    function updatePageCounterState( /** @type {Number} */ currentPage ,  /** @type {Number} */ amountOfPages){
+        console.log(`updatePageCounterState(${currentPage}, ${amountOfPages})`);
+        const currentPageSpan = /** @type {HTMLElement} */ (document.querySelector('#page-current'));
+        const countPageSpan = /** @type {HTMLElement} */ (document.querySelector('#page-count'));
+
+        if (currentPageSpan) {
+            currentPageSpan.innerText = currentPage.toString();
+        }
+        if (countPageSpan) {
+            countPageSpan.innerText = amountOfPages.toString();
+        }
+    }
+
+    function updateNavigationNumberButtons(/** @type {Number} */ currentPage, /** @type {Number} */ amountOfPages){
+        console.log(`updateNavigationNumberButtons(${currentPage}, ${amountOfPages})`);
+        const tabulatorPagesSpan = document.getElementById("tabulator-pages");
+
+        var startPage = 1, endPage;
+
+        if (currentPage < 4) {
+            startPage = 1;
+            endPage = Math.min(amountOfPages, 5);
+        }
+        else if (currentPage > amountOfPages - 3){
+            startPage = amountOfPages - 4;
+            endPage = amountOfPages;
+        }
+        else {
+            startPage = currentPage - 2;
+            endPage = Math.min(currentPage + 2, amountOfPages);
+        }
+
+        const pageNumbers = Array.from({length: endPage - startPage + 1}, (_, a) => a + startPage);
+
+        const elements = document.getElementsByClassName("page-number");
+        const elementsArray = Array.from(elements);
+        elementsArray.forEach(element => {
+            element.remove();
+          }
+        );
+
+        pageNumbers.forEach(p => {
+            const button = document.createElement("button");
+
+            if (p === currentPage){
+                button.classList.add("tabulator-page", "page-number", "active");
+            } else {
+                button.classList.add("tabulator-page", "page-number");
+            }
+            button.setAttribute("type", "button");
+            button.setAttribute("role", "button");
+            button.setAttribute("aria-label", `Show Page ${p}`);
+            button.setAttribute("title", `Show Page ${p}`);
+            button.setAttribute("data-page", `${p}`);
+            button.textContent = `${p}`;
+
+            button.addEventListener('click', (e) => {
+                vscode.postMessage({
+                    type: 'currentPage',
+                    pageNumber: Number(e.target.innerHTML)
+                });
+            });
+
+            tabulatorPagesSpan?.appendChild(button);
+        });
+    }
+
+    function updateNavigationButtonsState(/** @type {Number} */ currentPage, /** @type {Number} */ amountOfPages){
+        console.log(`updateNavigationButtonsState(${currentPage}, ${amountOfPages})`);
         const nextButton = /** @type {HTMLElement} */ (document.querySelector('#btn-next'));
         const prevButton = /** @type {HTMLElement} */ (document.querySelector('#btn-prev'));
         const firstButton = /** @type {HTMLElement} */ (document.querySelector('#btn-first'));
         const lastButton = /** @type {HTMLElement} */ (document.querySelector('#btn-last'));
-    
-        function checkButtonState(){
-            if (currentPage === amountOfPages){
-                nextButton.setAttribute('disabled', '');
-            }
-    
-            if (currentPage > 1){
-                prevButton.removeAttribute('disabled');
-            }
-    
-            if (currentPage < amountOfPages ) {
-                nextButton.removeAttribute('disabled');
-            }
-    
-            if (currentPage === 1){
-                prevButton.setAttribute('disabled', '');
-            }
+        if (currentPage === amountOfPages){
+            nextButton.setAttribute('disabled', '');
+            lastButton.setAttribute('disabled', '');
         }
-    
+
+        if (currentPage > 1){
+            prevButton.removeAttribute('disabled');
+            firstButton.removeAttribute('disabled');
+        }
+
+        if (currentPage < amountOfPages ) {
+            nextButton.removeAttribute('disabled');
+            lastButton.removeAttribute('disabled');
+        }
+
+        if (currentPage === 1){
+            prevButton.setAttribute('disabled', '');
+            firstButton.setAttribute('disabled', '');
+        }
+    }
+
+    function initializeFooter() {
+        console.log("initializeFooter");
+        const nextButton = /** @type {HTMLElement} */ (document.querySelector('#btn-next'));
+        const prevButton = /** @type {HTMLElement} */ (document.querySelector('#btn-prev'));
+        const firstButton = /** @type {HTMLElement} */ (document.querySelector('#btn-first'));
+        const lastButton = /** @type {HTMLElement} */ (document.querySelector('#btn-last'));
+
         nextButton.addEventListener('click', () => {
-            if (currentPage < amountOfPages){
-                currentPage++;
-            }
-    
-            checkButtonState();
-            
             vscode.postMessage({
                 type: 'nextPage'
             });
         });
     
         prevButton.addEventListener('click', () => {
-            if (currentPage > 1){
-                currentPage--;
-            }
-    
-            checkButtonState();
-            
             vscode.postMessage({
                 type: 'prevPage'
             });
         });
     
         firstButton.addEventListener('click', () => {
-            currentPage = 1;
-    
-            checkButtonState();
-    
             vscode.postMessage({
                 type: 'firstPage'
             });
         });
     
         lastButton.addEventListener('click', () => {
-            currentPage = amountOfPages;
-    
-            checkButtonState();
-    
             vscode.postMessage({
                 type: 'lastPage'
             });
         });
     
-        const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector('#dropdown-num-records'));
+        const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector('#dropdown-page-size'));
         numRecordsDropdown.addEventListener('change', (e) => {
             const selectedIndex = numRecordsDropdown.selectedIndex;
             const selectedOption = numRecordsDropdown.options[selectedIndex];
@@ -223,50 +285,30 @@
     }
     
 
-    // const rawRadioInput = /** @type {HTMLInputElement} */ (document.querySelector('#radio-raw'));
-    // const tableRadioInput = /** @type {HTMLInputElement} */ (document.querySelector('#radio-table'));
-
-    // rawRadioInput.addEventListener('change', () => {
-    //     if (rawRadioInput.checked) {
-    //         tableContainer.style.display = 'none';
-    //         // rawDataContainer.style.display = 'block';
-    //     }
-    // });
-
-    // tableRadioInput.addEventListener('change', () => {
-    //     if (tableRadioInput.checked) {
-    //         tableContainer.style.display = 'block';
-    //         // rawDataContainer.style.display = 'none';
-    //     }
-    // });
-
     // Handle messages from the extension
     window.addEventListener('message', async e => {
-        console.log(e.data);
         const { type, tableData, requestId } = e.data;
         switch (type) {
             case 'init':{
                 console.log('init');
                 if (tableData) {
-                    const {headers, schema, values, rawData, rowCount, startRow, endRow, pageCount, pageSize } = tableData;
-                    amountOfPages = pageCount;
-                    startingRow = startRow;
-                    initTable(headers, rawData);
-                    // updatePageCounter({rowCount, startRow, endRow});
-                    // updateRawData(rawData);
-                    updateSchema(schema);
+                    startingRow = tableData.startRow;
+                    initTable(tableData);
+                    initSchema(tableData.schema);
+
+                    currentPage = tableData.currentPage;
+                    amountOfPages = tableData.pageCount;
                 }
             }
             case 'update': {
                 console.log('update');
-                // if (tableData) {
-                //     const {headers, values, rawData, rowCount, startRow, endRow, pageCount, pageSize } = tableData;
-                //     amountOfPages = pageCount;
-                //     startingRow = startRow;
-                //     updateTable(rawData);
-                //     updatePageCounter({rowCount, startRow, endRow});
-                //     updateRawData(rawData);
-                // }
+                if (tableData) {
+                    startingRow = tableData.startRow;
+                    updateTable(tableData.rawData);
+                    updatePageCounterState(tableData.currentPage, tableData.pageCount);
+                    updateNavigationNumberButtons(tableData.currentPage, tableData.pageCount);
+                    updateNavigationButtonsState(tableData.currentPage, tableData.pageCount);
+                }
             }
         }
     });

@@ -33,27 +33,27 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
 
     private readonly _onDidChangeDocument = this._register(new vscode.EventEmitter<{
       readonly rawData?: any;
-      readonly rowData?: any;
       readonly rowCount?: number;
       readonly startRow?: number;
       readonly endRow?: number;
       readonly pageCount?: number;
       readonly pageSize?: number;
+      readonly currentPage?: number;
     }>());
     /**
      * Fired to notify webviews that the document has changed.
      */
     public readonly onDidChangeContent = this._onDidChangeDocument.event;
 
-    fireChangedDocumentEvent(rowData: any, rawData: any, startRow: number) {
+    fireChangedDocumentEvent(rawData: any, startRow: number) {
       const tableData = {
-        rowData: rowData,
         rawData: rawData,
         rowCount: this.getRowCount(),
         startRow: startRow,
-        endRow: startRow + rowData.length - 1,
+        endRow: startRow + rawData.length - 1,
         pageCount: this.getPageCount(),
-        pageSize: this.getPageSize()
+        pageSize: this.getPageSize(),
+        currentPage: this.currentPage
       };
       this._onDidChangeDocument.fire(tableData);
     }
@@ -62,48 +62,51 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       return this.getPageSize() * this.currentPage - this.getPageSize() + 1;
     }
 
-    async nextPage() {
+    async emitNextPage() {
       this.currentPage++;
       const startRow = this.getStartRowNumber();
 
       const rawData = await this.getCurrentPage();
-      const rowData = rawData.map(p => Object.keys(p).map(key => p[key]));
-      this.fireChangedDocumentEvent(rowData, rawData, startRow);
+      this.fireChangedDocumentEvent(rawData, startRow);
     }
 
-    async prevPage() {
+    async emitPrevPage() {
       this.currentPage--;
       const startRow = this.getStartRowNumber();
       
       const rawData = await this.getCurrentPage();
-      const rowData = rawData.map(p => Object.keys(p).map(key => p[key]));
-      this.fireChangedDocumentEvent(rowData, rawData, startRow);
-
+      this.fireChangedDocumentEvent(rawData, startRow);
     }
 
-    async firstPage(){
+    async emitFirstPage(){
       this.currentPage = 1;
       const startRow = this.getStartRowNumber();
       
       const rawData = await this.getCurrentPage();
-      const rowData = rawData.map(p => Object.keys(p).map(key => p[key]));
-      this.fireChangedDocumentEvent(rowData, rawData, startRow);
+      this.fireChangedDocumentEvent(rawData, startRow);
     }
 
-    async lastPage() {
+    async emitLastPage() {
       this.currentPage = Math.ceil(this.getRowCount() / this.getPageSize());
       const startRow = this.getStartRowNumber();
 
       const rawData = await this.getCurrentPage();
-      const rowData = rawData.map(p => Object.keys(p).map(key => p[key]));
-      this.fireChangedDocumentEvent(rowData, rawData, startRow);
+      this.fireChangedDocumentEvent(rawData, startRow);
+    }
+
+    async emitCurrentPage(currentPage: number) {
+      this.currentPage = currentPage;
+      const rawData = await this.getPageByNumber(currentPage);
+      const startRow = this.getStartRowNumber();
+      this.fireChangedDocumentEvent(rawData, startRow);
     }
 
     async changePageSize(data: any) {
       // Check if value is 'All'
       if (isNaN(+(data.newPageSize))) {
         this.setPageSize(this.getRowCount());
-        await this.firstPage();
+        this.currentPage = 1;
+        await this.emitFirstPage();
         return;
       }
 
@@ -119,10 +122,13 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         pageNumber++;
       }
 
+      this.currentPage = pageNumber;
+
       this.setPageSize(newPageSize);
+      this.setPageCount(newPageSize);
+      
       const rawData = await this.getPageByNumber(pageNumber);
-      const rowData = rawData.map(p => Object.keys(p).map(key => p[key]));
-      this.fireChangedDocumentEvent(rowData, rawData, prevStartRow);
+      this.fireChangedDocumentEvent(rawData, prevStartRow);
     }
 
     async getCurrentPage() {
@@ -155,6 +161,10 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
 
     setPageSize(value: number){
       this.paginator.setPageSize(value);
+    }
+
+    setPageCount(pageSize: number){
+      this.paginator.setPageCount(pageSize);
     }
   }
 
@@ -196,13 +206,13 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           // Update all webviews when the document changes
           const dataChange = {
             headers : [],
-            values: e.rowData,
             rawData: e.rawData,
             rowCount: e.rowCount,
             startRow: e.startRow,
             endRow: e.endRow,
             pageCount: e.pageCount,
-            pageSize: e.pageSize
+            pageSize: e.pageSize,
+            currentPage: e.currentPage
           };
 
           this.webviewPanel.webview.postMessage({
@@ -230,11 +240,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             enableScripts: true,
         };
 
-
-        // const currentPage = await document.getCurrentPage();
-        // const values = currentPage.map(p => Object.keys(p).map(key => p[key]));
-
-        const values = await document.getAllRows();
+        const values = await document.getCurrentPage();
 
         const data = {
           headers: document.paginator.getFields(),
@@ -245,28 +251,11 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           startRow: document.getPageSize() * document.currentPage - document.getPageSize() + 1,
           endRow: document.getPageSize() * document.currentPage,
           pageCount: document.getPageCount(),
+          currentPage: document.currentPage
         };
 
         webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
       
-        // Hook up event handlers so that we can synchronize the webview with the text document.
-        //
-        // The text document acts as our model, so we have to sync change in the document to our
-        // editor and sync changes in the editor back to the document.
-        // 
-        // Remember that a single text document can also be shared between multiple custom
-        // editors (this happens for example when you split a custom editor)
-    
-        const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(e => {
-          if (e.document.uri.toString() === document.uri.toString()) {
-            console.log('onDidChangeTextDocument');
-            webviewPanel.webview.postMessage({
-              type: 'update',
-              tableData: data
-            });
-          }
-        });
-    
         webviewPanel.webview.onDidReceiveMessage(e => this.onMessage(document, e));
 
         // Wait for the webview to be properly ready before we init
@@ -288,7 +277,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
     
         // Make sure we get rid of the listener when our editor is closed.
         webviewPanel.onDidDispose(() => {
-          changeDocumentSubscription.dispose();
+          // changeDocumentSubscription.dispose();
         });
         
     }
@@ -296,19 +285,23 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
     private async onMessage(document: CustomParquetDocument, message: any) {
       switch (message.type) {
         case 'nextPage': {
-          await document.nextPage();
+          await document.emitNextPage();
           break;
         }
         case 'prevPage': {
-          await document.prevPage();
+          await document.emitPrevPage();
           break;
         }
         case 'firstPage': {
-          await document.firstPage();
+          await document.emitFirstPage();
           break;
         }
         case 'lastPage': {
-          await document.lastPage();
+          await document.emitLastPage();
+          break;
+        }
+        case 'currentPage': {
+          await document.emitCurrentPage(message.pageNumber);
           break;
         }
         case 'changePageSize': {

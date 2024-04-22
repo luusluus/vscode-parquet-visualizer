@@ -9,7 +9,6 @@ import {tableFromIPC, Table, Schema} from "apache-arrow";
 import {
     readParquet,
 } from "parquet-wasm/node/arrow1";
-import { subtle } from 'crypto';
 
 
 export class ParquetPaginator {
@@ -23,8 +22,8 @@ export class ParquetPaginator {
     this.table = table;
     this.schema = table.schema;
     this.rowCount = this.table.numRows;
-    this.pageSize = pageSize;
-    this.pageCount = Math.ceil(this.rowCount / this.pageSize);
+    this.pageSize = pageSize; // This is the amount of rows in a page.
+    this.setPageCount(pageSize); // This is the amount of pages
   }
 
   public static async createAsync (filePath: string, pageSize: number = 10) {
@@ -97,6 +96,10 @@ export class ParquetPaginator {
 
   public setPageSize(value: number) {
     this.pageSize = value;
+  }
+
+  public setPageCount(pageSize: number) {
+    this.pageCount = Math.ceil(this.rowCount / pageSize); 
   }
 
 }
