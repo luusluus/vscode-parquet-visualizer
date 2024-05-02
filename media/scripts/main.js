@@ -5,8 +5,10 @@
     const vscode = acquireVsCodeApi();
 
     let table;
+    let tableBuilt = false;
 
     let currentPage = 1;
+    let rowCount = 1;
     let amountOfPages = 0;
     let startingRow = 0;
 
@@ -109,8 +111,11 @@
 
         table.on("tableBuilt", () => {
             console.log("tableBuilt");
-            initializeFooter();
+            tableBuilt = true;
+            initializeFooter(amountOfPages);
             updateNavigationNumberButtons(currentPage, amountOfPages);
+            updatePageCounterState(currentPage, amountOfPages);
+            updateNavigationButtonsState(currentPage, amountOfPages);
         });
 
         table.on("popupOpened", function(component){
@@ -142,11 +147,28 @@
     }
 
     function updateTable(/** @type {any} */ data) {
-        table.replaceData(data);
+        console.log("updateTable");
+        if (tableBuilt){
+            table.replaceData(data);
+        }
+    }
+
+    function doesFooterExist(){
+        const footer = document.querySelector(".tabulator-footer");
+        if (!footer) {
+            console.log("footer doesn't exist yet.");
+            return false;
+        }
+        return true;
     }
 
     function updatePageCounterState( /** @type {Number} */ currentPage ,  /** @type {Number} */ amountOfPages){
         console.log(`updatePageCounterState(${currentPage}, ${amountOfPages})`);
+
+        if (!doesFooterExist()){
+            return;
+        }
+
         const currentPageSpan = /** @type {HTMLElement} */ (document.querySelector('#page-current'));
         const countPageSpan = /** @type {HTMLElement} */ (document.querySelector('#page-count'));
 
@@ -160,6 +182,11 @@
 
     function updateNavigationNumberButtons(/** @type {Number} */ currentPage, /** @type {Number} */ amountOfPages){
         console.log(`updateNavigationNumberButtons(${currentPage}, ${amountOfPages})`);
+
+        if (!doesFooterExist()){
+            return;
+        }
+
         const tabulatorPagesSpan = document.getElementById("tabulator-pages");
 
         var startPage = 1, endPage;
@@ -199,6 +226,11 @@
             button.setAttribute("aria-label", `Show Page ${p}`);
             button.setAttribute("title", `Show Page ${p}`);
             button.setAttribute("data-page", `${p}`);
+
+            if (amountOfPages === 1) {
+                button.setAttribute('disabled', '');
+            }
+
             button.textContent = `${p}`;
 
             button.addEventListener('click', (e) => {
@@ -214,10 +246,23 @@
 
     function updateNavigationButtonsState(/** @type {Number} */ currentPage, /** @type {Number} */ amountOfPages){
         console.log(`updateNavigationButtonsState(${currentPage}, ${amountOfPages})`);
+
+        if (!doesFooterExist()){
+            return;
+        }
+
         const nextButton = /** @type {HTMLElement} */ (document.querySelector('#btn-next'));
         const prevButton = /** @type {HTMLElement} */ (document.querySelector('#btn-prev'));
         const firstButton = /** @type {HTMLElement} */ (document.querySelector('#btn-first'));
         const lastButton = /** @type {HTMLElement} */ (document.querySelector('#btn-last'));
+
+        if (amountOfPages === 1) {
+            nextButton.setAttribute('disabled', '');
+            prevButton.setAttribute('disabled', '');
+            firstButton.setAttribute('disabled', '');
+            lastButton.setAttribute('disabled', '');
+        }
+
         if (currentPage === amountOfPages){
             nextButton.setAttribute('disabled', '');
             lastButton.setAttribute('disabled', '');
@@ -239,7 +284,7 @@
         }
     }
 
-    function initializeFooter() {
+    function initializeFooter(/** @type {Number} */ rowCount) {
         console.log("initializeFooter");
         const nextButton = /** @type {HTMLElement} */ (document.querySelector('#btn-next'));
         const prevButton = /** @type {HTMLElement} */ (document.querySelector('#btn-prev'));
@@ -271,28 +316,37 @@
         });
     
         const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector('#dropdown-page-size'));
-        numRecordsDropdown.addEventListener('change', (e) => {
-            const selectedIndex = numRecordsDropdown.selectedIndex;
-            const selectedOption = numRecordsDropdown.options[selectedIndex];
-            vscode.postMessage({
-                type: 'changePageSize',
-                data: {
-                    newPageSize: selectedOption.innerText,
-                    prevStartRow: startingRow
-                }
+
+        if (rowCount <= 10 ) {
+            numRecordsDropdown.setAttribute('disabled', '');
+        } else {
+            numRecordsDropdown.addEventListener('change', (e) => {
+                const selectedIndex = numRecordsDropdown.selectedIndex;
+                const selectedOption = numRecordsDropdown.options[selectedIndex];
+                vscode.postMessage({
+                    type: 'changePageSize',
+                    data: {
+                        newPageSize: selectedOption.innerText,
+                        prevStartRow: startingRow
+                    }
+                });
             });
-        });
+        }
+
     }
     
 
     // Handle messages from the extension
     window.addEventListener('message', async e => {
-        const { type, tableData, requestId } = e.data;
+        const { type, body } = e.data;
+        console.log(e.data);
         switch (type) {
             case 'init':{
                 console.log('init');
+                const tableData = body.tableData;
                 if (tableData) {
                     startingRow = tableData.startRow;
+                    rowCount = tableData.rowCount;
                     initTable(tableData);
                     initSchema(tableData.schema);
 
@@ -302,6 +356,7 @@
             }
             case 'update': {
                 console.log('update');
+                const tableData = body.tableData;
                 if (tableData) {
                     startingRow = tableData.startRow;
                     updateTable(tableData.rawData);

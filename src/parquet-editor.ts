@@ -16,7 +16,6 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
     static async create(
       uri: vscode.Uri
     ): Promise<CustomParquetDocument | PromiseLike<CustomParquetDocument>> {
-      // If we have a backup, read that. Otherwise read the resource from the workspace
       const paginator = await ParquetPaginator.createAsync(uri.fsPath);
       return new CustomParquetDocument(uri, paginator);
     }
@@ -30,6 +29,12 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       this.paginator = paginator;
       this.currentPage = 1;
     }
+
+    private readonly _onDidDispose = this._register(new vscode.EventEmitter<void>());
+    /**
+     * Fired when the document is disposed of.
+     */
+    public readonly onDidDispose = this._onDidDispose.event;
 
     private readonly _onDidChangeDocument = this._register(new vscode.EventEmitter<{
       readonly rawData?: any;
@@ -46,6 +51,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
     public readonly onDidChangeContent = this._onDidChangeDocument.event;
 
     fireChangedDocumentEvent(rawData: any, startRow: number) {
+      console.log(`fireChangedDocumentEvent(${this.uri}). Page {${this.currentPage}}`);
       const tableData = {
         rawData: rawData,
         rowCount: this.getRowCount(),
@@ -56,6 +62,17 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         currentPage: this.currentPage
       };
       this._onDidChangeDocument.fire(tableData);
+    }
+
+    /**
+     * Called by VS Code when there are no more references to the document.
+     *
+     * This happens when all editors for it have been closed.
+     */
+    dispose(): void {
+      console.log(`dispose(${this.uri})`);
+      this._onDidDispose.fire();
+      super.dispose();
     }
 
     getStartRowNumber() {
@@ -172,11 +189,8 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
     private static readonly viewType = 'parquet-visualizer.parquetVisualizer';
 
-    private webviewPanel: vscode.WebviewPanel;
-    private readonly _onDidChangeCustomDocument = new vscode.EventEmitter<vscode.CustomDocumentEditEvent<CustomParquetDocument>>();
-	  public readonly onDidChangeCustomDocument = this._onDidChangeCustomDocument.event;
-
     public static register(context: vscode.ExtensionContext): vscode.Disposable {
+        console.log(`register()`);
         const provider = new ParquetEditorProvider(context);
         return vscode.window.registerCustomEditorProvider(
           ParquetEditorProvider.viewType, 
@@ -193,17 +207,22 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         );
     }
 
+    /**
+     * Tracks all known webviews
+     */
+    private readonly webviews = new WebviewCollection();
+
     constructor(
         private readonly context: vscode.ExtensionContext
     ) { }
 
     async openCustomDocument(uri: vscode.Uri): Promise<CustomParquetDocument> {
+        console.log(`openCustomDocument(uri: ${uri})`);
         const document: CustomParquetDocument = await CustomParquetDocument.create(uri);
 
         const listeners: vscode.Disposable[] = [];
 
         listeners.push(document.onDidChangeContent(e => {
-          // Update all webviews when the document changes
           const dataChange = {
             headers : [],
             rawData: e.rawData,
@@ -215,10 +234,13 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             currentPage: e.currentPage
           };
 
-          this.webviewPanel.webview.postMessage({
-            type: 'update',
-            tableData: dataChange
-          });
+          // Update all webviews when the document changes
+          for (const webviewPanel of this.webviews.get(document.uri)) {
+            this.postMessage(webviewPanel, 'update', {
+                type: 'update',
+                tableData: dataChange
+            });
+          }
         }));
 
         return document;
@@ -234,11 +256,34 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         webviewPanel: vscode.WebviewPanel,
         _token: vscode.CancellationToken
     ): Promise<void> {
+
+        console.log(`resolveCustomEditor(${document.uri})`);
+        this.webviews.add(document.uri, webviewPanel);
         // Setup initial content for the webview
-        this.webviewPanel = webviewPanel;
         webviewPanel.webview.options = {
             enableScripts: true,
         };
+
+        webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
+      
+        webviewPanel.webview.onDidReceiveMessage(e => this.onMessage(document, e));
+
+        // Hook up event handlers so that we can synchronize the webview with the text document.
+        //
+        // The text document acts as our model, so we have to sync change in the document to our
+        // editor and sync changes in the editor back to the document.
+        // 
+        // Remember that a single text document can also be shared between multiple custom
+        // editors (this happens for example when you split a custom editor)
+        // const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(e => {
+        //   if (e.document.uri.toString() === document.uri.toString()) {
+        //     console.log('onDidChangeTextDocument');
+        //     webviewPanel.webview.postMessage({
+        //       type: 'update',
+        //       tableData: data
+        //     });
+        //   }
+        // });
 
         const values = await document.getCurrentPage();
 
@@ -254,35 +299,33 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           currentPage: document.currentPage
         };
 
-        webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
-      
-        webviewPanel.webview.onDidReceiveMessage(e => this.onMessage(document, e));
-
         // Wait for the webview to be properly ready before we init
         webviewPanel.webview.onDidReceiveMessage(e => {
           if (e.type === 'ready') {
             if (document.uri.scheme === 'untitled') {
-              this.webviewPanel.webview.postMessage({
-                type: 'init',
+              this.postMessage(webviewPanel, 'init', {
                 tableData: data,
               });
             } else {
-              this.webviewPanel.webview.postMessage({
-                type: 'init',
+              this.postMessage(webviewPanel, 'init', {
                 tableData: data,
               });
             }
           }
         });
     
-        // Make sure we get rid of the listener when our editor is closed.
-        webviewPanel.onDidDispose(() => {
-          // changeDocumentSubscription.dispose();
-        });
-        
+    }
+
+    private readonly _onDidChangeCustomDocument = new vscode.EventEmitter<vscode.CustomDocumentEditEvent<CustomParquetDocument>>();
+	  public readonly onDidChangeCustomDocument = this._onDidChangeCustomDocument.event;
+
+    private postMessage(panel: vscode.WebviewPanel, type: string, body: any): void {
+      panel.webview.postMessage({ type, body });
     }
 
     private async onMessage(document: CustomParquetDocument, message: any) {
+      console.log(`onMessage(${document.uri})`);
+      console.log(`Message: ${JSON.stringify(message)}`);
       switch (message.type) {
         case 'nextPage': {
           await document.emitNextPage();
@@ -364,4 +407,39 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         // Use a nonce to whitelist which scripts can be run
     }
 
+}
+
+/**
+ * Tracks all webviews.
+ */
+class WebviewCollection {
+
+	private readonly _webviews = new Set<{
+		readonly resource: string;
+		readonly webviewPanel: vscode.WebviewPanel;
+	}>();
+
+	/**
+	 * Get all known webviews for a given uri.
+	 */
+	public *get(uri: vscode.Uri): Iterable<vscode.WebviewPanel> {
+		const key = uri.toString();
+		for (const entry of this._webviews) {
+			if (entry.resource === key) {
+				yield entry.webviewPanel;
+			}
+		}
+	}
+
+	/**
+	 * Add a new webview to the collection.
+	 */
+	public add(uri: vscode.Uri, webviewPanel: vscode.WebviewPanel) {
+		const entry = { resource: uri.toString(), webviewPanel };
+		this._webviews.add(entry);
+
+		webviewPanel.onDidDispose(() => {
+			this._webviews.delete(entry);
+		});
+	}
 }
