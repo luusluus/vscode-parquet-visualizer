@@ -325,7 +325,6 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
     private async onMessage(document: CustomParquetDocument, message: any) {
       console.log(`onMessage(${document.uri})`);
-      console.log(`Message: ${JSON.stringify(message)}`);
       switch (message.type) {
         case 'nextPage': {
           await document.emitNextPage();

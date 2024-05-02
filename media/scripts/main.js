@@ -89,7 +89,7 @@
                     <span class="tabulator-paginator">
                         <label>Page Size</label>
                         <select class="tabulator-page-size" id="dropdown-page-size" aria-label="Page Size" title="Page Size">
-                            <option value="25">10</option>
+                            <option value="10">10</option>
                             <option value="50">50</option>
                             <option value="100">100</option>
                             <option value="500">500</option>
@@ -317,9 +317,26 @@
     
         const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector('#dropdown-page-size'));
 
+        if (rowCount > 10000) {
+            // https://stackoverflow.com/questions/3364493/how-do-i-clear-all-options-in-a-dropdown-box
+            var i, L = numRecordsDropdown.options.length - 1;
+            for(i = L; i >= 0; i--) {
+                numRecordsDropdown.remove(i);
+            }
+
+            const pageSizes = [10, 50, 100, 500, 1000, 5000, 10000];
+            pageSizes.forEach((pageSize) => {
+                let option = document.createElement('option');
+                option.value = pageSize.toString();
+                option.innerHTML = pageSize.toString();
+                numRecordsDropdown.options.add(option);
+            });
+        }
+        
         if (rowCount <= 10 ) {
             numRecordsDropdown.setAttribute('disabled', '');
-        } else {
+        } 
+        else {
             numRecordsDropdown.addEventListener('change', (e) => {
                 const selectedIndex = numRecordsDropdown.selectedIndex;
                 const selectedOption = numRecordsDropdown.options[selectedIndex];
