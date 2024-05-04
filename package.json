@@ -1,14 +1,38 @@
 {
   "name": "parquet-visualizer",
   "displayName": "parquet-visualizer",
-  "description": "",
+  "description": "Visualizes Apache Parquet files in table format.",
+  "publisher": "luusluus",
+  "homepage": "https://github.com/luusluus/vscode-parquet-visualizer",
+  "bugs": {
+    "url": "https://github.com/luusluus/vscode-parquet-visualizer/issues",
+    "email": "lucienmartijn@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/luusluus/vscode-parquet-visualizer.git"
+  },
+  "author": {
+    "name": "Lucien Martijn",
+    "email": "lucienmartijn@gmail.com",
+    "url": "https://github.com/luusluus"
+  },
+  "license": "MIT",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.74.0",
     "node": ">18.0.0"
   },
   "categories": [
-    "Other"
+    "Visualization",
+    "Data Science",
+    "Formatters"
+  ],
+  "keywords": [
+    "parquet",
+    "visualizer",
+    "table",
+    "schema"
   ],
   "activationEvents": [],
   "main": "./out/extension.js",
