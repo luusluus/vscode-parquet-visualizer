@@ -51,7 +51,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
     public readonly onDidChangeContent = this._onDidChangeDocument.event;
 
     fireChangedDocumentEvent(rawData: any, startRow: number) {
-      console.log(`fireChangedDocumentEvent(${this.uri}). Page {${this.currentPage}}`);
+      // console.log(`fireChangedDocumentEvent(${this.uri}). Page {${this.currentPage}}`);
       const tableData = {
         rawData: rawData,
         rowCount: this.getRowCount(),
@@ -70,7 +70,6 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
      * This happens when all editors for it have been closed.
      */
     dispose(): void {
-      console.log(`dispose(${this.uri})`);
       this._onDidDispose.fire();
       super.dispose();
     }
@@ -190,7 +189,6 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
     private static readonly viewType = 'parquet-visualizer.parquetVisualizer';
 
     public static register(context: vscode.ExtensionContext): vscode.Disposable {
-        console.log(`register()`);
         const provider = new ParquetEditorProvider(context);
         return vscode.window.registerCustomEditorProvider(
           ParquetEditorProvider.viewType, 
@@ -217,7 +215,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
     ) { }
 
     async openCustomDocument(uri: vscode.Uri): Promise<CustomParquetDocument> {
-        console.log(`openCustomDocument(uri: ${uri})`);
+        // console.log(`openCustomDocument(uri: ${uri})`);
         const document: CustomParquetDocument = await CustomParquetDocument.create(uri);
 
         const listeners: vscode.Disposable[] = [];
@@ -257,7 +255,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         _token: vscode.CancellationToken
     ): Promise<void> {
 
-        console.log(`resolveCustomEditor(${document.uri})`);
+        // console.log(`resolveCustomEditor(${document.uri})`);
         this.webviews.add(document.uri, webviewPanel);
         // Setup initial content for the webview
         webviewPanel.webview.options = {
@@ -324,7 +322,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
     }
 
     private async onMessage(document: CustomParquetDocument, message: any) {
-      console.log(`onMessage(${document.uri})`);
+      // console.log(`onMessage(${document.uri})`);
       switch (message.type) {
         case 'nextPage': {
           await document.emitNextPage();

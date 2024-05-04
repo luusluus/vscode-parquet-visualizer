@@ -46,3 +46,8 @@ html, body {
     background-color: #101010;
     color: #d4d4d4;
 }
+
+#schema .schema-row {
+    display: flex;
+    justify-content: left; /* Spaces out the children evenly */
+}

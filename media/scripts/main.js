@@ -12,9 +12,7 @@
     let amountOfPages = 0;
     let startingRow = 0;
 
-    const tableContainer = /** @type {HTMLElement} */ (document.querySelector('#table'));
-    
-    const rawSchemaJsonContainer = /** @type {HTMLElement} */ (document.querySelector('#schema'));
+    const schemaContainer = /** @type {HTMLElement} */ (document.querySelector('#schema'));
     
     document.getElementById("data-tab").addEventListener("click", handleTabChange);
     document.getElementById("schema-tab").addEventListener("click", handleTabChange);
@@ -47,7 +45,25 @@
     }
 
     function initSchema (/** @type {any} */  data) {
-        rawSchemaJsonContainer.textContent = JSON.stringify(data, undefined, 2);
+        for (var i = 0; i < data.length; ++i) {
+            const schemaRow = document.createElement("div");
+            schemaRow.className = 'schema-row';
+            
+            const name = document.createElement("strong");
+            name.innerText = data[i].name; 
+            schemaRow.appendChild(name);
+    
+            const separator = document.createElement("p");
+            separator.innerHTML = ':&nbsp';
+            schemaRow.appendChild(separator);
+
+            const type = document.createElement("p");
+            type.innerText = data[i].type; 
+            schemaRow.appendChild(type);
+
+            schemaContainer.appendChild(schemaRow);
+        }
+
     }
     
     function initTable(/** @type {any} */ data) {
@@ -110,7 +126,7 @@
         });
 
         table.on("tableBuilt", () => {
-            console.log("tableBuilt");
+            // console.log("tableBuilt");
             tableBuilt = true;
             initializeFooter(amountOfPages);
             updateNavigationNumberButtons(currentPage, amountOfPages);
@@ -147,7 +163,7 @@
     }
 
     function updateTable(/** @type {any} */ data) {
-        console.log("updateTable");
+        // console.log("updateTable");
         if (tableBuilt){
             table.replaceData(data);
         }
@@ -156,14 +172,14 @@
     function doesFooterExist(){
         const footer = document.querySelector(".tabulator-footer");
         if (!footer) {
-            console.log("footer doesn't exist yet.");
+            // console.log("footer doesn't exist yet.");
             return false;
         }
         return true;
     }
 
     function updatePageCounterState( /** @type {Number} */ currentPage ,  /** @type {Number} */ amountOfPages){
-        console.log(`updatePageCounterState(${currentPage}, ${amountOfPages})`);
+        // console.log(`updatePageCounterState(${currentPage}, ${amountOfPages})`);
 
         if (!doesFooterExist()){
             return;
@@ -181,7 +197,7 @@
     }
 
     function updateNavigationNumberButtons(/** @type {Number} */ currentPage, /** @type {Number} */ amountOfPages){
-        console.log(`updateNavigationNumberButtons(${currentPage}, ${amountOfPages})`);
+        // console.log(`updateNavigationNumberButtons(${currentPage}, ${amountOfPages})`);
 
         if (!doesFooterExist()){
             return;
@@ -245,7 +261,7 @@
     }
 
     function updateNavigationButtonsState(/** @type {Number} */ currentPage, /** @type {Number} */ amountOfPages){
-        console.log(`updateNavigationButtonsState(${currentPage}, ${amountOfPages})`);
+        // console.log(`updateNavigationButtonsState(${currentPage}, ${amountOfPages})`);
 
         if (!doesFooterExist()){
             return;
@@ -285,7 +301,7 @@
     }
 
     function initializeFooter(/** @type {Number} */ rowCount) {
-        console.log("initializeFooter");
+        // console.log("initializeFooter");
         const nextButton = /** @type {HTMLElement} */ (document.querySelector('#btn-next'));
         const prevButton = /** @type {HTMLElement} */ (document.querySelector('#btn-prev'));
         const firstButton = /** @type {HTMLElement} */ (document.querySelector('#btn-first'));
@@ -332,7 +348,7 @@
                 numRecordsDropdown.options.add(option);
             });
         }
-        
+
         if (rowCount <= 10 ) {
             numRecordsDropdown.setAttribute('disabled', '');
         } 
@@ -356,10 +372,8 @@
     // Handle messages from the extension
     window.addEventListener('message', async e => {
         const { type, body } = e.data;
-        console.log(e.data);
         switch (type) {
             case 'init':{
-                console.log('init');
                 const tableData = body.tableData;
                 if (tableData) {
                     startingRow = tableData.startRow;
@@ -372,7 +386,6 @@
                 }
             }
             case 'update': {
-                console.log('update');
                 const tableData = body.tableData;
                 if (tableData) {
                     startingRow = tableData.startRow;

@@ -68,7 +68,23 @@ export class ParquetPaginator {
   }
 
   public getSchema() {
-    return this.schema;
+    // https://arrow.apache.org/docs/python/api/datatypes.html
+
+    return this.schema.fields.map((f) => {
+      const name = f.name;
+      let type = f.type.toString();
+      if (type.includes('Utf8')) {
+        type = type.replace(/Utf8/g, 'String');
+      } else if (type.includes('LargeUtf8')) {
+        type = type.replace(/LargeUtf8/g, 'LargeString');
+      }
+
+      return {
+        'name': name,
+        'type': type
+      };
+    });
+    
   }
 
   public getFields() {
