@@ -1,5 +1,12 @@
+# vscode files
 .vscode/**
 .vscode-test/**
+
+# hidden files and folder in root
+**/.*
+**/.*/
+
+# typescript files
 src/**
 .gitignore
 .yarnrc
@@ -9,6 +16,7 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 
-out/
+data/
+
 node_modules
 webpack.config.js
