@@ -65,7 +65,7 @@
         }
 
     }
-    
+
     function initTable(/** @type {any} */ data) {
         const columns = data.headers.map(c => (
             {
@@ -151,6 +151,16 @@
             }
             style.backgroundColor = '#101010';
             style.color = '#d4d4d4';
+
+            const container = document.getElementById("container");
+            const parentRect = container.getBoundingClientRect();
+            const childRect = element.getBoundingClientRect();
+
+            if (childRect.right > parentRect.right) {
+                const difference = childRect.right - parentRect.right;
+                style.left = `${childRect.left - difference}px`;
+            }
+
         });
 
         // const filters = columns = columns.map(c => ({
