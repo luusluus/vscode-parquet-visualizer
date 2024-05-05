@@ -2,7 +2,7 @@
   "name": "parquet-visualizer",
   "displayName": "parquet-visualizer",
   "description": "Visualizes Apache Parquet files in table format.",
-  "publisher": "luusluus",
+  "publisher": "lucien-martijn",
   "icon": "media/ico128.png",
   "homepage": "https://github.com/luusluus/vscode-parquet-visualizer",
   "bugs": {
