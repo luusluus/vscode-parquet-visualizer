@@ -2,11 +2,11 @@
 Explore parquet files visually with a table paginator.
 
 ## Features
-Paginate through parquet file and inspect raw JSON schema.
-
-Open multiple files simultanuously.
-
-Inspect complex objects in a cell.
+- Visualizes the binary parquet file in readable table format
+- Paginate through parquet file
+- Inspect the parquet schema
+- Open multiple files simultanuously
+- Inspect complex objects by clicking on a table cell
 
 
 ## Parquet backend
