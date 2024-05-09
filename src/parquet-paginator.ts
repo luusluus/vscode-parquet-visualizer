@@ -47,7 +47,7 @@ export class ParquetPaginator {
     const subTable = this.table.slice(startIndex, endIndex);
     
     const rows = subTable.toArray().map(obj => {
-      const newObj = {};
+      const newObj : { [key: string]: any } = {};
       for (const [key, value] of Object.entries(obj)) {
         newObj[key] = String(value); // Convert value to string
       }
@@ -59,7 +59,7 @@ export class ParquetPaginator {
 
   public async getAllRows() {
     return this.table.toArray().map(obj => {
-      const newObj = {};
+      const newObj: { [key: string]: any } = {};
       for (const [key, value] of Object.entries(obj)) {
         newObj[key] = String(value); // Convert value to string
       }
