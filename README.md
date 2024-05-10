@@ -1,6 +1,8 @@
 # parquet-visualizer
 Explore parquet files visually with a table paginator.
 
+![visualize](media/visualize.gif)
+
 ## Features
 - Visualizes the binary parquet file in readable table format
 - Paginate through parquet file
