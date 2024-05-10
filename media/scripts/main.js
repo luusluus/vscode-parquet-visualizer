@@ -8,7 +8,6 @@
     let tableBuilt = false;
 
     let currentPage = 1;
-    let rowCount = 1;
     let amountOfPages = 0;
     let startingRow = 0;
 
@@ -343,7 +342,7 @@
     
         const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector('#dropdown-page-size'));
 
-        if (rowCount > 10000) {
+        if (rowCount >= 10000) {
             // https://stackoverflow.com/questions/3364493/how-do-i-clear-all-options-in-a-dropdown-box
             var i, L = numRecordsDropdown.options.length - 1;
             for(i = L; i >= 0; i--) {
