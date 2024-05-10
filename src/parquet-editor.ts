@@ -121,6 +121,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       // Check if value is 'All'
       if (isNaN(+(data.newPageSize))) {
         this.setPageSize(this.getRowCount());
+        this.setPageCount(this.getRowCount());
         this.currentPage = 1;
         await this.emitFirstPage();
         return;
