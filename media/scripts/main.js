@@ -8,6 +8,7 @@
     let tableBuilt = false;
 
     let currentPage = 1;
+    let rowCount = 1;
     let amountOfPages = 0;
     let startingRow = 0;
 
@@ -127,7 +128,7 @@
         table.on("tableBuilt", () => {
             // console.log("tableBuilt");
             tableBuilt = true;
-            initializeFooter(amountOfPages);
+            initializeFooter(rowCount);
             updateNavigationNumberButtons(currentPage, amountOfPages);
             updatePageCounterState(currentPage, amountOfPages);
             updateNavigationButtonsState(currentPage, amountOfPages);
