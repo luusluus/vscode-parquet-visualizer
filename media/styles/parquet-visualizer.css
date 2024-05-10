@@ -47,6 +47,10 @@ html, body {
     color: #d4d4d4;
 }
 
+#table .active {
+    font-weight: bold;
+}
+
 #schema .schema-row {
     display: flex;
     justify-content: left; /* Spaces out the children evenly */
