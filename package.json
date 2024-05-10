@@ -19,7 +19,7 @@
     "url": "https://github.com/luusluus"
   },
   "license": "MIT",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "engines": {
     "vscode": "^1.74.0",
     "node": ">18.0.0"
