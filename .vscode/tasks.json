@@ -5,11 +5,11 @@
 	"tasks": [
 		{
 			"type": "npm",
-			"script": "watch",
-			"problemMatcher": "$tsc-watch",
-			"isBackground": true,
+			"script": "build",
+			"problemMatcher": [],
+			"label": "npm: build",
 			"presentation": {
-				"reveal": "never"
+				"clear": true
 			},
 			"group": {
 				"kind": "build",

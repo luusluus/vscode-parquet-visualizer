@@ -1,6 +1,10 @@
 {
 	"include": [
-		"src/**/*.ts"
+		"src/**/*.ts",
+		"./package.json"
+	],
+	"exclude": [
+		"node_modules",
 	],
 	"compilerOptions": {
 		"module": "commonjs",
@@ -11,8 +15,6 @@
 			"DOM"
 		],
 		"sourceMap": true,
-		"rootDir": "src",
-		"resolveJsonModule": true,
 		"strict": true,   /* enable all strict type-checking options */
 		"strictPropertyInitialization": false,
 		/* Additional Checks */
@@ -21,8 +23,5 @@
         "typeRoots": [
             "node_modules/@types"
         ]
-		// "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
-		// "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
-		// "noUnusedParameters": true,  /* Report errors on unused parameters. */
 	}
 }

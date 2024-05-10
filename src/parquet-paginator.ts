@@ -6,9 +6,7 @@
 import * as fs from 'fs';
 
 import {tableFromIPC, Table, Schema} from "apache-arrow";
-import {
-    readParquet,
-} from "parquet-wasm/node/arrow1";
+import { readParquet } from 'parquet-wasm/node/arrow1';
 
 
 export class ParquetPaginator {
@@ -27,6 +25,7 @@ export class ParquetPaginator {
   }
 
   public static async createAsync (filePath: string, pageSize: number = 10) {
+    console.log("createAsync");
     const byteArray = fs.readFileSync(filePath);
     const arrowUint8Array = readParquet(byteArray);
     const arrowTable = tableFromIPC(arrowUint8Array.intoIPCStream());
