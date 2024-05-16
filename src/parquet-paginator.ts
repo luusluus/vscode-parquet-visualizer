@@ -4,33 +4,53 @@
 // import * as readline from 'readline/promises';
 
 import * as fs from 'fs';
+const { File } = require('buffer'); 
 
-import {tableFromIPC, Table, Schema} from "apache-arrow";
-import { readParquet } from 'parquet-wasm/node/arrow1';
-
+import { tableFromIPC, Table, Schema } from "apache-arrow";
+import { ParquetFile, ParquetMetaData } from 'parquet-wasm';
 
 export class ParquetPaginator {
   private table: Table<any>;
+  private parquetFile: ParquetFile;
+  private metaData: ParquetMetaData;
   private pageSize: number;
   private rowCount: number;
   private pageCount: number;
   private schema: Schema;
 
-  private constructor(table: Table<any>, pageSize: number) {
+  private constructor(
+    parquetFile: ParquetFile,
+    table: Table<any>, 
+    pageSize: number
+  ) {
+    this.parquetFile = parquetFile;
     this.table = table;
     this.schema = table.schema;
-    this.rowCount = this.table.numRows;
+    this.metaData = this.parquetFile.metadata();
+    this.rowCount = this.metaData.fileMetadata().numRows();
     this.pageSize = pageSize; // This is the amount of rows in a page.
     this.setPageCount(pageSize); // This is the amount of pages
   }
 
   public static async createAsync (filePath: string, pageSize: number = 10) {
-    console.log("createAsync");
-    const byteArray = fs.readFileSync(filePath);
-    const arrowUint8Array = readParquet(byteArray);
-    const arrowTable = tableFromIPC(arrowUint8Array.intoIPCStream());
+    const buffer = fs.readFileSync(filePath);
+    const file = new File([buffer], "fileName", {
+      type: "application/vnd.apache.parquet",
+    });
 
-    return new ParquetPaginator(arrowTable, pageSize);
+    const parquetFile = await ParquetFile.fromFile(file);
+
+    const stream = (await parquetFile.read({
+      offset: 0,
+      limit: 100
+    })).intoIPCStream();
+    const table = tableFromIPC(stream);
+
+    return new ParquetPaginator(
+      parquetFile, 
+      table, 
+      pageSize
+    );
   }
 
   // TODO: return a complex type called Page, with a method to get only values, not keys
@@ -40,12 +60,19 @@ export class ParquetPaginator {
     }
     // read all records from the file and print them
     
-    let startIndex = (pageNumber - 1) * this.pageSize;
-    let endIndex = Math.min(startIndex + this.pageSize - 1, this.rowCount);
-
-    const subTable = this.table.slice(startIndex, endIndex);
+    const startIndex = (pageNumber - 1) * this.pageSize;
+    const endIndex = Math.min(startIndex + this.pageSize - 1, this.rowCount);
+    const limit = endIndex - startIndex;
     
-    const rows = subTable.toArray().map(obj => {
+    const stream = (await this.parquetFile.read(
+      {
+        offset: startIndex,
+        limit: limit,
+      }
+    )).intoIPCStream();
+    this.table = tableFromIPC(stream);
+    
+    const rows = this.table.toArray().map(obj => {
       const newObj : { [key: string]: any } = {};
       for (const [key, value] of Object.entries(obj)) {
         newObj[key] = String(value); // Convert value to string
