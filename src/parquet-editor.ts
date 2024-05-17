@@ -176,6 +176,10 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       return this.paginator.getSchema();
     }
 
+    getMetaData(){
+      return this.paginator.getMetaData();
+    }
+
     setPageSize(value: number){
       this.paginator.setPageSize(value);
     }
@@ -289,6 +293,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         const data = {
           headers: document.paginator.getFields(),
           schema: document.getSchema(),
+          metaData: document.getMetaData(),
           values: values,
           rawData: values,
           rowCount: document.getRowCount(),
