@@ -13,9 +13,11 @@
     let startingRow = 0;
 
     const schemaContainer = /** @type {HTMLElement} */ (document.querySelector('#schema'));
+    const metaDataContainer = /** @type {HTMLElement} */ (document.querySelector('#metadata'));
     
     document.getElementById("data-tab").addEventListener("click", handleTabChange);
     document.getElementById("schema-tab").addEventListener("click", handleTabChange);
+    document.getElementById("metadata-tab").addEventListener("click", handleTabChange);
 
 
     function handleTabChange(/** @type {any} */ e) {
@@ -38,32 +40,49 @@
         const id = e.currentTarget.id;
         if (id === 'data-tab') {
             document.getElementById('data-tab-panel').style.display = "block";
-        } else {
+        } else if (id === 'schema-tab'){
             document.getElementById('schema-tab-panel').style.display = "block";
+        } else {
+            document.getElementById('metadata-tab-panel').style.display = "block";
         }
         e.currentTarget.checked = true;
     }
 
+    function createKeyValueRow(/** @type {string} */  key, /** @type {string} */  value) {
+        const keyValueRow = document.createElement("div");
+        keyValueRow.className = 'schema-row';
+        
+        const name = document.createElement("strong");
+        name.innerText = key
+        keyValueRow.appendChild(name);
+
+        const separator = document.createElement("p");
+        separator.innerHTML = ':&nbsp';
+        keyValueRow.appendChild(separator);
+
+        const paragraph = document.createElement("p");
+        paragraph.innerText = value
+        keyValueRow.appendChild(paragraph);
+
+        return keyValueRow;
+    }
+
     function initSchema (/** @type {any} */  data) {
         for (var i = 0; i < data.length; ++i) {
-            const schemaRow = document.createElement("div");
-            schemaRow.className = 'schema-row';
-            
-            const name = document.createElement("strong");
-            name.innerText = data[i].name; 
-            schemaRow.appendChild(name);
-    
-            const separator = document.createElement("p");
-            separator.innerHTML = ':&nbsp';
-            schemaRow.appendChild(separator);
-
-            const type = document.createElement("p");
-            type.innerText = data[i].type; 
-            schemaRow.appendChild(type);
-
+            const schemaRow = createKeyValueRow(data[i].name, data[i].type);
             schemaContainer.appendChild(schemaRow);
         }
+    }
 
+    function initMetaData (/** @type {any} */  data) {
+        const createdByRow = createKeyValueRow("Created By", data['createdBy']);
+        metaDataContainer.appendChild(createdByRow);
+
+        const versionRow = createKeyValueRow("Version", data['version']);
+        metaDataContainer.appendChild(versionRow);
+
+        const numRowsRow = createKeyValueRow("Number of Rows", data['numRows']);
+        metaDataContainer.appendChild(numRowsRow);
     }
 
     function initTable(/** @type {any} */ data) {
@@ -390,6 +409,7 @@
                     rowCount = tableData.rowCount;
                     initTable(tableData);
                     initSchema(tableData.schema);
+                    initMetaData(tableData.metaData);
 
                     currentPage = tableData.currentPage;
                     amountOfPages = tableData.pageCount;

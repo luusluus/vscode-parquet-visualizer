@@ -21,6 +21,10 @@ html, body {
     padding-left:20px;
 }
 
+#metadata {
+    padding-left:20px;
+}
+
 #table .tabulator-header .tabulator-col {
     background-color:#080808;
     color: #d4d4d4;
@@ -52,6 +56,11 @@ html, body {
 }
 
 #schema .schema-row {
+    display: flex;
+    justify-content: left; /* Spaces out the children evenly */
+}
+
+#metadata .schema-row {
     display: flex;
     justify-content: left; /* Spaces out the children evenly */
 }
