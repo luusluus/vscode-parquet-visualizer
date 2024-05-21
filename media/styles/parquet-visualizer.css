@@ -21,6 +21,10 @@ html, body {
     padding-left:20px;
 }
 
+#metadata {
+    padding-left:20px;
+}
+
 #table .tabulator-header .tabulator-col {
     background-color:#080808;
     color: #d4d4d4;

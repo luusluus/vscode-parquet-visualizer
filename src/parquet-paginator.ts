@@ -16,7 +16,7 @@ export class ParquetPaginator {
   private pageSize: number;
   private rowCount: number;
   private pageCount: number;
-  private schema: Schema;
+  private schema: Schema<any>;
 
   private constructor(
     parquetFile: ParquetFile,
@@ -122,6 +122,15 @@ export class ParquetPaginator {
       };
     });
     return headers;
+  }
+
+  public getMetaData() {
+    const fileMetaData = this.metaData.fileMetadata();
+    return {
+      'createdBy': fileMetaData.createdBy(),
+      'version': fileMetaData.version(),
+      'numRows': fileMetaData.numRows()
+    }
   }
 
   public getPageSize() {
