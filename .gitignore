@@ -6,4 +6,5 @@ node_modules
 .idea
 
 very_large.parquet
+very_large_2.parquet
 binary_string.parquet

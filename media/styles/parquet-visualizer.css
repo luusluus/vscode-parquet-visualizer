@@ -17,36 +17,32 @@ html, body {
     height: 100%; /* Sets the height of the table and schema to be 100% of their parent */
 }
 
-#schema {
-    padding-left:20px;
-}
-
 #metadata {
     padding-left:20px;
 }
 
-#table .tabulator-header .tabulator-col {
+#table .tabulator-header .tabulator-col, #schema .tabulator-header .tabulator-col{
     background-color:#080808;
     color: #d4d4d4;
 }
 
-#table .tabulator-row {
+#table .tabulator-row, #schema .tabulator-row{
     color: #d4d4d4;
 }
 
-#table .tabulator-row-odd {
+#table .tabulator-row-odd, #schema .tabulator-row-odd{
     background-color: #151515;
 }
-#table .tabulator-row-even {
+#table .tabulator-row-even, #schema .tabulator-row-even {
     background-color: #202020;
 }
 
-#table .tabulator-footer * {
+#table .tabulator-footer *, #schema .tabulator-footer * {
     background-color: #101010;
     color: #d4d4d4;
 }
 
-#table .tabulator-popup {
+#table .tabulator-popup, #schema .tabulator-popup{
     background-color: #101010;
     color: #d4d4d4;
 }

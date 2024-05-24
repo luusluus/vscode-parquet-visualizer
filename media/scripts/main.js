@@ -4,7 +4,8 @@
 (function () {
     const vscode = acquireVsCodeApi();
 
-    let table;
+    let dataTable;
+    let schemaTable;
     let tableBuilt = false;
 
     let currentPage = 1;
@@ -12,7 +13,6 @@
     let amountOfPages = 0;
     let startingRow = 0;
 
-    const schemaContainer = /** @type {HTMLElement} */ (document.querySelector('#schema'));
     const metaDataContainer = /** @type {HTMLElement} */ (document.querySelector('#metadata'));
     
     document.getElementById("data-tab").addEventListener("click", handleTabChange);
@@ -48,6 +48,48 @@
         e.currentTarget.checked = true;
     }
 
+    function onCellClick(e, cell) {
+        const val = cell.getValue();
+
+        let popupValue = '';
+        try{
+            const obj = JSON.parse(val);
+            popupValue = `<pre>${JSON.stringify(obj, undefined, 4)}</pre>`;
+        } catch(e) {
+            popupValue = val;
+        }
+
+        cell.popup(popupValue, "center");
+    }
+
+    function onPopupOpened(component) {
+        const element = document.getElementsByClassName("tabulator-popup tabulator-popup-container")[0];
+            
+        let innerHTML = element.innerHTML;
+
+        let style = element.style;
+        // Check if html contains JSON. Make it a little bit wider and horizontally scrollable
+        if (innerHTML.includes('pre')) {
+            style.width = '400px';
+            style.overflowX  = 'auto';
+        }
+        style.maxHeight = '400px';
+        if (style.top[0] === '-') { // negative top
+            style.top = '0px';
+        }
+        style.backgroundColor = '#101010';
+        style.color = '#d4d4d4';
+
+        const container = document.getElementById("container");
+        const parentRect = container.getBoundingClientRect();
+        const childRect = element.getBoundingClientRect();
+
+        if (childRect.right > parentRect.right) {
+            const difference = childRect.right - parentRect.right;
+            style.left = `${childRect.left - difference}px`;
+        }
+    }
+
     function createKeyValueRow(/** @type {string} */  key, /** @type {string} */  value) {
         const keyValueRow = document.createElement("div");
         keyValueRow.className = 'schema-row';
@@ -67,12 +109,6 @@
         return keyValueRow;
     }
 
-    function initSchema (/** @type {any} */  data) {
-        for (var i = 0; i < data.length; ++i) {
-            const schemaRow = createKeyValueRow(data[i].name, data[i].type);
-            schemaContainer.appendChild(schemaRow);
-        }
-    }
 
     function initMetaData (/** @type {any} */  data) {
         const createdByRow = createKeyValueRow("Created By", data['createdBy']);
@@ -85,26 +121,45 @@
         metaDataContainer.appendChild(numRowsRow);
     }
 
+    function initSchema (/** @type {any} */  data) {
+        const columns = [
+            {title:"#", field:"index", width: 150},
+            {title:"Column name", field:"name", width: 150},
+            {
+                title:"Data type", 
+                field:"type", 
+                width: 150,
+                cellClick:onCellClick
+            },
+            {title:"Nullable", field:"nullable", width: 150},
+            {title:"Metadata", field:"metadata", width: 150},
+        ];
+        schemaTable = new Tabulator("#schema", {
+            columnDefaults:{
+                width:150, //set the width on all columns to 200px
+            },
+            placeholder:"No Data Available", //display message to user on empty table
+            data: data,
+            columns: columns,
+            pagination: true,
+            paginationSize: 20,
+            paginationSizeSelector: [20, 50, 100],
+            paginationCounter: "pages",
+        });
+
+        schemaTable.on("popupOpened", onPopupOpened);
+
+    }
+
     function initTable(/** @type {any} */ data) {
         const columns = data.headers.map(c => (
             {
                 ...c, 
-                cellClick:function(e, cell){
-                    const val = cell.getValue();
-
-                    let popupValue = '';
-                    try{
-                        const obj = JSON.parse(val);
-                        popupValue = `<pre>${JSON.stringify(obj, undefined, 4)}</pre>`;
-                    } catch(e) {
-                        popupValue = val;
-                    }
-
-                    cell.popup(popupValue, "center");
-                },
+                cellClick:onCellClick
             }
         ));
-        table = new Tabulator("#table", {
+
+        dataTable = new Tabulator("#table", {
             columnDefaults:{
                 width:150, //set the width on all columns to 200px
             },
@@ -144,7 +199,7 @@
             pagination: false,
         });
 
-        table.on("tableBuilt", () => {
+        dataTable.on("tableBuilt", () => {
             // console.log("tableBuilt");
             tableBuilt = true;
             initializeFooter(rowCount);
@@ -153,34 +208,7 @@
             updateNavigationButtonsState(currentPage, amountOfPages);
         });
 
-        table.on("popupOpened", function(component){
-            const element = document.getElementsByClassName("tabulator-popup tabulator-popup-container")[0];
-            
-            let innerHTML = element.innerHTML;
-
-            let style = element.style;
-            // Check if html contains JSON. Make it a little bit wider and horizontally scrollable
-            if (innerHTML.includes('pre')) {
-                style.width = '400px';
-                style.overflowX  = 'auto';
-            }
-            style.maxHeight = '400px';
-            if (style.top[0] === '-') { // negative top
-                style.top = '0px';
-            }
-            style.backgroundColor = '#101010';
-            style.color = '#d4d4d4';
-
-            const container = document.getElementById("container");
-            const parentRect = container.getBoundingClientRect();
-            const childRect = element.getBoundingClientRect();
-
-            if (childRect.right > parentRect.right) {
-                const difference = childRect.right - parentRect.right;
-                style.left = `${childRect.left - difference}px`;
-            }
-
-        });
+        dataTable.on("popupOpened", onPopupOpened);
 
         // const filters = columns = columns.map(c => ({
         //     field: c.field,
@@ -194,7 +222,7 @@
     function updateTable(/** @type {any} */ data) {
         // console.log("updateTable");
         if (tableBuilt){
-            table.replaceData(data);
+            dataTable.replaceData(data);
         }
     }
 
