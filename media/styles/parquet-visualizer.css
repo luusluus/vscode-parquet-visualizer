@@ -17,11 +17,11 @@ html, body {
     height: 100%; /* Sets the height of the table and schema to be 100% of their parent */
 }
 
-/* #schema {
+#metadata {
     padding-left:20px;
-} */
+}
 
-#table .tabulator-header .tabulator-col, #schema .tabulator-header .tabulator-col {
+#table .tabulator-header .tabulator-col, #schema .tabulator-header .tabulator-col{
     background-color:#080808;
     color: #d4d4d4;
 }
@@ -54,4 +54,17 @@ html, body {
 #schema .schema-row {
     display: flex;
     justify-content: left; /* Spaces out the children evenly */
+}
+
+#metadata .schema-row {
+    display: flex;
+    justify-content: left; /* Spaces out the children evenly */
+}
+
+#table ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(172, 172, 172, 1)
+}
+
+#table ::-webkit-scrollbar-thumb {
+    background-color: rgba(60, 60, 60, 0.4);
 }

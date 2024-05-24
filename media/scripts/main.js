@@ -12,11 +12,10 @@
     let rowCount = 1;
     let amountOfPages = 0;
     let startingRow = 0;
-
-    // const schemaContainer = /** @type {HTMLElement} */ (document.querySelector('#schema'));
     
     document.getElementById("data-tab").addEventListener("click", handleTabChange);
     document.getElementById("schema-tab").addEventListener("click", handleTabChange);
+    document.getElementById("metadata-tab").addEventListener("click", handleTabChange);
 
 
     function handleTabChange(/** @type {any} */ e) {
@@ -39,8 +38,10 @@
         const id = e.currentTarget.id;
         if (id === 'data-tab') {
             document.getElementById('data-tab-panel').style.display = "block";
-        } else {
+        } else if (id === 'schema-tab'){
             document.getElementById('schema-tab-panel').style.display = "block";
+        } else {
+            document.getElementById('metadata-tab-panel').style.display = "block";
         }
         e.currentTarget.checked = true;
     }
@@ -85,7 +86,17 @@
             const difference = childRect.right - parentRect.right;
             style.left = `${childRect.left - difference}px`;
         }
+    }
 
+    function initMetaData (/** @type {any} */  data) {
+        const createdByRow = createKeyValueRow("Created By", data['createdBy']);
+        metaDataContainer.appendChild(createdByRow);
+
+        const versionRow = createKeyValueRow("Version", data['version']);
+        metaDataContainer.appendChild(versionRow);
+
+        const numRowsRow = createKeyValueRow("Number of Rows", data['numRows']);
+        metaDataContainer.appendChild(numRowsRow);
     }
 
     function initSchema (/** @type {any} */  data) {
@@ -404,6 +415,7 @@
                     rowCount = tableData.rowCount;
                     initTable(tableData);
                     initSchema(tableData.schema);
+                    initMetaData(tableData.metaData);
 
                     currentPage = tableData.currentPage;
                     amountOfPages = tableData.pageCount;
