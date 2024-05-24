@@ -12,6 +12,8 @@
     let rowCount = 1;
     let amountOfPages = 0;
     let startingRow = 0;
+
+    const metaDataContainer = /** @type {HTMLElement} */ (document.querySelector('#metadata'));
     
     document.getElementById("data-tab").addEventListener("click", handleTabChange);
     document.getElementById("schema-tab").addEventListener("click", handleTabChange);
@@ -87,6 +89,26 @@
             style.left = `${childRect.left - difference}px`;
         }
     }
+
+    function createKeyValueRow(/** @type {string} */  key, /** @type {string} */  value) {
+        const keyValueRow = document.createElement("div");
+        keyValueRow.className = 'schema-row';
+        
+        const name = document.createElement("strong");
+        name.innerText = key
+        keyValueRow.appendChild(name);
+
+        const separator = document.createElement("p");
+        separator.innerHTML = ':&nbsp';
+        keyValueRow.appendChild(separator);
+
+        const paragraph = document.createElement("p");
+        paragraph.innerText = value
+        keyValueRow.appendChild(paragraph);
+
+        return keyValueRow;
+    }
+
 
     function initMetaData (/** @type {any} */  data) {
         const createdByRow = createKeyValueRow("Created By", data['createdBy']);
