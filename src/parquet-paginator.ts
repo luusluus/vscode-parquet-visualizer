@@ -6,7 +6,7 @@
 import * as fs from 'fs';
 const { File } = require('buffer'); 
 
-import { tableFromIPC, Table, Schema } from "apache-arrow";
+import { tableFromIPC, Table, Schema, Field, Type } from "apache-arrow";
 import { ParquetFile, ParquetMetaData } from 'parquet-wasm';
 
 export class ParquetPaginator {
@@ -93,23 +93,57 @@ export class ParquetPaginator {
     });
   }
 
+  private parseSchema(field: Field) {
+    if (field.typeId === Type.List) {
+      let result: any = [];
+      
+      if (field.type.children.length > 0) {
+        result =  [this.parseSchema(field.type.children[0])]
+        return result;
+      }
+      return result;
+    } 
+    if (field.typeId === Type.Struct) {
+      const result: any = {};
+      for (const child of field.type.children) {
+        result[child.name] = this.parseSchema(child);
+      }
+      return result;
+      
+    }
+
+    let type = field.type.toString();
+    if (type.includes('Utf8')) {
+      type = type.replace(/Utf8/g, 'String');
+    } else if (type.includes('LargeUtf8')) {
+      type = type.replace(/LargeUtf8/g, 'LargeString');
+    }
+
+    return type;
+  }
+
   public getSchema() {
     // https://arrow.apache.org/docs/python/api/datatypes.html
 
-    return this.schema.fields.map((f) => {
-      const name = f.name;
-      let type = f.type.toString();
-      if (type.includes('Utf8')) {
-        type = type.replace(/Utf8/g, 'String');
-      } else if (type.includes('LargeUtf8')) {
-        type = type.replace(/LargeUtf8/g, 'LargeString');
+    const parsedSchema = this.schema.fields.map((f, index) => {
+      let parsedType = this.parseSchema(f);
+
+      if (typeof parsedType === 'object'){
+        parsedType = JSON.stringify(parsedType);
       }
 
+      if(f.metadata.size > 0) {
+        console.log(f.metadata);
+      }
       return {
-        'name': name,
-        'type': type
+        'index': index + 1,
+        'name': f.name,
+        'type': parsedType,
+        'nullable': f.nullable,
+        'metadata': JSON.stringify(f.metadata)
       };
     });
+    return parsedSchema;
     
   }
 
