@@ -6,7 +6,8 @@ Explore parquet files visually with a table paginator.
 ## Features
 - Visualizes the binary parquet file in readable table format
 - Paginate through parquet file
-- Inspect the parquet schema
+- Inspect the parquet file's schema
+- Inspect the parquet file's metadata
 - Open multiple files simultanuously
 - Inspect complex objects by clicking on a table cell
 
