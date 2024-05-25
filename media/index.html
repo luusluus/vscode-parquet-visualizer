@@ -9,13 +9,14 @@
     and only allow scripts that have a specific nonce.
     -->
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; img-src {{cspSource}}; style-src {{cspSource}}; script-src 'nonce-{{nonce}}';">
+        content="default-src 'none'; font-src {{cspSource}}; img-src {{cspSource}}; style-src {{cspSource}}; script-src 'nonce-{{nonce}}';">
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link href="{{styleResetUri}}" rel="stylesheet" />
     <link href="{{styleMainUri}}" rel="stylesheet" />
     <link href="{{styleTabulatorUri}}" rel="stylesheet" />
+    <link href="{{styleFontAwesomeUri}}" rel="stylesheet" />
     <link href="{{styleTabsUri}}" rel="stylesheet" />
 
     <title>Parquet Visualizer</title>
