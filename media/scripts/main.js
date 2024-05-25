@@ -62,12 +62,21 @@
         cell.popup(popupValue, "center");
     }
 
+    function onMenuOpened(component) {
+        const element = document.getElementsByClassName("tabulator-menu tabulator-popup-container")[0];
+        let style = element.style;
+
+        style.top = '30px';
+        style.height = '200px';
+        style.overflowX  = 'auto';
+        style.overflowY  = 'auto';
+    }
+
     function onPopupOpened(component) {
         const element = document.getElementsByClassName("tabulator-popup tabulator-popup-container")[0];
-            
         let innerHTML = element.innerHTML;
-
         let style = element.style;
+
         // Check if html contains JSON. Make it a little bit wider and horizontally scrollable
         if (innerHTML.includes('pre')) {
             style.width = '400px';
@@ -87,7 +96,8 @@
         if (childRect.right > parentRect.right) {
             const difference = childRect.right - parentRect.right;
             style.left = `${childRect.left - difference}px`;
-        }
+        } 
+        // NOTE: What if child.left < parent. left?
     }
 
     function createKeyValueRow(/** @type {string} */  key, /** @type {string} */  value) {
@@ -151,11 +161,68 @@
 
     }
 
+    var headerMenu = function(){
+        var menu = [];
+        var columns = this.getColumns();
+        
+        function createIcon(isVisible){
+            let icon = document.createElement("i");
+            icon.classList.add("fas");
+            icon.classList.add(isVisible ? "fa-check-square" : "fa-square");
+            return icon;
+        }
+
+        function createLabel(columnTitle, icon){
+            //build label
+            let label = document.createElement("span");
+            let title = document.createElement("span");
+    
+            title.textContent = " " + columnTitle;
+    
+            label.appendChild(icon);
+            label.appendChild(title);
+            return label;
+        }
+
+        for(let column of columns){
+            //create checkbox element using font awesome icons
+            const columnTitle = column.getDefinition().title;
+            let icon = createIcon(column.isVisible());
+            let label = createLabel(
+                columnTitle,
+                icon
+            );
+
+            //create menu item
+            menu.push({
+                label:label,
+                action:function(e){
+                    //prevent menu closing
+                    e.stopPropagation();
+    
+                    //toggle current column visibility
+                    column.toggle();
+    
+                    //change menu item icon
+                    if(column.isVisible()){
+                        icon.classList.remove("fa-square");
+                        icon.classList.add("fa-check-square");
+                    }else{
+                        icon.classList.remove("fa-check-square");
+                        icon.classList.add("fa-square");
+                    }
+                }
+            });
+        }
+        return menu;
+    };
+
     function initTable(/** @type {any} */ data) {
-        const columns = data.headers.map(c => (
+        let columns = data.headers.map(c => (
             {
                 ...c, 
-                cellClick:onCellClick
+                cellClick:onCellClick,
+                headerMenu: headerMenu
             }
         ));
 
@@ -171,8 +238,6 @@
                             <span>of</span>
                             <span id="page-count"> ${data.pageCount} </span>
                             <span>pages</span>
-                            <span> | </span>
-                            <span> ${data.rowCount} records </span>
 
                         </span>
                     </span>
@@ -209,6 +274,7 @@
         });
 
         dataTable.on("popupOpened", onPopupOpened);
+        dataTable.on("menuOpened", onMenuOpened);
 
         // const filters = columns = columns.map(c => ({
         //     field: c.field,
@@ -309,7 +375,7 @@
             button.addEventListener('click', (e) => {
                 vscode.postMessage({
                     type: 'currentPage',
-                    pageNumber: Number(e.target.innerHTML)
+                    pageNumber: Number(e.target.innerHTML),
                 });
             });
 
@@ -366,25 +432,25 @@
 
         nextButton.addEventListener('click', () => {
             vscode.postMessage({
-                type: 'nextPage'
+                type: 'nextPage',
             });
         });
     
         prevButton.addEventListener('click', () => {
             vscode.postMessage({
-                type: 'prevPage'
+                type: 'prevPage',
             });
         });
     
         firstButton.addEventListener('click', () => {
             vscode.postMessage({
-                type: 'firstPage'
+                type: 'firstPage',
             });
         });
     
         lastButton.addEventListener('click', () => {
             vscode.postMessage({
-                type: 'lastPage'
+                type: 'lastPage',
             });
         });
     
