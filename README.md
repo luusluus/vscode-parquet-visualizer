@@ -10,6 +10,7 @@ Explore parquet files visually with a table paginator.
 - Inspect the parquet file's metadata
 - Open multiple files simultanuously
 - Inspect complex objects by clicking on a table cell
+- Select columns to visualize in table
 
 
 ## Parquet backend
