@@ -83,16 +83,6 @@ export class ParquetPaginator {
     return rows;
   }
 
-  public async getAllRows() {
-    return this.table.toArray().map(obj => {
-      const newObj: { [key: string]: any } = {};
-      for (const [key, value] of Object.entries(obj)) {
-        newObj[key] = String(value); // Convert value to string
-      }
-      return newObj;
-    });
-  }
-
   private parseSchema(field: Field) {
     if (field.typeId === Type.List) {
       let result: any = [];
@@ -185,6 +175,50 @@ export class ParquetPaginator {
 
   public setPageCount(pageSize: number) {
     this.pageCount = Math.ceil(this.rowCount / pageSize); 
+  }
+
+  public async search(query: string){
+
+    async function* readableStreamAsyncIterator<T>(stream: ReadableStream<T>): AsyncIterableIterator<T> {
+      const reader = stream.getReader();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            break;
+          }
+          yield value;
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    }
+
+
+    const stream = await this.parquetFile.stream({
+      concurrency: 10
+    });
+
+    const start = Math.floor(Date.now() / 1000);
+    let result = [];
+    for await (const chunk of readableStreamAsyncIterator(stream)){
+      const ipcStream = chunk.intoIPCStream();
+      const arrowTable = tableFromIPC(ipcStream);
+
+      const array = arrowTable.toArray();
+      const subResult = array.filter(obj => 
+        Object.values(obj)
+        .flatMap(v => String(v))
+        .some(v => v.includes(query))
+      );
+
+      result.push(...subResult);
+    }
+
+    const end = Math.floor(Date.now() / 1000);
+    console.log(`${end-start} sec`);
+    return result;
+    
   }
 
 }

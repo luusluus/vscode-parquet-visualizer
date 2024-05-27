@@ -152,12 +152,13 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       return this.paginator.getPage(this.currentPage);
     }
 
-    async getAllRows() {
-      return this.paginator.getAllRows();
-    }
-
     async getPageByNumber(pageNumber: number) {
       return await this.paginator.getPage(pageNumber);
+    }
+
+    async search(query: string) {
+      console.log(`search: ${query}`);
+      return await this.paginator.search(query);
     }
 
     getPageSize() {
@@ -352,6 +353,10 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         }
         case 'changePageSize': {
           await document.changePageSize(message.data);
+          break;
+        }
+        case 'search': {
+          await document.paginator.search(message.query);
           break;
         }
       }

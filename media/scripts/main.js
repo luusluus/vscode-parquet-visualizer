@@ -19,6 +19,14 @@
     document.getElementById("schema-tab").addEventListener("click", handleTabChange);
     document.getElementById("metadata-tab").addEventListener("click", handleTabChange);
 
+    document.getElementById("filter-value").addEventListener("change", handleSearchInput);
+
+    function handleSearchInput(/** @type {any} */ e) {
+        vscode.postMessage({
+            type: 'search',
+            query: e.target.value,
+        });
+    }
 
     function handleTabChange(/** @type {any} */ e) {
         var i, tabcontent, tablinks;
@@ -238,7 +246,6 @@
                             <span>of</span>
                             <span id="page-count"> ${data.pageCount} </span>
                             <span>pages</span>
-
                         </span>
                     </span>
                     <span class="tabulator-paginator">
