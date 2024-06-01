@@ -6,12 +6,16 @@
 import * as fs from 'fs';
 const { File } = require('buffer'); 
 
+import { ParquetDatabase } from './parquet-database';
+
 import { tableFromIPC, Table, Schema, Field, Type } from "apache-arrow";
 import { ParquetFile, ParquetMetaData } from 'parquet-wasm';
 
+import { convertToTabulatorData } from './util';
+
 export class ParquetPaginator {
   private table: Table<any>;
-  private parquetFile: ParquetFile;
+  public parquetFile: ParquetFile;
   private metaData: ParquetMetaData;
   private pageSize: number;
   private rowCount: number;
@@ -46,6 +50,14 @@ export class ParquetPaginator {
     })).intoIPCStream();
     const table = tableFromIPC(stream);
 
+    const db = await ParquetDatabase.createAsync();
+    const query = db.buildCreateTableStatement("streamed", table.schema);
+    await db.query(query);
+    await db.initialize(parquetFile);
+
+    // const result = await db.query("select * from streamed limit 10;"); 
+    // console.log(result.toArray());
+
     return new ParquetPaginator(
       parquetFile, 
       table, 
@@ -71,26 +83,7 @@ export class ParquetPaginator {
       }
     )).intoIPCStream();
     this.table = tableFromIPC(stream);
-    
-    const rows = this.table.toArray().map(obj => {
-      const newObj : { [key: string]: any } = {};
-      for (const [key, value] of Object.entries(obj)) {
-        newObj[key] = String(value); // Convert value to string
-      }
-      return newObj;
-    });
-
-    return rows;
-  }
-
-  public async getAllRows() {
-    return this.table.toArray().map(obj => {
-      const newObj: { [key: string]: any } = {};
-      for (const [key, value] of Object.entries(obj)) {
-        newObj[key] = String(value); // Convert value to string
-      }
-      return newObj;
-    });
+    return convertToTabulatorData(this.table.toArray());
   }
 
   private parseSchema(field: Field) {
@@ -109,7 +102,6 @@ export class ParquetPaginator {
         result[child.name] = this.parseSchema(child);
       }
       return result;
-      
     }
 
     let type = field.type.toString();

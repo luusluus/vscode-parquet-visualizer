@@ -6,3 +6,13 @@ export function getNonce() {
 	}
 	return text;
 }
+
+export function convertToTabulatorData(array: any[]) {
+    return array.map(obj => {
+      const newObj : { [key: string]: any } = {};
+      for (const [key, value] of Object.entries(obj)) {
+        newObj[key] = String(value); // Convert value to string
+      }
+      return newObj;
+    });
+  }

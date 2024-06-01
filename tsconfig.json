@@ -7,12 +7,15 @@
 		"node_modules",
 	],
 	"compilerOptions": {
+		"types": [
+			"@types/emscripten"
+		  ],
 		"module": "commonjs",
 		"target": "es6",
 		"outDir": "dist",
 		"lib": [
 			"es6",
-			"DOM"
+			"DOM",
 		],
 		"sourceMap": true,
 		"strict": true,   /* enable all strict type-checking options */
@@ -20,8 +23,8 @@
 		/* Additional Checks */
 		"noUnusedLocals": true, /* Report errors on unused locals. */
         "esModuleInterop": true,
-        "typeRoots": [
-            "node_modules/@types"
-        ]
+        // "typeRoots": [
+        //     "node_modules/@types"
+        // ]
 	}
 }

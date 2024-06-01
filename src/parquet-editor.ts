@@ -5,28 +5,36 @@ import { getNonce } from './util';
 import { Disposable } from "./dispose";
 
 import { ParquetPaginator } from './parquet-paginator';
+import { ParquetDatabase } from './parquet-database';
+
 // import { getLogger } from './logger';
 
 
 class CustomParquetDocument extends Disposable implements vscode.CustomDocument {
     uri: vscode.Uri;
     paginator: ParquetPaginator;
+    db: ParquetDatabase;
     currentPage: number;
 
     static async create(
       uri: vscode.Uri
     ): Promise<CustomParquetDocument | PromiseLike<CustomParquetDocument>> {
       const paginator = await ParquetPaginator.createAsync(uri.fsPath);
-      return new CustomParquetDocument(uri, paginator);
+      const db = await ParquetDatabase.createAsync();
+
+      db.initialize(paginator.parquetFile)
+      return new CustomParquetDocument(uri, paginator, db);
     }
 
     private constructor(
       uri: vscode.Uri,
-      paginator: ParquetPaginator
+      paginator: ParquetPaginator,
+      db: ParquetDatabase
     ) {
       super();
       this.uri = uri;
       this.paginator = paginator;
+      this.db = db;
       this.currentPage = 1;
     }
 
@@ -152,10 +160,6 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       return this.paginator.getPage(this.currentPage);
     }
 
-    async getAllRows() {
-      return this.paginator.getAllRows();
-    }
-
     async getPageByNumber(pageNumber: number) {
       return await this.paginator.getPage(pageNumber);
     }
@@ -186,6 +190,10 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
 
     setPageCount(pageSize: number){
       this.paginator.setPageCount(pageSize);
+    }
+
+    async query(query: string){
+      return await this.db.query(query);
     }
   }
 
@@ -352,6 +360,10 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         }
         case 'changePageSize': {
           await document.changePageSize(message.data);
+          break;
+        }
+        case 'query': {
+          await document.query(message.data);
           break;
         }
       }
