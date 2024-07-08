@@ -6,17 +6,28 @@
 
     let dataTable;
     let schemaTable;
-    let tableBuilt = false;
+    let metadataTable;
+    let resultsTable;
 
-    let currentPage = 1;
-    let rowCount = 1;
-    let amountOfPages = 0;
-    let startingRow = 0;
+    let dataTableBuilt = false;
+    let queryTableBuilt = false;
 
-    const metaDataContainer = /** @type {HTMLElement} */ (document.querySelector('#metadata'));
+    let currentPageDataTab = 1;
+    let currentPageQueryTab = 1;
+    let amountOfPagesDataTab = 0;
+    let amountOfPagesQueryTab = 0;
     
+    let rowCountDataTab = 1;
+    let rowCountQueryTab = 0;
+
+    let pageSizeQueryTab = 10;
+
+    const requestSourceDataTab = 'dataTab';
+    const requestSourceResultTab = 'queryTab';
+
     document.getElementById("data-tab").addEventListener("click", handleTabChange);
     document.getElementById("schema-tab").addEventListener("click", handleTabChange);
+    document.getElementById("query-tab").addEventListener("click", handleTabChange);
     document.getElementById("metadata-tab").addEventListener("click", handleTabChange);
 
 
@@ -42,7 +53,10 @@
             document.getElementById('data-tab-panel').style.display = "block";
         } else if (id === 'schema-tab'){
             document.getElementById('schema-tab-panel').style.display = "block";
-        } else {
+        } else if (id === 'query-tab')  {
+            document.getElementById('query-tab-panel').style.display = "block";
+        }
+        else {
             document.getElementById('metadata-tab-panel').style.display = "block";
         }
         e.currentTarget.checked = true;
@@ -97,38 +111,184 @@
             const difference = childRect.right - parentRect.right;
             style.left = `${childRect.left - difference}px`;
         } 
-        // NOTE: What if child.left < parent. left?
+        if (childRect.left < 0){
+            style.left = `0px`;
+        }
+        // TODO: What if child.left < parent. left?
     }
 
-    function createKeyValueRow(/** @type {string} */  key, /** @type {string} */  value) {
-        const keyValueRow = document.createElement("div");
-        keyValueRow.className = 'schema-row';
+    function resetQueryControl(){
+        // console.log("resetQueryControl");
+        const runQueryButton = document.getElementById("run-query");
+        runQueryButton?.removeAttribute('disabled');
+        runQueryButton.innerText = 'Run';
+        resultsTable.clearAlert();
+    }
+
+    function initResultTable(/** @type {any} */ data, /** @type {any} */ headers) {
+        document.getElementById("query-results").innerHTML = `
+            <div class="tabulator">
+                <div class="tabulator-footer">
+                    <div class="tabulator-footer-contents">
+                        <span class="tabulator-page-counter">
+                            <span>
+                                <span><strong>Results</strong></span>
+                                <span id="query-count"></span>
+                            </span>
+                        </span>
+                        <span class="tabulator-paginator" id="pagination-${requestSourceResultTab}">
+                            <label>Page Size</label>
+                            <select class="tabulator-page-size" id="dropdown-page-size-${requestSourceResultTab}" aria-label="Page Size" title="Page Size">
+                                <option value="10">10</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="500">500</option>
+                            </select>
+                            <button class="tabulator-page" disabled id="btn-first-${requestSourceResultTab}" type="button" role="button" aria-label="First Page" title="First Page" data-page="first">First</button>
+                            <button class="tabulator-page" disabled id="btn-prev-${requestSourceResultTab}" type="button" role="button" aria-label="Prev Page" title="Prev Page" data-page="prev">Prev</button>
+                            <span class="tabulator-pages" id="tabulator-pages-${requestSourceResultTab}">
+                            </span>
+                            <button class="tabulator-page" disabled id="btn-next-${requestSourceResultTab}" type="button" role="button" aria-label="Next Page" title="Next Page" data-page="next">Next</button>
+                            <button class="tabulator-page" disabled id="btn-last-${requestSourceResultTab}" type="button" role="button" aria-label="Last Page" title="Last Page" data-page="last">Last</button>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <br>
+            <div id="table-${requestSourceResultTab}"></div>
+        `;
+
+        let columns = headers.map(c => (
+            {
+                ...c, 
+                cellClick:onCellClick,
+            }
+        ));
+
+        resultsTable = new Tabulator(`#table-${requestSourceResultTab}`, {
+            columnDefaults:{
+                width:150, //set the width on all columns to 200px
+            },
+            placeholder:"No results. Run a query to view results", //display message to user on empty table
+            data: data,
+            columns: columns,
+            paginationElement: document.getElementById(`pagination-${requestSourceResultTab}`),
+        });
+
+        resultsTable.on("popupOpened", onPopupOpened);
+
+        resultsTable.on("tableBuilt", function(data){
+            const resultsCountElement = document.getElementById("query-count");
+            resultsCountElement.innerText = `(${rowCountQueryTab})`;
+
+            resetQueryControl();
+            initializeFooter(rowCountQueryTab, requestSourceResultTab);
+        });
+    }
+
+    function getTextFromEditor(editor) {
+        var selectedText = editor.getSelectedText();
+        if (selectedText) {
+            return selectedText;
+        } else {
+            return editor.getValue();
+        }
+    }
+
+    function runQuery(editor) {
+        resultsTable.alert("Loading...");
+
+        const runQueryButton = document.getElementById("run-query");
+        runQueryButton.setAttribute('disabled', '');
+        runQueryButton.innerText = 'Running';
+
+        const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSourceResultTab}`));
+        const selectedIndex = numRecordsDropdown.selectedIndex;
+        const selectedOption = numRecordsDropdown.options[selectedIndex];
+
+        const query = getTextFromEditor(editor);
+        vscode.postMessage({
+            type: 'startQuery',
+            data: query,
+            pageSize: Number(selectedOption.innerText)
+        });
+    }
+
+    function initCodeEditor(isQueryable) {
+        const queryTabPanel = document.getElementById("query-tab-panel");
+        if (!isQueryable) {
+            const paragraph = document.createElement("p");
+            paragraph.innerText = "This parquet file with compression codec BROTLI does not have SQL support. Supported options are uncompressed, gzip, lz4_raw, snappy or zstd.";
+            queryTabPanel?.appendChild(paragraph);
+            return;
+        }
+
+        const editorElement = document.createElement("div");
+        editorElement.id = "editor";
+        queryTabPanel?.appendChild(editorElement);
+
+        const buttonContainer = document.createElement("div");
+        buttonContainer.id = "query-actions";
+        buttonContainer.classList.add("button-container");
+        queryTabPanel?.appendChild(buttonContainer);
+
         
-        const name = document.createElement("strong");
-        name.innerText = key
-        keyValueRow.appendChild(name);
+        const queryResultsContainer = document.createElement("div");
+        queryResultsContainer.id = "query-results";
+        queryTabPanel?.appendChild(queryResultsContainer);
 
-        const separator = document.createElement("p");
-        separator.innerHTML = ':&nbsp';
-        keyValueRow.appendChild(separator);
+        var editor = ace.edit("editor");
 
-        const paragraph = document.createElement("p");
-        paragraph.innerText = value
-        keyValueRow.appendChild(paragraph);
+        editor.setTheme("ace/theme/idle_fingers");
+        editor.session.setMode("ace/mode/sql");
 
-        return keyValueRow;
+        editor.setValue("SELECT *\r\nFROM data\r\nLIMIT 1000;");
+
+        editor.commands.addCommand({
+            name: 'runQuery',
+            bindKey: {win: 'Ctrl-Enter',  mac: 'Command-Enter'},
+            exec: function(editor) {
+                runQuery(editor);
+            }
+        });
+
+        initResultTable([], []);
+
+        const runQueryButton = document.createElement("button");
+        runQueryButton.id = "run-query";
+        runQueryButton.innerText = "Run";
+        runQueryButton.classList.add("tabulator-page", "flex-button"); 
+        
+        runQueryButton?.addEventListener('click', (e) => {
+            runQuery(editor);
+        });
+        buttonContainer?.appendChild(runQueryButton);
+
+        const clearQueryTextButton = document.createElement("button");
+        clearQueryTextButton.id = "clear-query";
+        clearQueryTextButton.innerText = "Clear";
+        clearQueryTextButton.classList.add("tabulator-page", "flex-button"); 
+
+        clearQueryTextButton?.addEventListener('click', (e) => {
+            editor.setValue("");
+        });
+
+        buttonContainer?.appendChild(clearQueryTextButton);
     }
-
 
     function initMetaData (/** @type {any} */  data) {
-        const createdByRow = createKeyValueRow("Created By", data['createdBy']);
-        metaDataContainer.appendChild(createdByRow);
+        const columns = [
+            // {title:"#", field:"index", width: 150},
+            {title:"Key", field:"key", width: 200},
+            {title:"Value", field:"value", width: 500},
+        ];
+        metadataTable = new Tabulator("#metadata", {
+            placeholder:"No Data Available", //display message to user on empty table
+            data: data,
+            columns: columns,
+        });
 
-        const versionRow = createKeyValueRow("Version", data['version']);
-        metaDataContainer.appendChild(versionRow);
-
-        const numRowsRow = createKeyValueRow("Number of Rows", data['numRows']);
-        metaDataContainer.appendChild(numRowsRow);
+        metadataTable.on("popupOpened", onPopupOpened);
     }
 
     function initSchema (/** @type {any} */  data) {
@@ -158,7 +318,6 @@
         });
 
         schemaTable.on("popupOpened", onPopupOpened);
-
     }
 
     var headerMenu = function(){
@@ -217,7 +376,7 @@
         return menu;
     };
 
-    function initTable(/** @type {any} */ data) {
+    function initDataTable(/** @type {any} */ data) {
         let columns = data.headers.map(c => (
             {
                 ...c, 
@@ -234,29 +393,27 @@
             footerElement:`<span class="tabulator-page-counter">
                         <span>
                             <span>Showing</span>
-                            <span id="page-current"> 1 </span>
+                            <span id="page-current-${requestSourceDataTab}"> 1 </span>
                             <span>of</span>
-                            <span id="page-count"> ${data.pageCount} </span>
+                            <span id="page-count-${requestSourceDataTab}"> ${data.pageCount} </span>
                             <span>pages</span>
 
                         </span>
                     </span>
                     <span class="tabulator-paginator">
                         <label>Page Size</label>
-                        <select class="tabulator-page-size" id="dropdown-page-size" aria-label="Page Size" title="Page Size">
+                        <select class="tabulator-page-size" id="dropdown-page-size-${requestSourceDataTab}" aria-label="Page Size" title="Page Size">
                             <option value="10">10</option>
                             <option value="50">50</option>
                             <option value="100">100</option>
                             <option value="500">500</option>
-                            <option value="1000">1000</option>
-                            <option value="true">All</option>
                         </select>
-                        <button class="tabulator-page" disabled id="btn-first" type="button" role="button" aria-label="First Page" title="First Page" data-page="first">First</button>
-                        <button class="tabulator-page" disabled id="btn-prev" type="button" role="button" aria-label="Prev Page" title="Prev Page" data-page="prev">Prev</button>
-                        <span class="tabulator-pages" id="tabulator-pages">
+                        <button class="tabulator-page" disabled id="btn-first-${requestSourceDataTab}" type="button" role="button" aria-label="First Page" title="First Page" data-page="first">First</button>
+                        <button class="tabulator-page" disabled id="btn-prev-${requestSourceDataTab}" type="button" role="button" aria-label="Prev Page" title="Prev Page" data-page="prev">Prev</button>
+                        <span class="tabulator-pages" id="tabulator-pages-${requestSourceDataTab}">
                         </span>
-                        <button class="tabulator-page" id="btn-next" type="button" role="button" aria-label="Next Page" title="Next Page" data-page="next">Next</button>
-                        <button class="tabulator-page" id="btn-last" type="button" role="button" aria-label="Last Page" title="Last Page" data-page="last">Last</button>
+                        <button class="tabulator-page" id="btn-next-${requestSourceDataTab}" type="button" role="button" aria-label="Next Page" title="Next Page" data-page="next">Next</button>
+                        <button class="tabulator-page" id="btn-last-${requestSourceDataTab}" type="button" role="button" aria-label="Last Page" title="Last Page" data-page="last">Last</button>
                     </span>
             `,
             data: data.rawData,
@@ -265,12 +422,11 @@
         });
 
         dataTable.on("tableBuilt", () => {
-            // console.log("tableBuilt");
-            tableBuilt = true;
-            initializeFooter(rowCount);
-            updateNavigationNumberButtons(currentPage, amountOfPages);
-            updatePageCounterState(currentPage, amountOfPages);
-            updateNavigationButtonsState(currentPage, amountOfPages);
+            dataTableBuilt = true;
+            initializeFooter(rowCountDataTab, requestSourceDataTab);
+            updateNavigationNumberButtons(currentPageDataTab, amountOfPagesDataTab, requestSourceDataTab);
+            updatePageCounterState(currentPageDataTab, amountOfPagesDataTab, requestSourceDataTab);
+            updateNavigationButtonsState(currentPageDataTab, amountOfPagesDataTab, requestSourceDataTab);
         });
 
         dataTable.on("popupOpened", onPopupOpened);
@@ -285,31 +441,61 @@
         // table.setFilter([filters]);
     }
 
-    function updateTable(/** @type {any} */ data) {
+    function handleError (){
+        // console.log("handleError()");
+        // query error
+        resetQueryControl();
+    }
+
+    function updateTable(
+        /** @type {any} */ data, 
+        /** @type {any} */ headers, 
+        /** @type {number} */ rowCount, 
+        /** @type {string} */ requestSource,
+        /** @type {string} */ requestType,
+        /** @type {number} */ pageSize,
+
+    ) {
         // console.log("updateTable");
-        if (tableBuilt){
-            dataTable.replaceData(data);
+        if (requestSource === requestSourceDataTab){
+            if (dataTableBuilt){
+                dataTable.replaceData(data);
+            }
+        } else if (requestSource === requestSourceResultTab) {
+            if (requestType === 'query'){
+                rowCountQueryTab = rowCount;
+                pageSizeQueryTab = pageSize;
+
+                initResultTable(data, headers);
+            } else if (requestType === 'paginator') {
+                resultsTable.replaceData(data);
+            }
         }
     }
 
     function doesFooterExist(){
         const footer = document.querySelector(".tabulator-footer");
         if (!footer) {
-            // console.log("footer doesn't exist yet.");
+            console.error("footer doesn't exist yet.");
             return false;
         }
         return true;
     }
 
-    function updatePageCounterState( /** @type {Number} */ currentPage ,  /** @type {Number} */ amountOfPages){
+    function updatePageCounterState(
+        /** @type {Number} */ currentPage ,  
+        /** @type {Number} */ amountOfPages,
+        /** @type {String} */ requestSource,
+
+    ){
         // console.log(`updatePageCounterState(${currentPage}, ${amountOfPages})`);
 
         if (!doesFooterExist()){
             return;
         }
 
-        const currentPageSpan = /** @type {HTMLElement} */ (document.querySelector('#page-current'));
-        const countPageSpan = /** @type {HTMLElement} */ (document.querySelector('#page-count'));
+        const currentPageSpan = /** @type {HTMLElement} */ (document.querySelector(`#page-current-${requestSource}`));
+        const countPageSpan = /** @type {HTMLElement} */ (document.querySelector(`#page-count-${requestSource}`));
 
         if (currentPageSpan) {
             currentPageSpan.innerText = currentPage.toString();
@@ -319,14 +505,16 @@
         }
     }
 
-    function updateNavigationNumberButtons(/** @type {Number} */ currentPage, /** @type {Number} */ amountOfPages){
-        // console.log(`updateNavigationNumberButtons(${currentPage}, ${amountOfPages})`);
+    function updateNavigationNumberButtons(
+        /** @type {Number} */ currentPage, 
+        /** @type {Number} */ amountOfPages,
+        /** @type {String} */ requestSource
+    ){
+        console.log(`updateNavigationNumberButtons(${currentPage}, ${amountOfPages}, ${requestSource})`);
 
         if (!doesFooterExist()){
             return;
         }
-
-        const tabulatorPagesSpan = document.getElementById("tabulator-pages");
 
         var startPage = 1, endPage;
 
@@ -345,20 +533,26 @@
 
         const pageNumbers = Array.from({length: endPage - startPage + 1}, (_, a) => a + startPage);
 
-        const elements = document.getElementsByClassName("page-number");
+        const className = `page-number-${requestSource}`;
+        const elements = document.getElementsByClassName(className);
         const elementsArray = Array.from(elements);
         elementsArray.forEach(element => {
             element.remove();
           }
         );
 
+        const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSource}`));
+        const selectedIndex = numRecordsDropdown.selectedIndex;
+        const selectedOption = numRecordsDropdown.options[selectedIndex];
+
+        const tabulatorPagesSpan = document.getElementById(`tabulator-pages-${requestSource}`);
         pageNumbers.forEach(p => {
             const button = document.createElement("button");
 
             if (p === currentPage){
-                button.classList.add("tabulator-page", "page-number", "active");
+                button.classList.add("tabulator-page", className, "active");
             } else {
-                button.classList.add("tabulator-page", "page-number");
+                button.classList.add("tabulator-page", className);
             }
             button.setAttribute("type", "button");
             button.setAttribute("role", "button");
@@ -376,6 +570,8 @@
                 vscode.postMessage({
                     type: 'currentPage',
                     pageNumber: Number(e.target.innerHTML),
+                    pageSize: Number(selectedOption.innerText),
+                    source: requestSource
                 });
             });
 
@@ -383,17 +579,21 @@
         });
     }
 
-    function updateNavigationButtonsState(/** @type {Number} */ currentPage, /** @type {Number} */ amountOfPages){
+    function updateNavigationButtonsState(
+        /** @type {Number} */ currentPage, 
+        /** @type {Number} */ amountOfPages,
+        /** @type {String} */ requestSource,
+    ){
         // console.log(`updateNavigationButtonsState(${currentPage}, ${amountOfPages})`);
 
         if (!doesFooterExist()){
             return;
         }
 
-        const nextButton = /** @type {HTMLElement} */ (document.querySelector('#btn-next'));
-        const prevButton = /** @type {HTMLElement} */ (document.querySelector('#btn-prev'));
-        const firstButton = /** @type {HTMLElement} */ (document.querySelector('#btn-first'));
-        const lastButton = /** @type {HTMLElement} */ (document.querySelector('#btn-last'));
+        const nextButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-next-${requestSource}`));
+        const prevButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-prev-${requestSource}`));
+        const firstButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-first-${requestSource}`));
+        const lastButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-last-${requestSource}`));
 
         if (amountOfPages === 1) {
             nextButton.setAttribute('disabled', '');
@@ -423,54 +623,56 @@
         }
     }
 
-    function initializeFooter(/** @type {Number} */ rowCount) {
-        // console.log("initializeFooter");
-        const nextButton = /** @type {HTMLElement} */ (document.querySelector('#btn-next'));
-        const prevButton = /** @type {HTMLElement} */ (document.querySelector('#btn-prev'));
-        const firstButton = /** @type {HTMLElement} */ (document.querySelector('#btn-first'));
-        const lastButton = /** @type {HTMLElement} */ (document.querySelector('#btn-last'));
+    function initializeFooter(/** @type {Number} */ rowCount, /** @type {String} */ requestSource) {
+        console.log(`initializeFooter(rowCount:${rowCount}, requestSource:${requestSource})`);
+        const nextButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-next-${requestSource}`));
+        const prevButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-prev-${requestSource}`));
+        const firstButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-first-${requestSource}`));
+        const lastButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-last-${requestSource}`));
 
         nextButton.addEventListener('click', () => {
+            const selectedIndex = numRecordsDropdown.selectedIndex;
+            const selectedOption = numRecordsDropdown.options[selectedIndex];
             vscode.postMessage({
                 type: 'nextPage',
+                pageSize: Number(selectedOption.innerText),
+                source: requestSource
             });
         });
     
         prevButton.addEventListener('click', () => {
+            const selectedIndex = numRecordsDropdown.selectedIndex;
+            const selectedOption = numRecordsDropdown.options[selectedIndex];
             vscode.postMessage({
                 type: 'prevPage',
+                pageSize: Number(selectedOption.innerText),
+                source: requestSource
             });
         });
     
         firstButton.addEventListener('click', () => {
+            const selectedIndex = numRecordsDropdown.selectedIndex;
+            const selectedOption = numRecordsDropdown.options[selectedIndex];
             vscode.postMessage({
                 type: 'firstPage',
+                pageSize: Number(selectedOption.innerText),
+                source: requestSource
             });
         });
     
         lastButton.addEventListener('click', () => {
+            const selectedIndex = numRecordsDropdown.selectedIndex;
+            const selectedOption = numRecordsDropdown.options[selectedIndex];
             vscode.postMessage({
                 type: 'lastPage',
+                pageSize: Number(selectedOption.innerText),
+                source: requestSource
             });
         });
     
-        const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector('#dropdown-page-size'));
-
-        if (rowCount >= 10000) {
-            // https://stackoverflow.com/questions/3364493/how-do-i-clear-all-options-in-a-dropdown-box
-            var i, L = numRecordsDropdown.options.length - 1;
-            for(i = L; i >= 0; i--) {
-                numRecordsDropdown.remove(i);
-            }
-
-            const pageSizes = [10, 50, 100, 500, 1000, 5000, 10000];
-            pageSizes.forEach((pageSize) => {
-                let option = document.createElement('option');
-                option.value = pageSize.toString();
-                option.innerHTML = pageSize.toString();
-                numRecordsDropdown.options.add(option);
-            });
-        }
+        const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSource}`));
+        
+        numRecordsDropdown.value = `${pageSizeQueryTab}`;
 
         if (rowCount <= 10 ) {
             numRecordsDropdown.setAttribute('disabled', '');
@@ -482,42 +684,67 @@
                 vscode.postMessage({
                     type: 'changePageSize',
                     data: {
-                        newPageSize: selectedOption.innerText,
-                        prevStartRow: startingRow
+                        newPageSize: Number(selectedOption.innerText),
+                        source: requestSource
                     }
                 });
             });
         }
-
     }
     
 
     // Handle messages from the extension
     window.addEventListener('message', async e => {
+        console.log(e.data);
         const { type, body } = e.data;
         switch (type) {
             case 'init':{
                 const tableData = body.tableData;
                 if (tableData) {
-                    startingRow = tableData.startRow;
-                    rowCount = tableData.rowCount;
-                    initTable(tableData);
+                    rowCountDataTab = tableData.rowCount;
+                    initDataTable(tableData);
                     initSchema(tableData.schema);
                     initMetaData(tableData.metaData);
+                    initCodeEditor(tableData.isQueryable);
 
-                    currentPage = tableData.currentPage;
-                    amountOfPages = tableData.pageCount;
+                    currentPageDataTab = tableData.currentPage;
+                    amountOfPagesDataTab = tableData.pageCount;
                 }
+                break;
             }
             case 'update': {
                 const tableData = body.tableData;
                 if (tableData) {
-                    startingRow = tableData.startRow;
-                    updateTable(tableData.rawData);
-                    updatePageCounterState(tableData.currentPage, tableData.pageCount);
-                    updateNavigationNumberButtons(tableData.currentPage, tableData.pageCount);
-                    updateNavigationButtonsState(tableData.currentPage, tableData.pageCount);
+                    updateTable(
+                        tableData.rawData, 
+                        tableData.headers, 
+                        tableData.rowCount, 
+                        tableData.requestSource,
+                        tableData.requestType,
+                        tableData.pageSize,
+                    );
+                    
+                    updatePageCounterState(
+                        tableData.currentPage, 
+                        tableData.pageCount,
+                        tableData.requestSource
+                    );
+                    updateNavigationNumberButtons(
+                        tableData.currentPage, 
+                        tableData.pageCount,
+                        tableData.requestSource
+                    );
+                    updateNavigationButtonsState(
+                        tableData.currentPage, 
+                        tableData.pageCount,
+                        tableData.requestSource
+                    );
                 }
+                break;
+            }
+            case 'error': {
+                handleError();
+                break;
             }
         }
     });

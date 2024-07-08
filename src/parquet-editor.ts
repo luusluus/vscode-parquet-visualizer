@@ -1,41 +1,88 @@
 import * as fs from 'fs';
+import { Worker } from 'worker_threads';
 
 import * as vscode from 'vscode';
-import { getNonce } from './util';
-import { Disposable } from "./dispose";
+import { DuckDbError } from 'duckdb';
 
-import { ParquetPaginator } from './parquet-paginator';
-import { ParquetDatabase } from './parquet-database';
+import { Paginator } from './paginator';
+import { Backend } from './backend';
+import { createHeadersFromData, getNonce } from './util';
+import { Disposable } from "./dispose";
+import { DuckDBBackend } from './duckdb-backend';
+import { DuckDBPaginator } from './duckdb-paginator';
+import { ParquetWasmBackend } from './parquet-wasm-backend';
+import { ParquetWasmPaginator } from './parquet-wasm-paginator';
+// import { ParquetWasmBackend } from './parquet-wasm-backend';
+// import { ParquetWasmPaginator } from './parquet-wasm-paginator';
 
 // import { getLogger } from './logger';
 
+// TODO: Put in constants.ts
+const requestSourceDataTab = 'dataTab';
+const requestSourceQueryTab = 'queryTab';
 
 class CustomParquetDocument extends Disposable implements vscode.CustomDocument {
     uri: vscode.Uri;
-    paginator: ParquetPaginator;
-    db: ParquetDatabase;
-    currentPage: number;
+    paginator: Paginator;
+    backend: Backend;
+    worker: Worker;
+    isQueryAble: boolean = false;
 
     static async create(
       uri: vscode.Uri
     ): Promise<CustomParquetDocument | PromiseLike<CustomParquetDocument>> {
-      const paginator = await ParquetPaginator.createAsync(uri.fsPath);
-      const db = await ParquetDatabase.createAsync();
+        try{
+            const backend = await DuckDBBackend.createAsync(uri.fsPath);
+            await backend.initialize();
+            const totalItems = backend.getRowCount();
+            const table = 'data';
+            const readFromFile = true;
+            const paginator = new DuckDBPaginator(backend, table, totalItems, readFromFile);
+            return new CustomParquetDocument(uri, backend, paginator);
 
-      db.initialize(paginator.parquetFile)
-      return new CustomParquetDocument(uri, paginator, db);
+        } catch (err: any){
+            console.log(err);
+            const backend = await ParquetWasmBackend.createAsync(uri.fsPath);
+            const paginator = new ParquetWasmPaginator(backend);
+            return new CustomParquetDocument(uri, backend, paginator);
+        }
     }
 
     private constructor(
       uri: vscode.Uri,
-      paginator: ParquetPaginator,
-      db: ParquetDatabase
+      backend: Backend,
+      paginator: Paginator
     ) {
       super();
       this.uri = uri;
+      this.backend = backend;
       this.paginator = paginator;
-      this.db = db;
-      this.currentPage = 1;
+      
+      // FIXME: Check if backend is of type ParquetWasm
+      if (this.backend instanceof DuckDBBackend) {
+        this.isQueryAble = true;
+
+        this.worker = new Worker(__dirname + "/worker.js", {
+            workerData: {
+              pathParquetFile: this.uri.fsPath
+            }
+          });
+    
+          this.worker.on('message', (message) => {
+            if (message.type === 'query'){
+              this.emitQueryResult(message);
+            } else if (message.type === 'paginator') {
+              this.fireDataPaginatorEvent(
+                message.result, 
+                message.rowCount,
+                message.pageSize,
+                message.pageNumber,
+                message.pageCount,
+                requestSourceQueryTab
+              );
+            }
+          });
+      }
     }
 
     private readonly _onDidDispose = this._register(new vscode.EventEmitter<void>());
@@ -46,28 +93,52 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
 
     private readonly _onDidChangeDocument = this._register(new vscode.EventEmitter<{
       readonly rawData?: any;
+      readonly headers?: any;
       readonly rowCount?: number;
-      readonly startRow?: number;
-      readonly endRow?: number;
       readonly pageCount?: number;
       readonly pageSize?: number;
       readonly currentPage?: number;
+      readonly requestSource?: string;
+      readonly requestType?: string;
+
+    }>());
+
+    private readonly _onError = this._register(new vscode.EventEmitter<{
+      readonly error?: string;
+
     }>());
     /**
      * Fired to notify webviews that the document has changed.
      */
     public readonly onDidChangeContent = this._onDidChangeDocument.event;
+    public readonly onError = this._onError.event;
 
-    fireChangedDocumentEvent(rawData: any, startRow: number) {
+    fireErrorEvent(error: string) {
+      this._onError.fire({
+        error: error
+      });
+    }
+
+    fireChangedDocumentEvent(
+      rawData: any, 
+      headers: any, 
+      rowCount: number,
+      requestSource: string,
+      requestType: string,
+      pageSize: number,
+      pageNumber: number,
+      pageCount: number
+    ) {
       // console.log(`fireChangedDocumentEvent(${this.uri}). Page {${this.currentPage}}`);
       const tableData = {
         rawData: rawData,
-        rowCount: this.getRowCount(),
-        startRow: startRow,
-        endRow: startRow + rawData.length - 1,
-        pageCount: this.getPageCount(),
-        pageSize: this.getPageSize(),
-        currentPage: this.currentPage
+        headers: headers,
+        rowCount: rowCount,
+        pageCount: pageCount,
+        pageSize: pageSize,
+        currentPage: pageNumber,
+        requestSource: requestSource,
+        requestType: requestType,
       };
       this._onDidChangeDocument.fire(tableData);
     }
@@ -78,122 +149,143 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
      * This happens when all editors for it have been closed.
      */
     dispose(): void {
-      this._onDidDispose.fire();
-      super.dispose();
-    }
+        console.log("CustomParquetDocument.dispose()");
+        this.backend.dispose();
+        this._onDidDispose.fire();
 
-    getStartRowNumber() {
-      return this.getPageSize() * this.currentPage - this.getPageSize() + 1;
-    }
-
-    async emitNextPage() {
-      this.currentPage++;
-      const startRow = this.getStartRowNumber();
-
-      const rawData = await this.getCurrentPage();
-      this.fireChangedDocumentEvent(rawData, startRow);
-    }
-
-    async emitPrevPage() {
-      this.currentPage--;
-      const startRow = this.getStartRowNumber();
-      
-      const rawData = await this.getCurrentPage();
-      this.fireChangedDocumentEvent(rawData, startRow);
-    }
-
-    async emitFirstPage(){
-      this.currentPage = 1;
-      const startRow = this.getStartRowNumber();
-      
-      const rawData = await this.getCurrentPage();
-      this.fireChangedDocumentEvent(rawData, startRow);
-    }
-
-    async emitLastPage() {
-      this.currentPage = Math.ceil(this.getRowCount() / this.getPageSize());
-      const startRow = this.getStartRowNumber();
-
-      const rawData = await this.getCurrentPage();
-      this.fireChangedDocumentEvent(rawData, startRow);
-    }
-
-    async emitCurrentPage(currentPage: number) {
-      this.currentPage = currentPage;
-      const rawData = await this.getPageByNumber(currentPage);
-      const startRow = this.getStartRowNumber();
-      this.fireChangedDocumentEvent(rawData, startRow);
-    }
-
-    async changePageSize(data: any) {
-      // Check if value is 'All'
-      if (isNaN(+(data.newPageSize))) {
-        this.setPageSize(this.getRowCount());
-        this.setPageCount(this.getRowCount());
-        this.currentPage = 1;
-        await this.emitFirstPage();
-        return;
-      }
-
-      const newPageSize: number = +(data.newPageSize);
-      const prevStartRow: number = data.prevStartRow;
-      let pageNumber = 1;
-      let endRow = newPageSize;
-      while (true) {
-        endRow += newPageSize;
-        if (prevStartRow <= endRow){
-          break;
+        if (this.backend instanceof DuckDBBackend) {
+            this.worker.terminate();
         }
-        pageNumber++;
+        
+        super.dispose();
+    }
+
+    fireDataPaginatorEvent(
+      values: any, 
+      rowCount: number,
+      pageSize: number, 
+      pageNumber: number, 
+      pageCount: number,
+      requestSource: string
+    ){
+      const headers = createHeadersFromData(values);
+      const requestType = 'paginator';
+      this.fireChangedDocumentEvent(
+        values, 
+        headers, 
+        rowCount,
+        requestSource,
+        requestType,
+        pageSize,
+        pageNumber,
+        pageCount
+      );
+    }
+
+    async emitPage(message: any) {
+      let values;
+      if (message.source === requestSourceQueryTab) {
+        this.worker.postMessage({
+            source: 'paginator',
+            type: message.type,
+            pageSize: Number(message.pageSize)
+        });
+
+      } else if (message.source === requestSourceDataTab) {
+            if (message.type === 'nextPage') {
+                values = await this.paginator.nextPage(message.pageSize);
+            } else if (message.type === 'prevPage') {
+                values = await this.paginator.previousPage(message.pageSize);
+            } else if (message.type === 'firstPage') {
+                values = await this.paginator.firstPage(message.pageSize);
+            } else if (message.type === 'lastPage') {
+                values = await this.paginator.lastPage(message.pageSize);
+            } else {
+                throw Error(`Unknown message type: ${message.type}`);
+            }
+            
+            const rowCount = 0;
+            this.fireDataPaginatorEvent(
+                values,
+                rowCount, 
+                Number(message.pageSize),
+                this.paginator.getPageNumber(),
+                this.paginator.getTotalPages(message.pageSize),
+                requestSourceDataTab
+            );
       }
+    }
+    
+    async emitCurrentPage(message: any) {
+        if (message.source === requestSourceQueryTab) {
+            this.worker.postMessage({
+                source: 'paginator',
+                type: message.type,
+                pageSize: Number(message.pageSize),
+                pageNumber: message.pageNumber
+            });
+        } else if (message.source === requestSourceDataTab) {
+            const values = await this.paginator.gotoPage(message.pageNumber, message.pageSize);
+            const rowCount = 0;
+            this.fireDataPaginatorEvent(
+                values, 
+                rowCount,
+                Number(message.pageSize),
+                this.paginator.getPageNumber(),
+                this.paginator.getTotalPages(message.pageSize),
+                requestSourceDataTab
+            );
+        }
+    }
+    
 
-      this.currentPage = pageNumber;
-
-      this.setPageSize(newPageSize);
-      this.setPageCount(newPageSize);
-      
-      const rawData = await this.getPageByNumber(pageNumber);
-      this.fireChangedDocumentEvent(rawData, prevStartRow);
+    emitQueryResult(message: any) {
+        if (message.err) {
+            const err = message.err;
+            console.error(err);
+            const error = err as DuckDbError;
+            this.fireErrorEvent(err);
+            vscode.window.showErrorMessage(error.message);
+            return;
+        } 
+        const requestType = 'query';
+        this.fireChangedDocumentEvent(
+            message.result, 
+            message.headers, 
+            message.rowCount,
+            requestSourceQueryTab,
+            requestType,
+            message.pageSize,
+            message.pageNumber,
+            message.pageCount
+        );
+        vscode.window.showInformationMessage("Query Succeeded");
     }
 
-    async getCurrentPage() {
-      return this.paginator.getPage(this.currentPage);
-    }
-
-    async getPageByNumber(pageNumber: number) {
-      return await this.paginator.getPage(pageNumber);
-    }
-
-    getPageSize() {
-      return this.paginator.getPageSize();
-    }
-
-    getPageCount() {
-      return this.paginator.getPageCount();
-    }
-
-    getRowCount() {
-      return this.paginator.getRowCount();
-    }
-
-    getSchema() {
-      return this.paginator.getSchema();
-    }
-
-    getMetaData(){
-      return this.paginator.getMetaData();
-    }
-
-    setPageSize(value: number){
-      this.paginator.setPageSize(value);
-    }
-
-    setPageCount(pageSize: number){
-      this.paginator.setPageCount(pageSize);
-    }
-
-    async query(query: string){
-      return await this.db.query(query);
+    async changePageSize(message: any) {
+      if (message.source === requestSourceQueryTab) {
+        this.worker.postMessage({
+            source: 'paginator',
+            type: 'currentPage',
+            pageSize: Number(message.newPageSize),
+        });
+      }
+      else if (message.source === requestSourceDataTab) {
+        const values = await this.paginator.getCurrentPage(Number(message.newPageSize));
+        let headers: any[] = [];
+  
+        const requestType = 'paginator';
+        this.fireChangedDocumentEvent(
+          values, 
+          headers, 
+          values.length,
+          requestSourceDataTab,
+          requestType,
+          Number(message.newPageSize),
+          this.paginator.getPageNumber(), // TODO: Handle ChangePageSize for both query and datatab
+          this.paginator.getTotalPages(message.newPageSize)
+        );
+      }
     }
   }
 
@@ -223,26 +315,41 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
      */
     private readonly webviews = new WebviewCollection();
 
+    private listeners: vscode.Disposable[] = [];
+
     constructor(
         private readonly context: vscode.ExtensionContext
     ) { }
+
+    dispose() {
+        console.log("ParquetEditorProvider.dispose()");
+        this.listeners.forEach(l => l.dispose());
+        this._onDidChangeCustomDocument.dispose();
+    }
 
     async openCustomDocument(uri: vscode.Uri): Promise<CustomParquetDocument> {
         // console.log(`openCustomDocument(uri: ${uri})`);
         const document: CustomParquetDocument = await CustomParquetDocument.create(uri);
 
-        const listeners: vscode.Disposable[] = [];
+        this.listeners.push(document.onError(e => {
+          // Update all webviews when one document has an error
+          for (const webviewPanel of this.webviews.get(document.uri)) {
+            this.postMessage(webviewPanel, 'error', {
+                type: 'error'
+            });
+          }
+        }));
 
-        listeners.push(document.onDidChangeContent(e => {
+        this.listeners.push(document.onDidChangeContent(e => {
           const dataChange = {
-            headers : [],
+            headers : e.headers,
             rawData: e.rawData,
             rowCount: e.rowCount,
-            startRow: e.startRow,
-            endRow: e.endRow,
             pageCount: e.pageCount,
             pageSize: e.pageSize,
-            currentPage: e.currentPage
+            currentPage: e.currentPage,
+            requestSource: e.requestSource,
+            requestType: e.requestType
           };
 
           // Update all webviews when the document changes
@@ -296,19 +403,24 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         //   }
         // });
 
-        const values = await document.getCurrentPage();
-
+        const pageSize = 10;
+        const values = await document.paginator.getCurrentPage(pageSize);
+        const headers = createHeadersFromData(values);
+        const pageNumber = document.paginator.getPageNumber();
+        const schema = document.backend.getSchema();
+        const metadata = document.backend.getMetaData();
         const data = {
-          headers: document.paginator.getFields(),
-          schema: document.getSchema(),
-          metaData: document.getMetaData(),
+          headers: headers, 
+          schema: schema, 
+          metaData: metadata, 
           values: values,
           rawData: values,
-          rowCount: document.getRowCount(),
-          startRow: document.getPageSize() * document.currentPage - document.getPageSize() + 1,
-          endRow: document.getPageSize() * document.currentPage,
-          pageCount: document.getPageCount(),
-          currentPage: document.currentPage
+          rowCount: document.backend.getRowCount(),
+          pageCount: document.paginator.getTotalPages(pageSize),
+          currentPage: pageNumber,
+          requestSource: requestSourceDataTab,
+          requestType: 'paginator',
+          isQueryable: document.isQueryAble
         };
 
         // Wait for the webview to be properly ready before we init
@@ -325,45 +437,49 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             }
           }
         });
-    
     }
 
     private readonly _onDidChangeCustomDocument = new vscode.EventEmitter<vscode.CustomDocumentEditEvent<CustomParquetDocument>>();
-	  public readonly onDidChangeCustomDocument = this._onDidChangeCustomDocument.event;
+	public readonly onDidChangeCustomDocument = this._onDidChangeCustomDocument.event;
 
     private postMessage(panel: vscode.WebviewPanel, type: string, body: any): void {
       panel.webview.postMessage({ type, body });
     }
 
     private async onMessage(document: CustomParquetDocument, message: any) {
-      // console.log(`onMessage(${document.uri})`);
+    //   console.log(`onMessage(${message.type})`);
       switch (message.type) {
         case 'nextPage': {
-          await document.emitNextPage();
+          await document.emitPage(message);
           break;
         }
         case 'prevPage': {
-          await document.emitPrevPage();
+          await document.emitPage(message);
           break;
         }
         case 'firstPage': {
-          await document.emitFirstPage();
+          await document.emitPage(message);
           break;
         }
         case 'lastPage': {
-          await document.emitLastPage();
+          await document.emitPage(message);
           break;
         }
         case 'currentPage': {
-          await document.emitCurrentPage(message.pageNumber);
+          await document.emitCurrentPage(message);
           break;
         }
         case 'changePageSize': {
           await document.changePageSize(message.data);
           break;
         }
-        case 'query': {
-          await document.query(message.data);
+        case 'startQuery': {
+          document.worker.postMessage({
+            source: 'query',
+            query: message.data,
+            path: document.uri.fsPath,
+            pageSize: message.pageSize
+          });
           break;
         }
       }
@@ -458,6 +574,7 @@ class WebviewCollection {
 		this._webviews.add(entry);
 
 		webviewPanel.onDidDispose(() => {
+            console.log("webviewPanel.OnDidDispose");
 			this._webviews.delete(entry);
 		});
 	}
