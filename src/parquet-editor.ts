@@ -154,7 +154,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
      * This happens when all editors for it have been closed.
      */
     dispose(): void {
-        console.log("CustomParquetDocument.dispose()");
+        // console.log("CustomParquetDocument.dispose()");
         this.backend.dispose();
         this._onDidDispose.fire();
 
@@ -327,7 +327,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
     ) { }
 
     dispose() {
-        console.log("ParquetEditorProvider.dispose()");
+        // console.log("ParquetEditorProvider.dispose()");
         this.listeners.forEach(l => l.dispose());
         this._onDidChangeCustomDocument.dispose();
     }

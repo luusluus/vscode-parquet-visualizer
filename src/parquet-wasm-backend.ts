@@ -49,12 +49,12 @@ export class ParquetWasmBackend extends Backend {
   }
 
   dispose() {
-    console.log("ParquetWasmBackend.dispose()");
+    // console.log("ParquetWasmBackend.dispose()");
     this.parquetFile.free();
   }
   
   public async initialize(): Promise<void> {
-    console.log("initialize()");
+    // console.log("initialize()");
   }
 
   getRowCount(): number {

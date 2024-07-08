@@ -25,7 +25,7 @@ export class DuckDBBackend extends Backend{
     }
 
     dispose() {
-      console.log("Duckdbbackend.dispose()")
+      // console.log("Duckdbbackend.dispose()");
       const splitted = this.filePath.split('/');
       const filename = splitted[splitted.length-1];
       const filePath = `${__dirname}/${filename}.duckdb`;
@@ -74,14 +74,13 @@ export class DuckDBBackend extends Backend{
     }
 
     private async checkIfTableExists() {
-      console.log("checkIfTableExists()");
+      // console.log("checkIfTableExists()");
       const result = await this.db.all(`
         SELECT COUNT(*) as tableCount
         FROM information_schema.tables
         WHERE table_name = 'data'
       `);
       const tableCount = Number(result[0]['tableCount']);
-      console.log(tableCount);
       return tableCount > 0;
     }
     

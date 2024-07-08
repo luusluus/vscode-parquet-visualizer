@@ -511,7 +511,7 @@
         /** @type {Number} */ amountOfPages,
         /** @type {String} */ requestSource
     ){
-        console.log(`updateNavigationNumberButtons(${currentPage}, ${amountOfPages}, ${requestSource})`);
+        // console.log(`updateNavigationNumberButtons(${currentPage}, ${amountOfPages}, ${requestSource})`);
 
         if (!doesFooterExist()){
             return;
@@ -629,7 +629,7 @@
     }
 
     function initializeFooter(/** @type {Number} */ rowCount, /** @type {String} */ requestSource) {
-        console.log(`initializeFooter(rowCount:${rowCount}, requestSource:${requestSource})`);
+        // console.log(`initializeFooter(rowCount:${rowCount}, requestSource:${requestSource})`);
         const nextButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-next-${requestSource}`));
         const prevButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-prev-${requestSource}`));
         const firstButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-first-${requestSource}`));
@@ -715,7 +715,7 @@
 
     // Handle messages from the extension
     window.addEventListener('message', async e => {
-        console.log(e.data);
+        // console.log(e.data);
         const { type, body } = e.data;
         switch (type) {
             case 'init':{
