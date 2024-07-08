@@ -44,19 +44,31 @@ export class DuckDBBackend extends Backend{
     }
 
     getSchemaImpl(): any {
-      return this.db.arrowIPCAll(`
-        SELECT * 
-        FROM read_parquet('${this.filePath}')
-        LIMIT 10
-      `);
+      try{
+        return this.db.arrowIPCAll(`
+          SELECT * 
+          FROM read_parquet('${this.filePath}')
+          LIMIT 10
+        `);
+
+      } catch (e: any) {
+        this.dispose();
+        throw e;
+      }
     }
 
     getMetaDataImpl(): Promise<any> {
-      return this.db.all(`
-        SELECT * 
-        FROM parquet_file_metadata('${this.filePath}')
-      `);
+      try{
+        return this.db.all(`
+          SELECT * 
+          FROM parquet_file_metadata('${this.filePath}')
+        `);
+      } catch (e: any) {
+        this.dispose();
+        throw e;
+      }
     }
+    
     queryImpl(query: any): Promise<any> {
       return this.db.all(query);
     }
