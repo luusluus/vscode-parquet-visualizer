@@ -12,8 +12,6 @@ import { DuckDBBackend } from './duckdb-backend';
 import { DuckDBPaginator } from './duckdb-paginator';
 import { ParquetWasmBackend } from './parquet-wasm-backend';
 import { ParquetWasmPaginator } from './parquet-wasm-paginator';
-// import { ParquetWasmBackend } from './parquet-wasm-backend';
-// import { ParquetWasmPaginator } from './parquet-wasm-paginator';
 
 // import { getLogger } from './logger';
 
