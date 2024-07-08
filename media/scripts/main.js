@@ -460,6 +460,7 @@
         if (requestSource === requestSourceDataTab){
             if (dataTableBuilt){
                 dataTable.replaceData(data);
+                dataTable.clearAlert();
             }
         } else if (requestSource === requestSourceResultTab) {
             if (requestType === 'query'){
@@ -567,6 +568,10 @@
             button.textContent = `${p}`;
 
             button.addEventListener('click', (e) => {
+                if (requestSource === requestSourceDataTab) {
+                    dataTable.alert("Loading...");
+                }
+
                 vscode.postMessage({
                     type: 'currentPage',
                     pageNumber: Number(e.target.innerHTML),
@@ -633,6 +638,9 @@
         nextButton.addEventListener('click', () => {
             const selectedIndex = numRecordsDropdown.selectedIndex;
             const selectedOption = numRecordsDropdown.options[selectedIndex];
+            if (requestSource === requestSourceDataTab) {
+                dataTable.alert("Loading...");
+            }
             vscode.postMessage({
                 type: 'nextPage',
                 pageSize: Number(selectedOption.innerText),
@@ -643,6 +651,9 @@
         prevButton.addEventListener('click', () => {
             const selectedIndex = numRecordsDropdown.selectedIndex;
             const selectedOption = numRecordsDropdown.options[selectedIndex];
+            if (requestSource === requestSourceDataTab) {
+                dataTable.alert("Loading...");
+            }
             vscode.postMessage({
                 type: 'prevPage',
                 pageSize: Number(selectedOption.innerText),
@@ -653,6 +664,9 @@
         firstButton.addEventListener('click', () => {
             const selectedIndex = numRecordsDropdown.selectedIndex;
             const selectedOption = numRecordsDropdown.options[selectedIndex];
+            if (requestSource === requestSourceDataTab) {
+                dataTable.alert("Loading...");
+            }
             vscode.postMessage({
                 type: 'firstPage',
                 pageSize: Number(selectedOption.innerText),
@@ -663,6 +677,9 @@
         lastButton.addEventListener('click', () => {
             const selectedIndex = numRecordsDropdown.selectedIndex;
             const selectedOption = numRecordsDropdown.options[selectedIndex];
+            if (requestSource === requestSourceDataTab) {
+                dataTable.alert("Loading...");
+            }
             vscode.postMessage({
                 type: 'lastPage',
                 pageSize: Number(selectedOption.innerText),
@@ -681,6 +698,9 @@
             numRecordsDropdown.addEventListener('change', (e) => {
                 const selectedIndex = numRecordsDropdown.selectedIndex;
                 const selectedOption = numRecordsDropdown.options[selectedIndex];
+                if (requestSource === requestSourceDataTab) {
+                    dataTable.alert("Loading...");
+                }
                 vscode.postMessage({
                     type: 'changePageSize',
                     data: {
