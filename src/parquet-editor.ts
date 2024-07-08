@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import { Worker } from 'worker_threads';
 
 import * as vscode from 'vscode';
-import { DuckDbError } from 'duckdb';
+import { DuckDbError } from 'duckdb-async';
 
 import { Paginator } from './paginator';
 import { Backend } from './backend';
