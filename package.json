@@ -45,6 +45,9 @@
         "selector": [
           {
             "filenamePattern": "*.parquet"
+          },
+          {
+            "filenamePattern": "*.pq"
           }
         ]
       }
