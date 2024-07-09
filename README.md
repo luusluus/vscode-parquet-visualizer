@@ -1,12 +1,12 @@
 # parquet-visualizer
-Explore parquet files visually with a table paginator.
+Explore parquet files visually with SQL and with a table paginator.
 
 ![visualize](media/visualize.gif)
 
 ## Features
 - Visualizes the binary parquet file in readable table format
+- Query parquet files with SQL
 - Paginate through parquet file
-- SQL Query support
 - Inspect the parquet file's schema
 - Inspect the parquet file's metadata
 - Open multiple files simultanuously
