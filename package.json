@@ -51,6 +51,9 @@
             "filenamePattern": "*.parquet"
           },
           {
+            "filenamePattern": "*.parq"
+          },
+          {
             "filenamePattern": "*.pq"
           }
         ]
