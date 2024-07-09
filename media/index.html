@@ -9,7 +9,7 @@
     and only allow scripts that have a specific nonce.
     -->
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; font-src {{cspSource}}; img-src {{cspSource}}; style-src {{cspSource}}; script-src 'nonce-{{nonce}}';">
+        content="default-src 'none'; font-src {{cspSource}}; img-src {{cspSource}}; style-src {{cspSource}} 'unsafe-inline'; script-src 'nonce-{{nonce}}';">
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -21,6 +21,9 @@
 
     <title>Parquet Visualizer</title>
     <script nonce="{{nonce}}" type="text/javascript" src="{{scripts}}/tabulator/tabulator.min.js"></script>
+    <script nonce="{{nonce}}" type="text/javascript" src="{{scripts}}/ace/src-min/ace.js"></script>
+    <script nonce="{{nonce}}" type="text/javascript" src="{{scripts}}/ace/src-min/theme-idle_fingers.js"></script>
+    <script nonce="{{nonce}}" type="text/javascript" src="{{scripts}}/ace/src-min/mode-sql.js"></script>
 
 </head>
 
@@ -35,6 +38,9 @@
                 <input type="radio" name="schema-tab" id="schema-tab" class="tablinks" >
                 <label for="schema-tab">Schema</label>
 
+                <input type="radio" name="query-tab" id="query-tab" class="tablinks" >
+                <label for="query-tab">Query</label>
+
                 <input type="radio" name="metadata-tab" id="metadata-tab" class="tablinks" >
                 <label for="metadata-tab">Metadata</label>
             </div>
@@ -46,6 +52,8 @@
             <div class="tab" id="schema-tab-panel">
                 <div id="schema"></div>
             </div>
+
+            <div class="tab" id="query-tab-panel"></div>
             
             <div class="tab" id="metadata-tab-panel">
                 <div id="metadata"></div>

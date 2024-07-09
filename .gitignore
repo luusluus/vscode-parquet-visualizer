@@ -8,3 +8,4 @@ node_modules
 very_large.parquet
 very_large_2.parquet
 binary_string.parquet
+weird_columns.parquet
