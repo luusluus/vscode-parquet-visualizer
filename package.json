@@ -27,13 +27,17 @@
   "categories": [
     "Visualization",
     "Data Science",
-    "Formatters"
+    "Formatters",
+    "Other"
   ],
   "keywords": [
     "parquet",
     "visualizer",
     "table",
-    "schema"
+    "schema",
+    "SQL",
+    "duckdb",
+    "query"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
