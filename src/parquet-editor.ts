@@ -41,12 +41,6 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         } catch (err: any){
             console.log(err);
 
-            // Delete Duckdb file if it fails
-            // const splitted = uri.fsPath.split('/');
-            // const filename = splitted[splitted.length-1];
-            // const filePath = `${__dirname}/${filename}.duckdb`;
-            // fs.unlinkSync(filePath);
-
             const backend = await ParquetWasmBackend.createAsync(uri.fsPath);
             const paginator = new ParquetWasmPaginator(backend);
             return new CustomParquetDocument(uri, backend, paginator);
