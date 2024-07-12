@@ -16,20 +16,20 @@ export class DuckDBBackend extends Backend{
     }
 
     public static override async createAsync (path: string){
-      // const db = await duckdb.Database.create(":memory:");
-      const splitted = path.split('/');
-      const filename = splitted[splitted.length - 1];
-      const filePath = `${__dirname}/${filename}.duckdb`;
-      const db = await duckdb.Database.create(filePath);
+      const db = await duckdb.Database.create(":memory:");
+      // const splitted = path.split('/');
+      // const filename = splitted[splitted.length - 1];
+      // const filePath = `${__dirname}/${filename}.duckdb`;
+      // const db = await duckdb.Database.create(filePath);
       return new DuckDBBackend(path, db);
     }
 
     dispose() {
       // console.log("Duckdbbackend.dispose()");
-      const splitted = this.filePath.split('/');
-      const filename = splitted[splitted.length-1];
-      const filePath = `${__dirname}/${filename}.duckdb`;
-      fs.unlinkSync(filePath);
+      // const splitted = this.filePath.split('/');
+      // const filename = splitted[splitted.length-1];
+      // const filePath = `${__dirname}/${filename}.duckdb`;
+      // fs.unlinkSync(filePath);
     }
 
     public async initialize (){

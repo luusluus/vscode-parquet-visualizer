@@ -15,7 +15,15 @@
 			"outFiles": [
 				"${workspaceFolder}/dist/**/*.js"
 			],
-			"preLaunchTask": "${defaultBuildTask}"
+			"preLaunchTask": "npm: build"
+		},
+		{
+			"name": "Run Extension Prod",
+			"type": "extensionHost",
+			"request": "launch",
+			"args": ["--extensionDevelopmentPath=${workspaceRoot}"],
+			"outFiles": ["${workspaceFolder}/out/**/*.js"],
+			// "preLaunchTask": "npm: package"
 		},
 		{
 			"name": "Extension Tests",
