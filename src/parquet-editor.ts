@@ -347,7 +347,6 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         const document: CustomParquetDocument = await CustomParquetDocument.create(uri);
 
         this.listeners.push(vscode.workspace.onDidChangeConfiguration((e: vscode.ConfigurationChangeEvent) => {
-          console.log(e);
           if (affectsDocument(e)) {
             console.log("settings changed");
           }
