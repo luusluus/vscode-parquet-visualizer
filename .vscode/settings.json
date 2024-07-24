@@ -9,4 +9,8 @@
     // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
     "typescript.tsc.autoDetect": "off",
     "typescript.reportStyleChecksAsWarnings": true,
+
+    "parquet-visualizer.defaultPageSizes": [10, 50, 100],
+    "parquet-visualizer.backend": "duckdb",
+    "parquet-visualizer.defaultQuery": "SELECT *\r\nFROM data\r\nLIMIT 1000;"
 }

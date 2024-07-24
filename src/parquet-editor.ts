@@ -12,6 +12,7 @@ import { DuckDBBackend } from './duckdb-backend';
 import { DuckDBPaginator } from './duckdb-paginator';
 import { ParquetWasmBackend } from './parquet-wasm-backend';
 import { ParquetWasmPaginator } from './parquet-wasm-paginator';
+import { affectsDocument, defaultPageSizes, defaultQuery, defaultBackend } from './settings';
 
 // import { getLogger } from './logger';
 
@@ -30,13 +31,24 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       uri: vscode.Uri
     ): Promise<CustomParquetDocument | PromiseLike<CustomParquetDocument>> {
         try{
-            const backend = await DuckDBBackend.createAsync(uri.fsPath);
-            await backend.initialize();
-            const totalItems = backend.getRowCount();
-            const table = 'data';
-            const readFromFile = true;
-            const paginator = new DuckDBPaginator(backend, table, totalItems, readFromFile);
-            return new CustomParquetDocument(uri, backend, paginator);
+            switch (defaultBackend()) {
+              case 'duckdb': {
+                const backend = await DuckDBBackend.createAsync(uri.fsPath);
+                await backend.initialize();
+                const totalItems = backend.getRowCount();
+                const table = 'data';
+                const readFromFile = true;
+                const paginator = new DuckDBPaginator(backend, table, totalItems, readFromFile);
+                return new CustomParquetDocument(uri, backend, paginator);
+              }
+              case 'parquet-wasm': {
+                const backend = await ParquetWasmBackend.createAsync(uri.fsPath);
+                const paginator = new ParquetWasmPaginator(backend);
+                return new CustomParquetDocument(uri, backend, paginator);
+              }
+              default:
+                throw Error("Unknown backend. Terminating");
+            }
 
         } catch (err: any){
             console.log(err);
@@ -102,21 +114,10 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
 
     }>());
 
-    private readonly _onError = this._register(new vscode.EventEmitter<{
-      readonly error?: string;
-
-    }>());
     /**
      * Fired to notify webviews that the document has changed.
-     */
+    */
     public readonly onDidChangeContent = this._onDidChangeDocument.event;
-    public readonly onError = this._onError.event;
-
-    fireErrorEvent(error: string) {
-      this._onError.fire({
-        error: error
-      });
-    }
 
     fireChangedDocumentEvent(
       rawData: any, 
@@ -140,6 +141,21 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         requestType: requestType,
       };
       this._onDidChangeDocument.fire(tableData);
+    }
+
+    private readonly _onError = this._register(new vscode.EventEmitter<{
+      readonly error?: string;
+    }>());
+
+    /**
+     * Fired to notify webviews that the document has errorred.
+    */
+    public readonly onError = this._onError.event;
+
+    fireErrorEvent(error: string) {
+      this._onError.fire({
+        error: error
+      });
     }
 
     /**
@@ -330,6 +346,13 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         // console.log(`openCustomDocument(uri: ${uri})`);
         const document: CustomParquetDocument = await CustomParquetDocument.create(uri);
 
+        this.listeners.push(vscode.workspace.onDidChangeConfiguration((e: vscode.ConfigurationChangeEvent) => {
+          console.log(e);
+          if (affectsDocument(e)) {
+            console.log("settings changed");
+          }
+        }));
+
         this.listeners.push(document.onError(e => {
           // Update all webviews when one document has an error
           for (const webviewPanel of this.webviews.get(document.uri)) {
@@ -402,7 +425,11 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         //   }
         // });
 
-        const pageSize = 10;
+        const defaultPageSizesFromSettings = defaultPageSizes(); 
+        const pageSize = Number(defaultPageSizesFromSettings[0]);
+
+        const defaultQueryFromSettings = defaultQuery();
+        
         const values = await document.paginator.getCurrentPage(pageSize);
         const headers = createHeadersFromData(values);
         const pageNumber = document.paginator.getPageNumber();
@@ -419,7 +446,9 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           currentPage: pageNumber,
           requestSource: requestSourceDataTab,
           requestType: 'paginator',
-          isQueryable: document.isQueryAble
+          isQueryable: document.isQueryAble,
+          defaultPageSizes: defaultPageSizesFromSettings,
+          defaultQuery: defaultQueryFromSettings
         };
 
         // Wait for the webview to be properly ready before we init
@@ -573,7 +602,7 @@ class WebviewCollection {
 		this._webviews.add(entry);
 
 		webviewPanel.onDidDispose(() => {
-            console.log("webviewPanel.OnDidDispose");
+      // console.log("webviewPanel.OnDidDispose");
 			this._webviews.delete(entry);
 		});
 	}

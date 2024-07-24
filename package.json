@@ -1,7 +1,7 @@
 {
   "name": "parquet-visualizer",
-  "displayName": "parquet-visualizer",
-  "description": "Visualizes Apache Parquet files in table format.",
+  "displayName": "Parquet Visualizer",
+  "description": "Visualizes Parquet files in table format and query with SQL.",
   "publisher": "lucien-martijn",
   "icon": "media/ico128.png",
   "homepage": "https://github.com/luusluus/vscode-parquet-visualizer",
@@ -42,6 +42,36 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "parquet-visualizer",
+      "properties": {
+        "parquet-visualizer.backend": {
+          "markdownDescription": "Choose a backend for reading the parquet file.",
+          "type": "string",
+          "enum": [
+            "duckdb",
+            "parquet-wasm"
+          ],
+          "default": "duckdb"
+        },
+        "parquet-visualizer.defaultQuery": {
+            "type": "string",
+            "editPresentation": "multilineText",
+            "default": "SELECT *\r\nFROM data\r\nLIMIT 1000;",
+            "markdownDescription": "Default SQL query for parquet file. With the setting `${defaultPageSize}` you can set the default LIMIT size."
+        },
+        "parquet-visualizer.defaultPageSizes": {
+          "markdownDescription": "Set the default page size for data and query tab.",
+          "type": [
+            "array"
+          ],
+          "items": {
+            "type": "number"
+          },
+          "default": [20, 50, 100, 500]
+        }
+      }
+    },
     "customEditors": [
       {
         "viewType": "parquet-visualizer.parquetVisualizer",
