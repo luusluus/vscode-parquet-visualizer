@@ -28,7 +28,7 @@ This extension supports two different types of backends for visualizing and quer
 ### DuckDB
 [DuckDB](https://duckdb.org/docs/index) is the primary backend used for uncompressed and compressed parquet files (except for the BROTLI compression codec.)
 
-### Parquet WASM
+### Parquet-wasm
 The backend that loads the Parquet files uses the [parquet-wasm](https://kylebarron.dev/parquet-wasm) library.
 
 ## Frontend
