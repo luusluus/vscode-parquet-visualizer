@@ -12,6 +12,15 @@ Explore parquet files visually with SQL and a table paginator.
 - Open multiple files simultanuously
 - Select columns to visualize in table
 
+## Configuration
+The following configuration options are available:
+
+|name|default|description|
+|----|-------|-----------|
+|`parquet-visualizer.backend`|`duckdb`| Backend for reading the parquet file. Options: `duckdb`, `parquet-wasm`|
+|`parquet-visualizer.defaultPageSizes`|[20, 50, 100, 500]|Set the default page size for data and query tab.|
+|`parquet-visualizer.defaultQuery`|`SELECT *\r\nFROM data\r\nLIMIT 1000;`|Default SQL query for parquet file. The table `data` should remain the same.|
+
 
 ## Parquet backends
 This extension supports two different types of backends for visualizing and querying parquet files.
