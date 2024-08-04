@@ -9,32 +9,8 @@ on:
 
 jobs:
   build: # job 1 - build
-    strategy:
-      matrix: 
-        include: 
-        # strategy.matrix.include: Specifies different environments for the build. 
-        # Each environment is a combination of OS, platform, and architecture.
-          - os: windows-latest
-            platform: win32
-            arch: x64
-            npm_config_arch: x64
-          - os: ubuntu-latest
-            platform: linux
-            arch: x64
-            npm_config_arch: x64
-          - os: ubuntu-latest
-            platform: linux
-            arch: arm64
-            npm_config_arch: arm64
-          - os: macos-14
-            platform: darwin
-            arch: x64
-            npm_config_arch: x64
-          - os: macos-14
-            platform: darwin
-            arch: arm64
-            npm_config_arch: arm64
-    runs-on: ${{ matrix.os }} # This specifies the OS to run the job on, which is dynamically set by the matrix.
+    name: Package Extension
+    runs-on: ubuntu-latest
     steps:
       # Checkout the repository
       - uses: actions/checkout@v2
@@ -43,20 +19,17 @@ jobs:
         with:
           node-version: 18.x
       # Install dependencies
-      - run: npm install
-        env:
+      - env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          npm_config_arch: ${{ matrix.npm_config_arch }} # environment variable is set based on the matrix configuration.
-      # Set target environment variable which constructs a target string combining platform and architecture and appends it to the GitHub environment variables.
-      - shell: pwsh
-        run: echo "target=${{ matrix.platform }}-${{ matrix.arch }}" >> $env:GITHUB_ENV
-      # npx (Node Package eXecute) allows for package running, without installing the package.
-      - run: npx vsce package --target ${{ env.target }}
-      # Upload the packaged artifact
-      - uses: actions/upload-artifact@v2
+        run: | 
+          npm install
+          npm install --global @vscode/vsce
+          sh ./package.sh
+      - name: Upload extension
+        uses: actions/upload-artifact@v3.1.2
         with:
-          name: ${{ env.target }}
-          path: "*.vsix"
+          path: ./dist/*
+
 
   publish: # job 2 - publish
     runs-on: ubuntu-latest
