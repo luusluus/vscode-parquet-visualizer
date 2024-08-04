@@ -1,7 +1,7 @@
 {
   "name": "parquet-visualizer",
   "displayName": "Parquet Visualizer",
-  "description": "Visualizes Parquet files in table format and query with SQL.",
+  "description": "Inspect and query very large parquet files fast and easy",
   "publisher": "lucien-martijn",
   "icon": "media/ico128.png",
   "homepage": "https://github.com/luusluus/vscode-parquet-visualizer",
@@ -19,7 +19,7 @@
     "url": "https://github.com/luusluus"
   },
   "license": "MIT",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "engines": {
     "vscode": "^1.74.0",
     "node": ">18.0.0"
