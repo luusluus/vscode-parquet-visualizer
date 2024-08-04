@@ -4,14 +4,6 @@ Parquet Visualizer is a tool that helps you easily query and inspect parquet fil
 ![sql](media/sql.gif)
 
 ## What can I do with Parquet Visualizer?
-You can use Parquet Visualizer to:
-- query the data with SQL
-- visually inspect parquet files
-- inspect struct values easily by clicking on the cell
-- inspect the schema
-- inspect the metadata
-
-
 ### Run SQL Queries on a Parquet File
 You can query a parquet file with DuckDB SQL. You can also paginate the query result or change the page size.
 
