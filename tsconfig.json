@@ -12,12 +12,13 @@
 		  ],
 		"module": "commonjs",
 		"target": "es6",
-		"outDir": "dist",
+		"outDir": "out",
 		"lib": [
 			"es6",
 			"DOM",
 		],
 		"sourceMap": true,
+		"resolveJsonModule": true,
 		"strict": true,   /* enable all strict type-checking options */
 		"strictPropertyInitialization": false,
 		/* Additional Checks */

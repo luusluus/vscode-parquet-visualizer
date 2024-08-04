@@ -20,7 +20,7 @@
     let rowCountDataTab = 1;
     let rowCountQueryTab = 0;
 
-    let pageSizeQueryTab = 10;
+    let defaultPageSizes = [];
 
     const requestSourceDataTab = 'dataTab';
     const requestSourceResultTab = 'queryTab';
@@ -126,6 +126,7 @@
     }
 
     function initResultTable(/** @type {any} */ data, /** @type {any} */ headers) {
+        const options = createOptionHTMLElementsString(defaultPageSizes);
         document.getElementById("query-results").innerHTML = `
             <div class="tabulator">
                 <div class="tabulator-footer">
@@ -139,10 +140,7 @@
                         <span class="tabulator-paginator" id="pagination-${requestSourceResultTab}">
                             <label>Page Size</label>
                             <select class="tabulator-page-size" id="dropdown-page-size-${requestSourceResultTab}" aria-label="Page Size" title="Page Size">
-                                <option value="10">10</option>
-                                <option value="50">50</option>
-                                <option value="100">100</option>
-                                <option value="500">500</option>
+                                ${options}
                             </select>
                             <button class="tabulator-page" disabled id="btn-first-${requestSourceResultTab}" type="button" role="button" aria-label="First Page" title="First Page" data-page="first">First</button>
                             <button class="tabulator-page" disabled id="btn-prev-${requestSourceResultTab}" type="button" role="button" aria-label="Prev Page" title="Prev Page" data-page="prev">Prev</button>
@@ -214,11 +212,11 @@
         });
     }
 
-    function initCodeEditor(isQueryable) {
+    function initCodeEditor(isQueryable, defaultQuery) {
         const queryTabPanel = document.getElementById("query-tab-panel");
         if (!isQueryable) {
             const paragraph = document.createElement("p");
-            paragraph.innerText = "This parquet file with compression codec BROTLI does not have SQL support. Supported options are uncompressed, gzip, lz4_raw, snappy or zstd.";
+            paragraph.innerText = "The loaded backend does not have SQL support.";
             queryTabPanel?.appendChild(paragraph);
             return;
         }
@@ -242,7 +240,7 @@
         editor.setTheme("ace/theme/idle_fingers");
         editor.session.setMode("ace/mode/sql");
 
-        editor.setValue("SELECT *\r\nFROM data\r\nLIMIT 1000;");
+        editor.setValue(defaultQuery);
 
         editor.commands.addCommand({
             name: 'runQuery',
@@ -376,6 +374,18 @@
         return menu;
     };
 
+    function createOptionHTMLElementsString(/** @type {number[]} */ defaultPageSizes) {
+        let html = '';
+        defaultPageSizes.forEach((pageSize, idx) => {
+            if (idx === 0) {
+                html += `<option value="${pageSize}" selected="selected">${pageSize}</option>\n`;
+            } else {
+                html += `<option value="${pageSize}">${pageSize}</option>\n`;
+            }
+        });
+        return html;
+    }
+
     function initDataTable(/** @type {any} */ data) {
         let columns = data.headers.map(c => (
             {
@@ -385,6 +395,7 @@
             }
         ));
 
+        const options = createOptionHTMLElementsString(defaultPageSizes);
         dataTable = new Tabulator("#table", {
             columnDefaults:{
                 width:150, //set the width on all columns to 200px
@@ -403,10 +414,7 @@
                     <span class="tabulator-paginator">
                         <label>Page Size</label>
                         <select class="tabulator-page-size" id="dropdown-page-size-${requestSourceDataTab}" aria-label="Page Size" title="Page Size">
-                            <option value="10">10</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                            <option value="500">500</option>
+                            ${options}
                         </select>
                         <button class="tabulator-page" disabled id="btn-first-${requestSourceDataTab}" type="button" role="button" aria-label="First Page" title="First Page" data-page="first">First</button>
                         <button class="tabulator-page" disabled id="btn-prev-${requestSourceDataTab}" type="button" role="button" aria-label="Prev Page" title="Prev Page" data-page="prev">Prev</button>
@@ -465,8 +473,6 @@
         } else if (requestSource === requestSourceResultTab) {
             if (requestType === 'query'){
                 rowCountQueryTab = rowCount;
-                pageSizeQueryTab = pageSize;
-
                 initResultTable(data, headers);
             } else if (requestType === 'paginator') {
                 resultsTable.replaceData(data);
@@ -689,7 +695,7 @@
     
         const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSource}`));
         
-        numRecordsDropdown.value = `${pageSizeQueryTab}`;
+        numRecordsDropdown.value = `${defaultPageSizes[0]}`;
 
         if (rowCount <= 10 ) {
             numRecordsDropdown.setAttribute('disabled', '');
@@ -722,10 +728,11 @@
                 const tableData = body.tableData;
                 if (tableData) {
                     rowCountDataTab = tableData.rowCount;
+                    defaultPageSizes = tableData.defaultPageSizes;
                     initDataTable(tableData);
                     initSchema(tableData.schema);
                     initMetaData(tableData.metaData);
-                    initCodeEditor(tableData.isQueryable);
+                    initCodeEditor(tableData.isQueryable, tableData.defaultQuery);
 
                     currentPageDataTab = tableData.currentPage;
                     amountOfPagesDataTab = tableData.pageCount;
