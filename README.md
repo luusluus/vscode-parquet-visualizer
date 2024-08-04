@@ -1,30 +1,43 @@
 # Parquet Visualizer
-Parquet Visualizer is a tool that helps you easily explore and inspect parquet files fast.
+Parquet Visualizer is a tool that helps you easily query and inspect parquet files fast.
 
-![visualize](media/visualize.gif)
+![sql](media/sql.gif)
 
 ## What can I do with Parquet Visualizer?
-You can use this tool to query the data with SQL, visually inspect parquet files and more.
+You can use Parquet Visualizer to:
+- query the data with SQL
+- visually inspect parquet files
+- inspect struct values easily by clicking on the cell
+- inspect the schema
+- inspect the metadata
 
-### Run SQL Queries
+
+### Run SQL Queries on a Parquet File
+You can query a parquet file with DuckDB SQL. You can also paginate the query result or change the page size.
+
+![sql](media/sql.gif)
 
 ### Inspect Data
+You can inspect the binary data of parquet files in a human readable tabular format with pagination. You can also change the page size.
 
-### Inspect Complex Cell Values
+![data](media/inspect_data.gif)
+
+### Inspect Struct Value
+You can easily inspect complex struct values by clicking on the cell, which shows a popup containing the value of the struct.
+
+![complex](media/inspect_complex.gif)
 
 ### Inspect Schema
+You can inspect the schema of the parquet file by clicking on the Schema tab, in which you can paginate if the file has many columns.
+
+You can also inspect the struct type by clicking on the cell, which will show a popup containing the struct data type.
+
+![schema](media/inspect_schema.gif)
 
 ### Inspect Metadata
+You can inspect the metadata in tabular format by clicking on the Metadata tab.
 
-### Inspect Multiple Files
-
-- Visualizes the binary parquet file in readable table format
-- Query parquet files with SQL
-- Inspect complex objects by clicking on a table cell
-- Inspect the parquet file's schema
-- Inspect the parquet file's metadata
-- Open multiple files simultanuously
-- Select columns to visualize in table
+![metadata](media/inspect_metadata.gif)
 
 ## Configuration
 The following configuration options are available:
