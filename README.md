@@ -1,10 +1,10 @@
 # Parquet Visualizer
 
-### Inspect and query your parquet file easily
+### Inspect and query very large parquet files fast
 ![sql](media/sql.gif)
 
 ## What's Parquet Visualizer
-Parquet Visualizer is a tool that helps you easily query with SQL and inspect parquet files' data fast and easy.
+Parquet Visualizer is a tool that helps you easily query with SQL and inspect very large parquet files fast and easy.
 
 ## What can you do with Parquet Visualizer?
 ### Inspect Data
@@ -51,7 +51,7 @@ This extension supports two different types of backends for visualizing and quer
 [DuckDB](https://duckdb.org/docs/index) is the primary backend used for uncompressed and compressed parquet files (except for the BROTLI compression codec.)
 
 ### Parquet-wasm
-The backend that loads the Parquet files uses the [parquet-wasm](https://kylebarron.dev/parquet-wasm) library.
+[parquet-wasm](https://kylebarron.dev/parquet-wasm) is a backend that uses a Rust implementation of arrow and parquet. It supports all compression codecs except LZ4.
 
 ## Frontend
 The tables of the frontend are powered by [tabulator](https://tabulator.info/).
