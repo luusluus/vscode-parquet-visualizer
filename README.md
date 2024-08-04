@@ -1,9 +1,23 @@
 # Parquet Visualizer
-Explore parquet files visually with SQL and a table paginator.
+Parquet Visualizer is a tool that helps you easily explore and inspect parquet files fast.
 
 ![visualize](media/visualize.gif)
 
-## Features
+## What can I do with Parquet Visualizer?
+You can use this tool to query the data with SQL, visually inspect parquet files and more.
+
+### Run SQL Queries
+
+### Inspect Data
+
+### Inspect Complex Cell Values
+
+### Inspect Schema
+
+### Inspect Metadata
+
+### Inspect Multiple Files
+
 - Visualizes the binary parquet file in readable table format
 - Query parquet files with SQL
 - Inspect complex objects by clicking on a table cell
