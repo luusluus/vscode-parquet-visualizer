@@ -7,7 +7,7 @@ Parquet Visualizer is a tool that helps you easily query and inspect parquet fil
 You can use Parquet Visualizer to:
 - query the data with SQL
 - visually inspect parquet files
-- inspect struct files easily with a popup
+- inspect struct values easily by clicking on the cell
 - inspect the schema
 - inspect the metadata
 
