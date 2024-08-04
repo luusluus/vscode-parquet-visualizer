@@ -40,7 +40,7 @@ The following configuration options are available:
 |name|default|description|
 |----|-------|-----------|
 |`parquet-visualizer.backend`|`duckdb`| Backend for reading the parquet file. Options: `duckdb`, `parquet-wasm`|
-|`parquet-visualizer.defaultPageSizes`|[20, 50, 100, 500]|Set the default page size for data and query tab.|
+|`parquet-visualizer.defaultPageSizes`|`[20, 50, 100, 500]`|Set the default page size for data and query tab.|
 |`parquet-visualizer.defaultQuery`|`SELECT *\r\nFROM data\r\nLIMIT 1000;`|Default SQL query for parquet file. The table `data` should remain the same.|
 
 
@@ -56,5 +56,5 @@ This extension supports two different types of backends for visualizing and quer
 ## Frontend
 The tables of the frontend are powered by [tabulator](https://tabulator.info/).
 
-The query editor of the frontend is powered by [ace] (https://github.com/ajaxorg/ace).
+The query editor of the frontend is powered by [ace](https://github.com/ajaxorg/ace).
 
