@@ -418,7 +418,6 @@
                         </select>
                         <button class="tabulator-page" disabled id="btn-first-${requestSourceDataTab}" type="button" role="button" aria-label="First Page" title="First Page" data-page="first">First</button>
                         <button class="tabulator-page" disabled id="btn-prev-${requestSourceDataTab}" type="button" role="button" aria-label="Prev Page" title="Prev Page" data-page="prev">Prev</button>
-                        <span class="tabulator-pages" id="tabulator-pages-${requestSourceDataTab}">
                         </span>
                         <button class="tabulator-page" id="btn-next-${requestSourceDataTab}" type="button" role="button" aria-label="Next Page" title="Next Page" data-page="next">Next</button>
                         <button class="tabulator-page" id="btn-last-${requestSourceDataTab}" type="button" role="button" aria-label="Last Page" title="Last Page" data-page="last">Last</button>
@@ -432,7 +431,6 @@
         dataTable.on("tableBuilt", () => {
             dataTableBuilt = true;
             initializeFooter(rowCountDataTab, requestSourceDataTab);
-            updateNavigationNumberButtons(currentPageDataTab, amountOfPagesDataTab, requestSourceDataTab);
             updatePageCounterState(currentPageDataTab, amountOfPagesDataTab, requestSourceDataTab);
             updateNavigationButtonsState(currentPageDataTab, amountOfPagesDataTab, requestSourceDataTab);
         });
