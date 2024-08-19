@@ -139,7 +139,7 @@
                             </span>
                         </span>
                         <span class="tabulator-paginator">
-                            <button class="tabulator-page" disabled id="copy-query-results" type="button" role="button" aria-label="title="Copy" title="Copy">Copy</button>
+                            <button class="tabulator-page" disabled id="copy-query-results" type="button" role="button" aria-label="title="Copy to clipboard" title="Copy to clipboard">Copy to clipboard</button>
                             <button class="tabulator-page" disabled id="export-query-results" type="button" role="button" aria-label="title="Export results" title="Export results">Export results</button>
                         </span>
                     </div>
