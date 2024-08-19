@@ -17,6 +17,12 @@ You can query a parquet file with DuckDB SQL. You can also paginate the query re
 
 ![sql](media/sql.gif)
 
+### Export Query Result as CSV to Disk
+By clicking on the export button in the query tab, you can save your query result to disk.
+
+### Copy Query Result to Clipboard
+By clicking on the copy button in the querytab, you can copy the query result data to the clipboard.
+
 ### Inspect Struct Value
 You can easily inspect complex struct values by clicking on the cell, which shows a popup containing the value of the struct.
 
