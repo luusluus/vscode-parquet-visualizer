@@ -19,7 +19,7 @@
     "url": "https://github.com/luusluus"
   },
   "license": "MIT",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "engines": {
     "vscode": "^1.74.0",
     "node": ">18.0.0"
@@ -55,10 +55,10 @@
           "default": "duckdb"
         },
         "parquet-visualizer.defaultQuery": {
-            "type": "string",
-            "editPresentation": "multilineText",
-            "default": "SELECT *\r\nFROM data\r\nLIMIT 1000;",
-            "markdownDescription": "Default SQL query for parquet file. The table `data` should remain the same."
+          "type": "string",
+          "editPresentation": "multilineText",
+          "default": "SELECT *\r\nFROM data\r\nLIMIT 1000;",
+          "markdownDescription": "Default SQL query for parquet file. The table `data` should remain the same."
         },
         "parquet-visualizer.defaultPageSizes": {
           "markdownDescription": "Set the default page size for data and query tab.",
@@ -68,7 +68,12 @@
           "items": {
             "type": "number"
           },
-          "default": [20, 50, 100, 500]
+          "default": [
+            20,
+            50,
+            100,
+            500
+          ]
         }
       }
     },

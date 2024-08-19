@@ -91,6 +91,8 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
                 message.pageCount,
                 requestSourceQueryTab
               );
+            } else if (message.type === 'exportQueryResults') {
+              vscode.window.showInformationMessage(`Exported query result to ${message.path}`);
             }
           });
       }
@@ -274,7 +276,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
             message.pageNumber,
             message.pageCount
         );
-        vscode.window.showInformationMessage("Query Succeeded");
+        vscode.window.showInformationMessage("Query succeeded");
     }
 
     async changePageSize(message: any) {
@@ -508,6 +510,15 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             pageSize: message.pageSize
           });
           break;
+        }
+        case 'exportQueryResults': {
+          document.worker.postMessage({
+            source: message.type,
+          });
+          break;
+        }
+        case 'copyQueryResults': {
+          vscode.window.showInformationMessage("Query result data copied");
         }
       }
     }
