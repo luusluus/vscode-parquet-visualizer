@@ -127,6 +127,7 @@
 
     function initResultTable(/** @type {any} */ data, /** @type {any} */ headers) {
         const options = createOptionHTMLElementsString(defaultPageSizes);
+
         document.getElementById("query-results").innerHTML = `
             <div class="tabulator">
                 <div class="tabulator-footer">
@@ -137,6 +138,13 @@
                                 <span id="query-count"></span>
                             </span>
                         </span>
+                        <span class="tabulator-paginator">
+                            <button class="tabulator-page" disabled id="copy-query-results" type="button" role="button" aria-label="title="Copy" title="Copy">Copy</button>
+                            <button class="tabulator-page" disabled id="export-query-results" type="button" role="button" aria-label="title="Export results" title="Export results">Export results</button>
+                        </span>
+                    </div>
+                    <div class="tabulator-footer-contents">
+                        <!--<input id="search-rows" type="text" placeholder="Search rows">-->
                         <span class="tabulator-paginator" id="pagination-${requestSourceResultTab}">
                             <label>Page Size</label>
                             <select class="tabulator-page-size" id="dropdown-page-size-${requestSourceResultTab}" aria-label="Page Size" title="Page Size">
@@ -144,8 +152,7 @@
                             </select>
                             <button class="tabulator-page" disabled id="btn-first-${requestSourceResultTab}" type="button" role="button" aria-label="First Page" title="First Page" data-page="first">First</button>
                             <button class="tabulator-page" disabled id="btn-prev-${requestSourceResultTab}" type="button" role="button" aria-label="Prev Page" title="Prev Page" data-page="prev">Prev</button>
-                            <span class="tabulator-pages" id="tabulator-pages-${requestSourceResultTab}">
-                            </span>
+                            <span class="tabulator-pages" id="tabulator-pages-${requestSourceResultTab}"></span>
                             <button class="tabulator-page" disabled id="btn-next-${requestSourceResultTab}" type="button" role="button" aria-label="Next Page" title="Next Page" data-page="next">Next</button>
                             <button class="tabulator-page" disabled id="btn-last-${requestSourceResultTab}" type="button" role="button" aria-label="Last Page" title="Last Page" data-page="last">Last</button>
                         </span>
@@ -170,6 +177,7 @@
             placeholder:"No results. Run a query to view results", //display message to user on empty table
             data: data,
             columns: columns,
+            clipboard: "copy", 
             paginationElement: document.getElementById(`pagination-${requestSourceResultTab}`),
         });
 
@@ -472,6 +480,12 @@
             if (requestType === 'query'){
                 rowCountQueryTab = rowCount;
                 initResultTable(data, headers);
+
+                const exportResultsButton = document.getElementById(`export-query-results`);
+                exportResultsButton?.removeAttribute('disabled');
+
+                const copyButton = document.getElementById(`copy-query-results`);
+                copyButton?.removeAttribute('disabled');
             } else if (requestType === 'paginator') {
                 resultsTable.replaceData(data);
             }
@@ -692,8 +706,22 @@
         });
     
         const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSource}`));
-        
         numRecordsDropdown.value = `${defaultPageSizes[0]}`;
+
+        const exportResultsButton = /** @type {HTMLElement} */ (document.querySelector(`#export-query-results`));
+        exportResultsButton.addEventListener('click', () => {
+            vscode.postMessage({
+                type: 'exportQueryResults',
+            });
+        });
+
+        const copyResultsButton = /** @type {HTMLElement} */ (document.querySelector(`#copy-query-results`));
+        copyResultsButton.addEventListener('click', () => {
+            resultsTable.copyToClipboard("all", true);
+            vscode.postMessage({
+                type: 'copyQueryResults',
+            });
+        });
 
         if (rowCount <= 10 ) {
             numRecordsDropdown.setAttribute('disabled', '');

@@ -1,4 +1,8 @@
 // worker.ts
+const path = require('path');
+
+import { randomUUID } from 'crypto';
+
 const {
   parentPort, workerData
 } = require('node:worker_threads');
@@ -47,7 +51,7 @@ class BackendWorker {
       headers: headers,
       result: result,
       rowCount: this.queryResultCount
-    }
+    };
   }
 
   formatQueryString(query: string): string {
@@ -94,7 +98,19 @@ class BackendWorker {
       headers: headers,
       result: result,
       rowCount: this.queryResultCount
-    }
+    };
+  }
+
+  async exportQueryResult() {
+    const parsedPath = path.parse(this.backend.filePath);
+    const id: string = randomUUID();
+    parsedPath.base = `${parsedPath.name}-${id}.csv`;
+    const newPath = path.format(parsedPath);
+    await this.backend.query(
+      `COPY query_result TO '${newPath}' WITH (HEADER, DELIMITER ',');`
+    );
+
+    return newPath;
   }
 }
 
@@ -139,6 +155,16 @@ class BackendWorker {
               pageCount: pageCount,
               pageSize: message.pageSize,
             });
+            break;
+          }
+          case 'exportQueryResults': {
+            const exportPath = await worker.exportQueryResult();
+
+            parentPort.postMessage({
+              type: 'exportQueryResults',
+              path: exportPath
+            });
+
             break;
           }
           default: {
