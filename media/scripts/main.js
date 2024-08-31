@@ -140,7 +140,13 @@
                             </span>
                         </span>
                         <span class="tabulator-paginator">
-                            <button class="tabulator-page" disabled id="copy-query-results" type="button" role="button" aria-label="title="Copy to clipboard" title="Copy to clipboard">Copy to clipboard</button>
+                            <button class="tabulator-page" disabled id="copy-query-results" type="button" role="button" aria-label="Copy to clipboard" title="Copy to clipboard">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" width="16" height="16" class="copy-icon">
+                                    <path d="M2 5h9v9H2z" class="stroke-linejoin-round"></path>
+                                    <path d="M5 5V2h9v9h-3" class="stroke-linejoin-round"></path>
+                                </svg>
+                                Copy
+                            </button>
                             <button class="tabulator-page" disabled id="export-query-results" type="button" role="button" aria-label="title="Export results" title="Export results">Export results</button>
                         </span>
                     </div>
