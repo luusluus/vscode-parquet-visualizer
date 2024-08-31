@@ -17,7 +17,7 @@ You can query a parquet file with DuckDB SQL. You can also search within the res
 
 ![sql](media/sql.gif)
 
-### Match Values of Query Result
+### Search within rows of Query Result
 By typing free text in the search box, find specific values of the query result.
 
 ### Export Query Result as CSV to Disk
