@@ -30,14 +30,7 @@
     document.getElementById("query-tab").addEventListener("click", handleTabChange);
     document.getElementById("metadata-tab").addEventListener("click", handleTabChange);
 
-    document.getElementById("filter-value").addEventListener("change", handleSearchInput);
 
-    function handleSearchInput(/** @type {any} */ e) {
-        vscode.postMessage({
-            type: 'search',
-            query: e.target.value,
-        });
-    }
 
     function handleTabChange(/** @type {any} */ e) {
         var i, tabcontent, tablinks;
@@ -152,7 +145,22 @@
                         </span>
                     </div>
                     <div class="tabulator-footer-contents">
-                        <!--<input id="search-rows" type="text" placeholder="Search rows">-->
+                        <div class="tabulator-paginator search-container">
+                            <div class="search-icon-element">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" class="search-icon">
+                                    <circle cx="7" cy="7" r="5"></circle>
+                                    <path d="m15 15-4.5-4.5"></path>
+                                </svg>
+                            </div>
+                            <input class="search-box" id="input-filter-values" type="text" placeholder="Search rows">
+                            <div class="clear-icon-element" id="clear-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" class="clear-icon">
+                                    <path d="m2 2 12 12M14 2 2 14" stroke="#ffffff"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    
+
                         <span class="tabulator-paginator" id="pagination-${requestSourceResultTab}">
                             <label>Page Size</label>
                             <select class="tabulator-page-size" id="dropdown-page-size-${requestSourceResultTab}" aria-label="Page Size" title="Page Size">
@@ -720,6 +728,40 @@
             vscode.postMessage({
                 type: 'exportQueryResults',
             });
+        });
+
+        const clearIconButton = /** @type {HTMLElement} */ (document.querySelector(`#clear-icon`));
+        clearIconButton.addEventListener("click", function () {
+            var searchInput = document.getElementById('input-filter-values');
+            searchInput.value = ''; // Clear the input field
+            this.style.display = 'none'; // Hide the clear icon
+
+            resultsTable.clearFilter(true);
+        });
+
+        const filterValueInput = /** @type {HTMLElement} */ (document.querySelector(`#input-filter-values`));
+        filterValueInput.addEventListener("input", function () {
+
+            // Check whether we should show the clear button.
+            var clearIcon = document.getElementById('clear-icon');
+            if (filterValueInput.value.length > 0) {
+                clearIcon.style.display = 'flex';
+            } else {
+                clearIcon.style.display = 'none';
+            }
+            
+            const searchValue = filterValueInput.value.trim();
+            console.log(searchValue);
+            const columnLayout = resultsTable.getColumnLayout();
+
+            const filterArray = columnLayout.map((c) => {
+                return {
+                    field: c.field,
+                    type: 'like',
+                    value: searchValue
+                };
+            });
+            resultsTable.setFilter([filterArray]);
         });
 
         const copyResultsButton = /** @type {HTMLElement} */ (document.querySelector(`#copy-query-results`));

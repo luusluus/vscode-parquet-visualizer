@@ -110,3 +110,54 @@ html, body {
 .flex-button:disabled {
     opacity: .5;
 }
+
+.search-container {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ccc;
+    padding: 4px;
+    margin-right: 10px;
+}
+
+.search-icon-element {
+    margin-right: 8px; /* Space between the icon and the input box */
+}
+
+.search-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.search-icon circle, 
+.search-icon path {
+    fill: none; /* Ensure no fill on path */
+    stroke: #ffffff; /* Set stroke color to white */
+}
+
+.search-box {
+    border: none;
+    outline: none;
+    width: 100%;
+}
+
+/* Additional CSS to ensure no border or outline on focus */
+.search-box:focus {
+    border: none;  /* Ensures no border on focus */
+    outline: none; /* Ensures no outline on focus */
+}
+
+.search-box::placeholder {
+    color: #999;
+}
+
+.clear-icon-element {
+    display: none; /* Hide the element by default */
+    margin-left: 8px; /* Space between the input box and the clear icon */
+    cursor: pointer; /* Add a pointer cursor to indicate it's clickable */
+}
+
+.clear-icon {
+    width: 16px;
+    height: 16px;
+    stroke: #ffffff; /* Set stroke color to white */
+}
