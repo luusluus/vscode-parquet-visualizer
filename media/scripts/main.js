@@ -263,7 +263,6 @@
     }
 
     function initCodeEditor(isQueryable, defaultQuery, shortCutMapping) {
-        console.log(shortCutMapping);
         const queryTabPanel = document.getElementById("query-tab-panel");
         if (!isQueryable) {
             const paragraph = document.createElement("p");
