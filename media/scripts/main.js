@@ -87,7 +87,27 @@
         style.overflowY  = 'auto';
     }
 
-    function onPopupOpened(component) {
+    function onPopupOpenedDataTab(component) {
+        const parentContainerId = "data-tab-panel";
+        onPopupOpened(parentContainerId);
+    }
+
+    function onPopupOpenedQueryResultTab(component) {
+        const parentContainerId = "table-queryTab";
+        onPopupOpened(parentContainerId);
+    }
+
+    function onPopupOpenedSchemaTab(component) {
+        const parentContainerId = "schema";
+        onPopupOpened(parentContainerId);
+    }
+
+    function onPopupOpenedMetaDataTab(component) {
+        const parentContainerId = "metadata";
+        onPopupOpened(parentContainerId);
+    }
+
+    function onPopupOpened(parentContainerId) {
         const element = document.getElementsByClassName("tabulator-popup tabulator-popup-container")[0];
         let innerHTML = element.innerHTML;
         let style = element.style;
@@ -104,7 +124,7 @@
         style.backgroundColor = '#101010';
         style.color = '#d4d4d4';
 
-        const container = document.getElementById("container");
+        const container = document.getElementById(parentContainerId);
         const parentRect = container.getBoundingClientRect();
         const childRect = element.getBoundingClientRect();
 
@@ -203,7 +223,7 @@
             paginationElement: document.getElementById(`pagination-${requestSourceResultTab}`),
         });
 
-        resultsTable.on("popupOpened", onPopupOpened);
+        resultsTable.on("popupOpened", onPopupOpenedQueryResultTab);
 
         resultsTable.on("tableBuilt", function(data){
             const resultsCountElement = document.getElementById("query-count");
@@ -316,7 +336,7 @@
             columns: columns,
         });
 
-        metadataTable.on("popupOpened", onPopupOpened);
+        metadataTable.on("popupOpened", onPopupOpenedMetaDataTab);
     }
 
     function initSchema (/** @type {any} */  data) {
@@ -345,7 +365,7 @@
             paginationCounter: "pages",
         });
 
-        schemaTable.on("popupOpened", onPopupOpened);
+        schemaTable.on("popupOpened", onPopupOpenedSchemaTab);
     }
 
     var headerMenu = function(){
@@ -464,7 +484,7 @@
             updateNavigationButtonsState(currentPageDataTab, amountOfPagesDataTab, requestSourceDataTab);
         });
 
-        dataTable.on("popupOpened", onPopupOpened);
+        dataTable.on("popupOpened", onPopupOpenedDataTab);
         dataTable.on("menuOpened", onMenuOpened);
 
         // const filters = columns = columns.map(c => ({
