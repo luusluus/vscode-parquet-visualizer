@@ -751,9 +751,8 @@
             }
             
             const searchValue = filterValueInput.value.trim();
-            console.log(searchValue);
-            const columnLayout = resultsTable.getColumnLayout();
 
+            const columnLayout = resultsTable.getColumnLayout();
             const filterArray = columnLayout.map((c) => {
                 return {
                     field: c.field,
@@ -761,6 +760,7 @@
                     value: searchValue
                 };
             });
+            
             resultsTable.setFilter([filterArray]);
         });
 
