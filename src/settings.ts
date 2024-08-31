@@ -17,6 +17,10 @@ export function defaultQuery(): string {
 export function defaultBackend(): string {
     return settings().get('backend');
 }
+
+export function defaultRunQueryKeyBinding(): string {
+    return settings().get('RunQueryKeyBinding');
+}
   
 function settingsChanged(e: vscode.ConfigurationChangeEvent, sections: string[]): boolean {
     return sections.map(s => `${name}.${s}`).some(s => e.affectsConfiguration(s));

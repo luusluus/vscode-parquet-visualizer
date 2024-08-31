@@ -262,7 +262,7 @@
         });
     }
 
-    function initCodeEditor(isQueryable, defaultQuery) {
+    function initCodeEditor(isQueryable, defaultQuery, shortCutMapping) {
         const queryTabPanel = document.getElementById("query-tab-panel");
         if (!isQueryable) {
             const paragraph = document.createElement("p");
@@ -294,7 +294,7 @@
 
         editor.commands.addCommand({
             name: 'runQuery',
-            bindKey: {win: 'Ctrl-Enter',  mac: 'Command-Enter'},
+            bindKey: shortCutMapping,
             exec: function(editor) {
                 runQuery(editor);
             }
@@ -829,11 +829,15 @@
                 const tableData = body.tableData;
                 if (tableData) {
                     rowCountDataTab = tableData.rowCount;
-                    defaultPageSizes = tableData.defaultPageSizes;
+                    defaultPageSizes = tableData.settings.defaultPageSizes;
                     initDataTable(tableData);
                     initSchema(tableData.schema);
                     initMetaData(tableData.metaData);
-                    initCodeEditor(tableData.isQueryable, tableData.defaultQuery);
+                    initCodeEditor(
+                        tableData.isQueryable, 
+                        tableData.settings.defaultQuery,
+                        tableData.settings.shortCutMapping
+                    );
 
                     currentPageDataTab = tableData.currentPage;
                     amountOfPagesDataTab = tableData.pageCount;

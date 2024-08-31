@@ -12,7 +12,7 @@ import { DuckDBBackend } from './duckdb-backend';
 import { DuckDBPaginator } from './duckdb-paginator';
 import { ParquetWasmBackend } from './parquet-wasm-backend';
 import { ParquetWasmPaginator } from './parquet-wasm-paginator';
-import { affectsDocument, defaultPageSizes, defaultQuery, defaultBackend } from './settings';
+import { affectsDocument, defaultPageSizes, defaultQuery, defaultBackend, defaultRunQueryKeyBinding } from './settings';
 
 // import { getLogger } from './logger';
 
@@ -386,6 +386,32 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
         return document;
     }
+
+    createShortcutMapping(input: string): { win: string; mac: string } {
+      if (input.startsWith("Ctrl-")) {
+          const suffix = input.substring(5); // Remove "Ctrl-" from the start
+          return {
+              win: `Ctrl-${suffix}`,
+              mac: `Command-${suffix}`,
+          };
+      } else if (input.startsWith("Command-")) {
+          const suffix = input.substring(8); // Remove "Command-" from the start
+          return {
+              win: `Ctrl-${suffix}`,
+              mac: `Command-${suffix}`,
+          };
+      } else {
+         // Show an error message to the user
+          const errorMessage = 'Value of setting "parquet-visualizer.RunQueryKeyBinding" invalid. The string must start with "Ctrl-" or "Command-".';
+          vscode.window.showErrorMessage(`${errorMessage}`);
+          
+          // Optionally, log the error to the output channel for more details
+          const outputChannel = vscode.window.createOutputChannel("Your Extension");
+          outputChannel.appendLine(`Configuration Error: ${errorMessage}`);
+          outputChannel.show();
+          throw Error(errorMessage);
+      }
+    }
     
     /**
      * Called when our custom editor is opened.
@@ -430,7 +456,10 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         const pageSize = Number(defaultPageSizesFromSettings[0]);
 
         const defaultQueryFromSettings = defaultQuery();
-        
+
+        const defaultRunQueryKeyBindingFromSettings = defaultRunQueryKeyBinding();
+        const shortCutMapping = this.createShortcutMapping(defaultRunQueryKeyBindingFromSettings);
+
         const values = await document.paginator.getCurrentPage(pageSize);
         const headers = createHeadersFromData(values);
         const pageNumber = document.paginator.getPageNumber();
@@ -448,8 +477,11 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           requestSource: requestSourceDataTab,
           requestType: 'paginator',
           isQueryable: document.isQueryAble,
-          defaultPageSizes: defaultPageSizesFromSettings,
-          defaultQuery: defaultQueryFromSettings
+          settings: {
+            defaultQuery: defaultQueryFromSettings,
+            defaultPageSizes: defaultPageSizesFromSettings,
+            shortCutMapping: shortCutMapping
+          }
         };
 
         // Wait for the webview to be properly ready before we init
