@@ -31,6 +31,7 @@
     document.getElementById("metadata-tab").addEventListener("click", handleTabChange);
 
 
+
     function handleTabChange(/** @type {any} */ e) {
         var i, tabcontent, tablinks;
 
@@ -86,7 +87,27 @@
         style.overflowY  = 'auto';
     }
 
-    function onPopupOpened(component) {
+    function onPopupOpenedDataTab(component) {
+        const parentContainerId = "data-tab-panel";
+        onPopupOpened(parentContainerId);
+    }
+
+    function onPopupOpenedQueryResultTab(component) {
+        const parentContainerId = "table-queryTab";
+        onPopupOpened(parentContainerId);
+    }
+
+    function onPopupOpenedSchemaTab(component) {
+        const parentContainerId = "schema";
+        onPopupOpened(parentContainerId);
+    }
+
+    function onPopupOpenedMetaDataTab(component) {
+        const parentContainerId = "metadata";
+        onPopupOpened(parentContainerId);
+    }
+
+    function onPopupOpened(parentContainerId) {
         const element = document.getElementsByClassName("tabulator-popup tabulator-popup-container")[0];
         let innerHTML = element.innerHTML;
         let style = element.style;
@@ -103,7 +124,7 @@
         style.backgroundColor = '#101010';
         style.color = '#d4d4d4';
 
-        const container = document.getElementById("container");
+        const container = document.getElementById(parentContainerId);
         const parentRect = container.getBoundingClientRect();
         const childRect = element.getBoundingClientRect();
 
@@ -139,12 +160,33 @@
                             </span>
                         </span>
                         <span class="tabulator-paginator">
-                            <button class="tabulator-page" disabled id="copy-query-results" type="button" role="button" aria-label="title="Copy to clipboard" title="Copy to clipboard">Copy to clipboard</button>
+                            <button class="tabulator-page" disabled id="copy-query-results" type="button" role="button" aria-label="Copy to clipboard" title="Copy to clipboard">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" width="16" height="16" class="copy-icon">
+                                    <path d="M2 5h9v9H2z" class="stroke-linejoin-round"></path>
+                                    <path d="M5 5V2h9v9h-3" class="stroke-linejoin-round"></path>
+                                </svg>
+                                Copy
+                            </button>
                             <button class="tabulator-page" disabled id="export-query-results" type="button" role="button" aria-label="title="Export results" title="Export results">Export results</button>
                         </span>
                     </div>
                     <div class="tabulator-footer-contents">
-                        <!--<input id="search-rows" type="text" placeholder="Search rows">-->
+                        <div class="tabulator-paginator search-container">
+                            <div class="search-icon-element">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" class="search-icon">
+                                    <circle cx="7" cy="7" r="5"></circle>
+                                    <path d="m15 15-4.5-4.5"></path>
+                                </svg>
+                            </div>
+                            <input class="search-box" id="input-filter-values" type="text" placeholder="Search rows">
+                            <div class="clear-icon-element" id="clear-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" class="clear-icon">
+                                    <path d="m2 2 12 12M14 2 2 14" stroke="#ffffff"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    
+
                         <span class="tabulator-paginator" id="pagination-${requestSourceResultTab}">
                             <label>Page Size</label>
                             <select class="tabulator-page-size" id="dropdown-page-size-${requestSourceResultTab}" aria-label="Page Size" title="Page Size">
@@ -181,7 +223,7 @@
             paginationElement: document.getElementById(`pagination-${requestSourceResultTab}`),
         });
 
-        resultsTable.on("popupOpened", onPopupOpened);
+        resultsTable.on("popupOpened", onPopupOpenedQueryResultTab);
 
         resultsTable.on("tableBuilt", function(data){
             const resultsCountElement = document.getElementById("query-count");
@@ -294,7 +336,7 @@
             columns: columns,
         });
 
-        metadataTable.on("popupOpened", onPopupOpened);
+        metadataTable.on("popupOpened", onPopupOpenedMetaDataTab);
     }
 
     function initSchema (/** @type {any} */  data) {
@@ -323,7 +365,7 @@
             paginationCounter: "pages",
         });
 
-        schemaTable.on("popupOpened", onPopupOpened);
+        schemaTable.on("popupOpened", onPopupOpenedSchemaTab);
     }
 
     var headerMenu = function(){
@@ -416,7 +458,6 @@
                             <span>of</span>
                             <span id="page-count-${requestSourceDataTab}"> ${data.pageCount} </span>
                             <span>pages</span>
-
                         </span>
                     </span>
                     <span class="tabulator-paginator">
@@ -443,7 +484,7 @@
             updateNavigationButtonsState(currentPageDataTab, amountOfPagesDataTab, requestSourceDataTab);
         });
 
-        dataTable.on("popupOpened", onPopupOpened);
+        dataTable.on("popupOpened", onPopupOpenedDataTab);
         dataTable.on("menuOpened", onMenuOpened);
 
         // const filters = columns = columns.map(c => ({
@@ -713,6 +754,40 @@
             vscode.postMessage({
                 type: 'exportQueryResults',
             });
+        });
+
+        const clearIconButton = /** @type {HTMLElement} */ (document.querySelector(`#clear-icon`));
+        clearIconButton.addEventListener("click", function () {
+            var searchInput = document.getElementById('input-filter-values');
+            searchInput.value = ''; // Clear the input field
+            this.style.display = 'none'; // Hide the clear icon
+
+            resultsTable.clearFilter(true);
+        });
+
+        const filterValueInput = /** @type {HTMLElement} */ (document.querySelector(`#input-filter-values`));
+        filterValueInput.addEventListener("input", function () {
+
+            // Check whether we should show the clear button.
+            var clearIcon = document.getElementById('clear-icon');
+            if (filterValueInput.value.length > 0) {
+                clearIcon.style.display = 'flex';
+            } else {
+                clearIcon.style.display = 'none';
+            }
+            
+            const searchValue = filterValueInput.value.trim();
+
+            const columnLayout = resultsTable.getColumnLayout();
+            const filterArray = columnLayout.map((c) => {
+                return {
+                    field: c.field,
+                    type: 'like',
+                    value: searchValue
+                };
+            });
+            
+            resultsTable.setFilter([filterArray]);
         });
 
         const copyResultsButton = /** @type {HTMLElement} */ (document.querySelector(`#copy-query-results`));

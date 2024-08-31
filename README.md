@@ -13,9 +13,12 @@ You can inspect the binary data of parquet files in a human readable tabular for
 ![data](media/inspect_data.gif)
 
 ### Run SQL Queries on a Parquet File
-You can query a parquet file with DuckDB SQL. You can also paginate the query result or change the page size.
+You can query a parquet file with DuckDB SQL. You can also search within the result, paginate the result or change the page size. 
 
 ![sql](media/sql.gif)
+
+### Search within rows of Query Result
+By typing free text in the search box, find specific values of the query result.
 
 ### Export Query Result as CSV to Disk
 By clicking on the export button in the query tab, you can save your query result to disk.
