@@ -6,7 +6,7 @@ import { DuckDbError } from 'duckdb-async';
 
 import { Paginator } from './paginator';
 import { Backend } from './backend';
-import { createHeadersFromData, getNonce } from './util';
+import { createHeadersFromData, replacePeriodWithUnderscoreInKey, getNonce } from './util';
 import { Disposable } from "./dispose";
 import { DuckDBBackend } from './duckdb-backend';
 import { DuckDBPaginator } from './duckdb-paginator';
@@ -221,6 +221,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
                 throw Error(`Unknown message type: ${message.type}`);
             }
             
+            values = replacePeriodWithUnderscoreInKey(values);
             const rowCount = 0;
             this.fireDataPaginatorEvent(
                 values,
@@ -288,7 +289,8 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         });
       }
       else if (message.source === requestSourceDataTab) {
-        const values = await this.paginator.getCurrentPage(Number(message.newPageSize));
+        const page = await this.paginator.getCurrentPage(Number(message.newPageSize));
+        const values = replacePeriodWithUnderscoreInKey(page);
         let headers: any[] = [];
   
         const requestType = 'paginator';
@@ -460,7 +462,8 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         const defaultRunQueryKeyBindingFromSettings = defaultRunQueryKeyBinding();
         const shortCutMapping = this.createShortcutMapping(defaultRunQueryKeyBindingFromSettings);
 
-        const values = await document.paginator.getCurrentPage(pageSize);
+        const page = await document.paginator.getCurrentPage(pageSize);
+        const values = replacePeriodWithUnderscoreInKey(page);
         const headers = createHeadersFromData(values);
         const pageNumber = document.paginator.getPageNumber();
         const schema = document.backend.getSchema();

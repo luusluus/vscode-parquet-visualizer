@@ -93,3 +93,16 @@ export function createHeadersFromData(data: any) {
   }
   return headers;
 }
+
+export function replacePeriodWithUnderscoreInKey(data: any) {
+  return data.map(obj => {
+    const newObj: { [key: string]: any } = {};
+
+    Object.keys(obj).forEach(key => {
+      const newKey = key.replace(/\./g, '_'); // Replace all periods with underscores
+      newObj[newKey] = obj[key];
+    });
+
+    return newObj; 
+  });
+}
