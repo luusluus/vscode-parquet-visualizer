@@ -546,6 +546,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         case 'exportQueryResults': {
           document.worker.postMessage({
             source: message.type,
+            exportType: message.exportType
           });
           break;
         }
