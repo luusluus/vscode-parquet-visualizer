@@ -150,7 +150,7 @@
         const options = createOptionHTMLElementsString(defaultPageSizes);
 
         document.getElementById("query-results").innerHTML = `
-            <div class="tabulator">
+            <div class="tabulator" style="z-index: 2; overflow: visible">
                 <div class="tabulator-footer">
                     <div class="tabulator-footer-contents">
                         <span class="tabulator-page-counter">
@@ -167,7 +167,29 @@
                                 </svg>
                                 Copy
                             </button>
-                            <button class="tabulator-page" disabled id="export-query-results" type="button" role="button" aria-label="title="Export results" title="Export results">Export results</button>
+
+                            <div class="dropdown">
+                                <button class="dropdown-button" id="export-query-results" type="button" role="button" aria-label="Export results" title="Export results">
+                                    Export results
+                                </button>
+                                <ul class="dropdown-menu" id="dropdown-menu">
+                                    <li><span class="dropdown-item">To CSV</span></li>
+                                    <li><span class="dropdown-item">To Parquet</span></li>
+                                    <li><span class="dropdown-item">To JSON</span></li>
+                                    <li><span class="dropdown-item">To ndJSON</span></li>
+                                </ul>
+                            </div>
+
+
+                            <!--
+                            <select id="export-query-results" class="tabulator-page" aria-label="Export results" title="Export results">
+                                <option disabled selected>Export Result</option>
+                                <option value="csv">To CSV</option>
+                                <option value="parquet">To Parquet</option>
+                                <option value="json">To JSON</option>
+                                <option value="ndjson">To ndJSON</option>
+                            </select>
+                            -->
                         </span>
                     </div>
                     <div class="tabulator-footer-contents">
@@ -228,6 +250,9 @@
         resultsTable.on("tableBuilt", function(data){
             const resultsCountElement = document.getElementById("query-count");
             resultsCountElement.innerText = `(${rowCountQueryTab})`;
+
+            let tabulatorTableElement = document.getElementById("table-queryTab");
+            tabulatorTableElement.style.zIndex = 1;
 
             resetQueryControl();
             initializeFooter(rowCountQueryTab, requestSourceResultTab);
@@ -688,7 +713,7 @@
     }
 
     function initializeFooter(/** @type {Number} */ rowCount, /** @type {String} */ requestSource) {
-        // console.log(`initializeFooter(rowCount:${rowCount}, requestSource:${requestSource})`);
+        console.log(`initializeFooter(rowCount:${rowCount}, requestSource:${requestSource})`);
         const nextButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-next-${requestSource}`));
         const prevButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-prev-${requestSource}`));
         const firstButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-first-${requestSource}`));
@@ -750,10 +775,34 @@
         numRecordsDropdown.value = `${defaultPageSizes[0]}`;
 
         const exportResultsButton = /** @type {HTMLElement} */ (document.querySelector(`#export-query-results`));
-        exportResultsButton.addEventListener('click', () => {
-            vscode.postMessage({
-                type: 'exportQueryResults',
-            });
+
+        // Toggle dropdown menu visibility
+        exportResultsButton.addEventListener('click', (event) => {
+            event.stopPropagation(); // Prevent the event from bubbling up
+            let dropdownMenu = document.getElementById('dropdown-menu');
+
+            if (dropdownMenu.style.display === 'none' || dropdownMenu.style.display === '') {
+                dropdownMenu.style.display = 'block';
+            } else {
+                dropdownMenu.style.display = 'none';
+            }
+
+            // const selectedValue = event.target.value;
+            // vscode.postMessage({
+            //     type: 'exportQueryResults',
+            //     exportType: selectedValue
+            // });
+        });
+
+        // Close dropdown when clicking outside
+        window.addEventListener('click', function() {
+            console.log("outside click");
+            let dropdownMenu = document.getElementById('dropdown-menu');
+            
+            // Hide the menu if it's currently visible
+            if (dropdownMenu.style.display === 'block') {
+                dropdownMenu.style.display = 'none';
+            }
         });
 
         const clearIconButton = /** @type {HTMLElement} */ (document.querySelector(`#clear-icon`));
