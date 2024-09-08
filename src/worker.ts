@@ -11,7 +11,7 @@ const {
 import { Paginator } from './paginator';
 import { DuckDBBackend } from './duckdb-backend';
 import { DuckDBPaginator } from './duckdb-paginator';
-import { createHeadersFromData } from './util';
+import { createHeadersFromData, replacePeriodWithUnderscoreInKey } from './util';
 
 
 class BackendWorker {
@@ -45,11 +45,12 @@ class BackendWorker {
       throw Error(`Unknown message type: ${message.type}`);
     }
 
-    const headers = createHeadersFromData(result);
+    const values = replacePeriodWithUnderscoreInKey(result);
+    const headers = createHeadersFromData(values);
 
     return {
       headers: headers,
-      result: result,
+      result: values,
       rowCount: this.queryResultCount
     };
   }
@@ -92,11 +93,12 @@ class BackendWorker {
     );
 
     const result = await (this.paginator.firstPage(msg.pageSize));
-    const headers = createHeadersFromData(result);
+    const values = replacePeriodWithUnderscoreInKey(result);
+    const headers = createHeadersFromData(values);
 
     return {
       headers: headers,
-      result: result,
+      result: values,
       rowCount: this.queryResultCount
     };
   }
