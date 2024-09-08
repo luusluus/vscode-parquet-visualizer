@@ -705,7 +705,7 @@
     }
 
     function initializeFooter(/** @type {Number} */ rowCount, /** @type {String} */ requestSource) {
-        console.log(`initializeFooter(rowCount:${rowCount}, requestSource:${requestSource})`);
+        // console.log(`initializeFooter(rowCount:${rowCount}, requestSource:${requestSource})`);
         const nextButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-next-${requestSource}`));
         const prevButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-prev-${requestSource}`));
         const firstButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-first-${requestSource}`));
@@ -800,7 +800,6 @@
 
         // Close dropdown when clicking outside
         window.addEventListener('click', function() {
-            console.log("outside click");
             let dropdownMenu = document.getElementById('dropdown-menu');
             
             // Hide the menu if it's currently visible
