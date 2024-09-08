@@ -101,14 +101,37 @@ class BackendWorker {
     };
   }
 
-  async exportQueryResult() {
+  async exportQueryResult(exportType: string) {
     const parsedPath = path.parse(this.backend.filePath);
     const id: string = randomUUID();
-    parsedPath.base = `${parsedPath.name}-${id}.csv`;
-    const newPath = path.format(parsedPath);
-    await this.backend.query(
-      `COPY query_result TO '${newPath}' WITH (HEADER, DELIMITER ',');`
-    );
+
+    let query = '';
+    let newPath = '';
+    if (exportType === 'csv') {
+      parsedPath.base = `${parsedPath.name}-${id}.csv`;
+      newPath = path.format(parsedPath);
+      query = `COPY query_result TO '${newPath}' WITH (HEADER, DELIMITER ',');`;
+    }
+    else if (exportType === 'json') {
+      parsedPath.base = `${parsedPath.name}-${id}.json`;
+      newPath = path.format(parsedPath);
+      query = `COPY query_result TO '${newPath}' (FORMAT JSON, ARRAY true);`;
+    }
+    else if (exportType === 'ndjson') {
+      parsedPath.base = `${parsedPath.name}-${id}.json`;
+      newPath = path.format(parsedPath);
+      query = `COPY query_result TO '${newPath}' (FORMAT JSON, ARRAY false);`;
+    }
+    else if (exportType === 'parquet') {
+      parsedPath.base = `${parsedPath.name}-${id}.parquet`;
+      newPath = path.format(parsedPath);
+      query = `COPY query_result TO '${newPath}' (FORMAT PARQUET);`;
+    }
+    else {
+      throw Error(`unknown export type: ${exportType}`);
+    }
+    
+    await this.backend.query(query);
 
     return newPath;
   }
@@ -158,7 +181,8 @@ class BackendWorker {
             break;
           }
           case 'exportQueryResults': {
-            const exportPath = await worker.exportQueryResult();
+            const exportType = message.exportType;
+            const exportPath = await worker.exportQueryResult(exportType);
 
             parentPort.postMessage({
               type: 'exportQueryResults',

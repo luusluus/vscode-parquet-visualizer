@@ -150,7 +150,7 @@
         const options = createOptionHTMLElementsString(defaultPageSizes);
 
         document.getElementById("query-results").innerHTML = `
-            <div class="tabulator">
+            <div class="tabulator" style="z-index: 2; overflow: visible">
                 <div class="tabulator-footer">
                     <div class="tabulator-footer-contents">
                         <span class="tabulator-page-counter">
@@ -167,7 +167,21 @@
                                 </svg>
                                 Copy
                             </button>
-                            <button class="tabulator-page" disabled id="export-query-results" type="button" role="button" aria-label="title="Export results" title="Export results">Export results</button>
+
+                            <div class="dropdown">
+                                <button class="tabulator-page" disabled id="export-query-results" type="button" role="button" aria-label="Export results" title="Export results">
+                                Export results
+                                <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" focusable="false" aria-hidden="true">
+                                    <path d="M4 5h8l-4 6-4-6z" fill="white" stroke="none"></path>
+                                </svg>
+                                </button>
+                                <ul class="dropdown-menu" id="dropdown-menu">
+                                    <li><span data-value="csv" class="dropdown-item">To CSV</span></li>
+                                    <li><span data-value="parquet" class="dropdown-item">To Parquet</span></li>
+                                    <li><span data-value="json" class="dropdown-item">To JSON</span></li>
+                                    <li><span data-value="ndjson" class="dropdown-item">To ndJSON</span></li>
+                                </ul>
+                            </div>
                         </span>
                     </div>
                     <div class="tabulator-footer-contents">
@@ -228,6 +242,9 @@
         resultsTable.on("tableBuilt", function(data){
             const resultsCountElement = document.getElementById("query-count");
             resultsCountElement.innerText = `(${rowCountQueryTab})`;
+
+            let tabulatorTableElement = document.getElementById("table-queryTab");
+            tabulatorTableElement.style.zIndex = 1;
 
             resetQueryControl();
             initializeFooter(rowCountQueryTab, requestSourceResultTab);
@@ -750,10 +767,45 @@
         numRecordsDropdown.value = `${defaultPageSizes[0]}`;
 
         const exportResultsButton = /** @type {HTMLElement} */ (document.querySelector(`#export-query-results`));
-        exportResultsButton.addEventListener('click', () => {
-            vscode.postMessage({
-                type: 'exportQueryResults',
-            });
+
+        // Toggle dropdown menu visibility
+        exportResultsButton.addEventListener('click', (event) => {
+            event.stopPropagation(); // Prevent the event from bubbling up
+            let dropdownMenu = document.getElementById('dropdown-menu');
+
+            if (dropdownMenu.style.display === 'none' || dropdownMenu.style.display === '') {
+                dropdownMenu.style.display = 'block';
+            } else {
+                dropdownMenu.style.display = 'none';
+            }
+        });
+
+        document.getElementById('dropdown-menu').addEventListener('click', function(event) {
+            event.stopPropagation();
+            if (event.target.tagName === 'SPAN') {
+                const selectedOption = event.target.getAttribute('data-value');
+                vscode.postMessage({
+                    type: 'exportQueryResults',
+                    exportType: selectedOption
+                });
+
+                // Perform any additional actions here, e.g., close dropdown
+                // Hide the menu if it's currently visible
+                let dropdownMenu = document.getElementById('dropdown-menu');
+                if (dropdownMenu.style.display === 'block') {
+                    dropdownMenu.style.display = 'none';
+                }
+            }
+        });
+
+        // Close dropdown when clicking outside
+        window.addEventListener('click', function() {
+            let dropdownMenu = document.getElementById('dropdown-menu');
+            
+            // Hide the menu if it's currently visible
+            if (dropdownMenu.style.display === 'block') {
+                dropdownMenu.style.display = 'none';
+            }
         });
 
         const clearIconButton = /** @type {HTMLElement} */ (document.querySelector(`#clear-icon`));
