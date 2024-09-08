@@ -122,7 +122,8 @@ html, body {
 }
 
 .search-icon-element {
-    margin-right: 8px; /* Space between the icon and the input box */
+    margin-right: 8px;
+    margin-left: 3px;
 }
 
 .search-icon {
