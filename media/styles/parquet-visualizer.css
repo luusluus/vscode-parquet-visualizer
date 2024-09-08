@@ -178,6 +178,11 @@ html, body {
     stroke: #ffffff; /* Set stroke color to white */
 }
 
+/* dropdown export button */
+
+.dropdown-icon {
+    vertical-align: middle;
+}
 .dropdown {
     position: relative;
     display: inline-block;
@@ -195,8 +200,24 @@ html, body {
     margin: 0;
 }
 
+.dropdown-item {
+    text-align: left;
+    width: 85px;
+}
+
 .dropdown-menu li {
-    padding: 8px 16px;
+    margin: 0 2px;
+    padding: 2px 5px;
+    border-left: 0.5px solid  #aaa;
+    border-right: 0.5px solid  #aaa;
+}
+
+.dropdown-menu li:last-child {
+    margin: 0 2px;
+    padding: 2px 5px;
+    border-left: 0.5px solid  #aaa;
+    border-right: 0.5px solid  #aaa;
+    border-bottom: 0.5px solid  #aaa;
 }
 
 .dropdown-menu li span {
@@ -206,6 +227,7 @@ html, body {
     cursor: pointer; /* Make it look like a clickable item */
 }
 
-.dropdown-menu li:hover {
+.dropdown-menu li span:hover {
     background-color: #ddd;
+    font-weight: bolder;
 }

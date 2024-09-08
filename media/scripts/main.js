@@ -169,27 +169,19 @@
                             </button>
 
                             <div class="dropdown">
-                                <button class="dropdown-button" id="export-query-results" type="button" role="button" aria-label="Export results" title="Export results">
-                                    Export results
+                                <button class="tabulator-page" disabled id="export-query-results" type="button" role="button" aria-label="Export results" title="Export results">
+                                Export results
+                                <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" focusable="false" aria-hidden="true">
+                                    <path d="M4 5h8l-4 6-4-6z" fill="white" stroke="none"></path>
+                                </svg>
                                 </button>
                                 <ul class="dropdown-menu" id="dropdown-menu">
-                                    <li><span class="dropdown-item">To CSV</span></li>
-                                    <li><span class="dropdown-item">To Parquet</span></li>
-                                    <li><span class="dropdown-item">To JSON</span></li>
-                                    <li><span class="dropdown-item">To ndJSON</span></li>
+                                    <li><span data-value="csv" class="dropdown-item">To CSV</span></li>
+                                    <li><span data-value="parquet" class="dropdown-item">To Parquet</span></li>
+                                    <li><span data-value="json" class="dropdown-item">To JSON</span></li>
+                                    <li><span data-value="ndjson" class="dropdown-item">To ndJSON</span></li>
                                 </ul>
                             </div>
-
-
-                            <!--
-                            <select id="export-query-results" class="tabulator-page" aria-label="Export results" title="Export results">
-                                <option disabled selected>Export Result</option>
-                                <option value="csv">To CSV</option>
-                                <option value="parquet">To Parquet</option>
-                                <option value="json">To JSON</option>
-                                <option value="ndjson">To ndJSON</option>
-                            </select>
-                            -->
                         </span>
                     </div>
                     <div class="tabulator-footer-contents">
@@ -786,12 +778,24 @@
             } else {
                 dropdownMenu.style.display = 'none';
             }
+        });
 
-            // const selectedValue = event.target.value;
-            // vscode.postMessage({
-            //     type: 'exportQueryResults',
-            //     exportType: selectedValue
-            // });
+        document.getElementById('dropdown-menu').addEventListener('click', function(event) {
+            event.stopPropagation();
+            if (event.target.tagName === 'SPAN') {
+                const selectedOption = event.target.getAttribute('data-value');
+                vscode.postMessage({
+                    type: 'exportQueryResults',
+                    exportType: selectedOption
+                });
+
+                // Perform any additional actions here, e.g., close dropdown
+                // Hide the menu if it's currently visible
+                let dropdownMenu = document.getElementById('dropdown-menu');
+                if (dropdownMenu.style.display === 'block') {
+                    dropdownMenu.style.display = 'none';
+                }
+            }
         });
 
         // Close dropdown when clicking outside
