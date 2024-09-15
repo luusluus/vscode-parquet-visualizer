@@ -128,7 +128,8 @@
   "dependencies": {
     "apache-arrow": "^15.0.0",
     "duckdb-async": "^1.0.0",
-    "parquet-wasm": "^0.6.0"
+    "parquet-wasm": "^0.6.0",
+    "pgsql-parser": "^13.16.0"
   },
   "binary": {
     "module_name": "duckdb",
