@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import { performance }  from "perf_hooks";
 
 import * as duckdb from "duckdb-async";
 import { Backend } from "./backend";
@@ -73,57 +74,29 @@ export class DuckDBBackend extends Backend{
       return this.db.all(query);
     }
 
-    private async checkIfTableExists() {
-      // console.log("checkIfTableExists()");
+    public async checkIfTableExists(tableName: string) {
+      console.log("checkIfTableExists()");
       const result = await this.db.all(`
         SELECT COUNT(*) as tableCount
         FROM information_schema.tables
-        WHERE table_name = 'data'
+        WHERE table_name = ${tableName}
       `);
       const tableCount = Number(result[0]['tableCount']);
       return tableCount > 0;
     }
     
-    public async initializeFullTable(){
-      const rowCount = this.getRowCount();
-      const step = 100000;
-      for (let i = step; i < rowCount; i += step) {
-        console.log(`step ${i}`);
-        await this.db.all(`
-          INSERT INTO data
-            SELECT * 
-            FROM read_parquet('${this.filePath}')
-            OFFSET ${step}
-            LIMIT 100000;
-        `);
-      }
-      console.log("finished loading the full file into the database");
-    }
-
-    private async initializeTable() {
-      const tableExists = await this.checkIfTableExists();
-      if (tableExists) {
-        console.log("table data already exists");
-        return;
-      }
-
-      await this.db.all(`
-        DROP TABLE IF EXISTS data;
-      `);
-
-      try {
-        return await this.db.all(`
+    public async initializeTable(){
+        const start = performance.now();
+        const result = await this.db.all(`
           CREATE TABLE data AS 
           SELECT * 
-          FROM read_parquet('${this.filePath}')
-          LIMIT 100000
-          OFFSET 0
+          FROM read_parquet('${this.filePath}');
         `);
-      }
-      catch (e: any) {
-        this.dispose();
-        throw e;
-      }
+
+        const end = performance.now();
+        console.log(`initializeTable() took ${(end - start) / 1e3} seconds`);
+
+        return result;
     }
 
     public getRowCount(): number {

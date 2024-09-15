@@ -241,10 +241,14 @@
 
         resultsTable.on("tableBuilt", function(data){
             const resultsCountElement = document.getElementById("query-count");
-            resultsCountElement.innerText = `(${rowCountQueryTab})`;
+            if (resultsCountElement){
+                resultsCountElement.innerText = `(${rowCountQueryTab})`;
+            }
 
-            let tabulatorTableElement = document.getElementById("table-queryTab");
-            tabulatorTableElement.style.zIndex = 1;
+            const tabulatorTableElement = document.getElementById("table-queryTab");
+            if (tabulatorTableElement){
+                tabulatorTableElement.style.zIndex = "1";
+            }
 
             resetQueryControl();
             initializeFooter(rowCountQueryTab, requestSourceResultTab);
@@ -525,10 +529,8 @@
         /** @type {number} */ rowCount, 
         /** @type {string} */ requestSource,
         /** @type {string} */ requestType,
-        /** @type {number} */ pageSize,
 
     ) {
-        // console.log("updateTable");
         if (requestSource === requestSourceDataTab){
             if (dataTableBuilt){
                 dataTable.replaceData(data);
@@ -704,8 +706,11 @@
         }
     }
 
-    function initializeFooter(/** @type {Number} */ rowCount, /** @type {String} */ requestSource) {
-        // console.log(`initializeFooter(rowCount:${rowCount}, requestSource:${requestSource})`);
+    function initializeFooter(
+        /** @type {Number} */ rowCount, 
+        /** @type {String} */ requestSource
+    ) {
+        console.log(`initializeFooter(rowCount:${rowCount}, requestSource:${requestSource})`);
         const nextButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-next-${requestSource}`));
         const prevButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-prev-${requestSource}`));
         const firstButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-first-${requestSource}`));
@@ -767,9 +772,11 @@
         numRecordsDropdown.value = `${defaultPageSizes[0]}`;
 
         const exportResultsButton = /** @type {HTMLElement} */ (document.querySelector(`#export-query-results`));
-
+        if (rowCount === 0) {
+            exportResultsButton.setAttribute('disabled', '');
+        }
         // Toggle dropdown menu visibility
-        exportResultsButton.addEventListener('click', (event) => {
+        exportResultsButton?.addEventListener('click', (event) => {
             event.stopPropagation(); // Prevent the event from bubbling up
             let dropdownMenu = document.getElementById('dropdown-menu');
 
@@ -780,7 +787,8 @@
             }
         });
 
-        document.getElementById('dropdown-menu').addEventListener('click', function(event) {
+        const dropdownMenu = /** @type {HTMLElement} */ (document.querySelector(`#dropdown-menu`));
+        dropdownMenu?.addEventListener('click', function(event) {
             event.stopPropagation();
             if (event.target.tagName === 'SPAN') {
                 const selectedOption = event.target.getAttribute('data-value');
@@ -798,18 +806,20 @@
             }
         });
 
-        // Close dropdown when clicking outside
-        window.addEventListener('click', function() {
-            let dropdownMenu = document.getElementById('dropdown-menu');
-            
-            // Hide the menu if it's currently visible
-            if (dropdownMenu.style.display === 'block') {
-                dropdownMenu.style.display = 'none';
-            }
-        });
+        if (dropdownMenu) {
+            // Close dropdown when clicking outside
+            window.addEventListener('click', function() {
+                let dropdownMenu = document.getElementById('dropdown-menu');
+                
+                // Hide the menu if it's currently visible
+                if (dropdownMenu.style.display === 'block') {
+                    dropdownMenu.style.display = 'none';
+                }
+            });
+        }
 
         const clearIconButton = /** @type {HTMLElement} */ (document.querySelector(`#clear-icon`));
-        clearIconButton.addEventListener("click", function () {
+        clearIconButton?.addEventListener("click", function () {
             var searchInput = document.getElementById('input-filter-values');
             searchInput.value = ''; // Clear the input field
             this.style.display = 'none'; // Hide the clear icon
@@ -818,7 +828,10 @@
         });
 
         const filterValueInput = /** @type {HTMLElement} */ (document.querySelector(`#input-filter-values`));
-        filterValueInput.addEventListener("input", function () {
+        if (rowCount === 0) {
+            filterValueInput.setAttribute('disabled', '');
+        }
+        filterValueInput?.addEventListener("input", function () {
 
             // Check whether we should show the clear button.
             var clearIcon = document.getElementById('clear-icon');
@@ -843,7 +856,10 @@
         });
 
         const copyResultsButton = /** @type {HTMLElement} */ (document.querySelector(`#copy-query-results`));
-        copyResultsButton.addEventListener('click', () => {
+        if (rowCount === 0) {
+            copyResultsButton.setAttribute('disabled', '');
+        }
+        copyResultsButton?.addEventListener('click', () => {
             resultsTable.copyToClipboard("all", true);
             vscode.postMessage({
                 type: 'copyQueryResults',
@@ -905,7 +921,6 @@
                         tableData.rowCount, 
                         tableData.requestSource,
                         tableData.requestType,
-                        tableData.pageSize,
                     );
                     
                     updatePageCounterState(

@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import { Worker } from 'worker_threads';
+import { Worker } from 'node:worker_threads';
 
 import * as vscode from 'vscode';
 import { DuckDbError } from 'duckdb-async';
@@ -25,6 +25,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
     paginator: Paginator;
     backend: Backend;
     worker: Worker;
+    memoryReaderWorker: Worker;
     isQueryAble: boolean = false;
 
     static async create(
@@ -59,6 +60,46 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         }
     }
 
+    private initializeWorker(initializeData: boolean = false) {
+      const worker =  new Worker(__dirname + "/worker.js", {
+          workerData: {
+            pathParquetFile: this.uri.fsPath,
+            initialize: initializeData
+          }
+      });
+
+      worker.on('message', (message) => {
+        if (message.type === 'query'){
+          this.emitQueryResult(message);
+        } 
+        else if (message.type === 'paginator') {
+          this.fireDataPaginatorEvent(
+            message.result, 
+            message.rowCount,
+            message.pageSize,
+            message.pageNumber,
+            message.pageCount,
+            requestSourceQueryTab
+          );
+        } 
+        else if (message.type === 'exportQueryResults') {
+          vscode.window.showInformationMessage(`Exported query result to ${message.path}`);
+        }
+        else if (message.type === 'initialized') {
+          this.worker.terminate().then(() => {
+            this.worker = this.memoryReaderWorker;
+            vscode.window.showInformationMessage(`Parquet data loaded into memory`);
+          });
+
+        }
+        else if (message.type === 'err') {
+          vscode.window.showErrorMessage(`${message.err}`);
+        }
+      });
+
+      return worker;
+    }
+
     private constructor(
       uri: vscode.Uri,
       backend: Backend,
@@ -72,29 +113,8 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       // FIXME: Check if backend is of type ParquetWasm
       if (this.backend instanceof DuckDBBackend) {
         this.isQueryAble = true;
-
-        this.worker = new Worker(__dirname + "/worker.js", {
-            workerData: {
-              pathParquetFile: this.uri.fsPath
-            }
-          });
-    
-          this.worker.on('message', (message) => {
-            if (message.type === 'query'){
-              this.emitQueryResult(message);
-            } else if (message.type === 'paginator') {
-              this.fireDataPaginatorEvent(
-                message.result, 
-                message.rowCount,
-                message.pageSize,
-                message.pageNumber,
-                message.pageCount,
-                requestSourceQueryTab
-              );
-            } else if (message.type === 'exportQueryResults') {
-              vscode.window.showInformationMessage(`Exported query result to ${message.path}`);
-            }
-          });
+        this.worker = this.initializeWorker(false);
+        this.memoryReaderWorker = this.initializeWorker(true);
       }
     }
 

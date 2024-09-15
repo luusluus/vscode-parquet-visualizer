@@ -2,11 +2,9 @@
 const path = require('path');
 
 import { randomUUID } from 'crypto';
+import { Worker, parentPort, workerData } from 'node:worker_threads';
 
-const {
-  parentPort, workerData
-} = require('node:worker_threads');
-
+import { parse } from 'pgsql-parser';
 
 import { Paginator } from './paginator';
 import { DuckDBBackend } from './duckdb-backend';
@@ -18,6 +16,7 @@ class BackendWorker {
   paginator: Paginator;
   backend: DuckDBBackend;
   queryResultCount: number;
+  isInitialized: boolean = false;
 
   private constructor(backend: DuckDBBackend) {
     this.backend = backend;
@@ -66,7 +65,36 @@ class BackendWorker {
   }
 
   async query(msg: any){
-    const query = this.formatQueryString(msg.query);
+    // Parse query into AST
+    const asts = parse(msg.query);
+    console.log(asts);
+    if (asts.length > 1) {
+      throw Error("Only one SQL statement is allowed.");
+    }
+
+    const statement = asts[0]["RawStmt"]["stmt"];
+    let query = '';
+    if (!this.isInitialized){
+      // Read from file
+      if (!("SelectStmt" in statement)) {
+        throw Error("Data manipulation only possible when data is loaded into memory.");
+      }
+      else {
+        query = this.formatQueryString(msg.query);
+      }
+    } else {
+      query = msg.query;
+    }
+    
+    if (!("SelectStmt" in statement)) {
+      // const queryResult = await this.backend.query(query);
+      // const rowCount = Number(queryResult[0]['Count']);
+      return {
+        headers: [],
+        result: [],
+        rowCount: 0
+      };
+    }
 
     await this.backend.query(`DROP TABLE IF EXISTS query_result`);
     // console.log("table dropped");
@@ -140,7 +168,17 @@ class BackendWorker {
 }
 
 (async () => {
-    const worker = await BackendWorker.create(workerData.pathParquetFile);
+    const worker = await BackendWorker.create(
+      workerData.pathParquetFile
+    );
+
+    if (workerData.initialize){
+      await worker.backend.initializeTable();
+      worker.isInitialized = true;
+      parentPort?.postMessage({
+        type: 'initialized'
+      });
+    }
 
     parentPort.on('message', async (message: any) => {
         switch (message.source) {
