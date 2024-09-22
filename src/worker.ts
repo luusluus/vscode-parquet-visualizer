@@ -10,12 +10,12 @@ import { Paginator } from './paginator';
 import { DuckDBBackend } from './duckdb-backend';
 import { DuckDBPaginator } from './duckdb-paginator';
 import { createHeadersFromData, replacePeriodWithUnderscoreInKey } from './util';
-
+import { Action, BackendName, MessageType, RequestSource, TableName, QueryStatement } from './constants';
 
 class BackendWorker {
-  paginator: Paginator;
+  dataPaginator: Paginator;
+  queryResultPaginator: Paginator;
   backend: DuckDBBackend;
-  queryResultCount: number;
   isInitialized: boolean = false;
 
   private constructor(backend: DuckDBBackend) {
@@ -28,20 +28,47 @@ class BackendWorker {
     return new BackendWorker(backend);
   }
 
+  async initializeDataPaginator(){
+    console.log("initializeDataPaginator()");
+    const queryResult = await this.backend.query(
+      `SELECT COUNT(*) AS count FROM ${TableName.data}`
+    );
+    const dataCount = Number(queryResult[0]['count']);
+    const readFromFile = false;
+    this.dataPaginator = new DuckDBPaginator(
+      this.backend,
+      TableName.data,
+      dataCount,
+      readFromFile
+    );
+  }
+
   async getQueryResultPage(message: any) {
+    return this.getPage(message, this.queryResultPaginator);
+  }
+
+  async getDataPage(message: any) {
+    return this.getPage(message, this.dataPaginator);
+  }
+
+  async getPage(message: any, paginator: Paginator) {
+    console.log(`getPage(${message})`);
+    console.log(message);
     let result;
-    if (message.type === 'nextPage') {
-      result = await this.paginator.nextPage(message.pageSize);
-    } else if (message.type === 'prevPage') {
-      result = await this.paginator.previousPage(message.pageSize);
-    } else if (message.type === 'firstPage') {
-      result = await this.paginator.firstPage(message.pageSize);
-    } else if (message.type === 'lastPage') {
-      result = await this.paginator.lastPage(message.pageSize); 
-    } else if (message.type === 'currentPage') {
-      result = await this.paginator.gotoPage(message.pageNumber, message.pageSize);
+    if (message.action === Action.nextPage) {
+      result = await paginator.nextPage(message.pageSize);
+    } else if (message.action === Action.prevPage) {
+      result = await paginator.previousPage(message.pageSize);
+    } else if (message.action === Action.firstPage) {
+      result = await paginator.firstPage(message.pageSize);
+    } else if (message.action === Action.lastPage) {
+      result = await paginator.lastPage(message.pageSize); 
+    } else if (message.action === Action.goToPage) {
+      result = await paginator.gotoPage(message.pageNumber, message.pageSize);
+    } else if (message.action === Action.currentPage) {
+      result = await paginator.getCurrentPage(message.pageSize);
     } else {
-      throw Error(`Unknown message type: ${message.type}`);
+      throw Error(`Unknown message action: ${message.action}`);
     }
 
     const values = replacePeriodWithUnderscoreInKey(result);
@@ -50,7 +77,7 @@ class BackendWorker {
     return {
       headers: headers,
       result: values,
-      rowCount: this.queryResultCount
+      rowCount: paginator.getTotalItems()
     };
   }
 
@@ -67,12 +94,25 @@ class BackendWorker {
   async query(msg: any){
     // Parse query into AST
     const asts = parse(msg.query);
-    console.log(asts);
     if (asts.length > 1) {
       throw Error("Only one SQL statement is allowed.");
     }
 
+    // TODO: check if correct table is being queried.
     const statement = asts[0]["RawStmt"]["stmt"];
+    const statementType = Object.keys(statement)[0];
+
+    const allowedStatements = [
+      "InsertStmt",
+      "UpdateStmt",
+      "DeleteStmt",
+      "SelectStmt"
+    ];
+    
+    if (!(allowedStatements.indexOf(statementType) > - 1)) {
+      throw Error("This statement is not allowed in this extension.");
+    }
+
     let query = '';
     if (!this.isInitialized){
       // Read from file
@@ -87,8 +127,8 @@ class BackendWorker {
     }
     
     if (!("SelectStmt" in statement)) {
-      // const queryResult = await this.backend.query(query);
-      // const rowCount = Number(queryResult[0]['Count']);
+      await this.backend.query(query);
+      await this.initializeDataPaginator();
       return {
         headers: [],
         result: [],
@@ -100,34 +140,33 @@ class BackendWorker {
     // console.log("table dropped");
 
     await this.backend.query(
-        `CREATE TABLE query_result AS 
+        `CREATE TABLE ${TableName.queryResult} AS 
             ${query}
         `
     );
     // console.log("ctas query done");
 
     const queryResult = await this.backend.query(
-        `SELECT COUNT(*) AS count FROM query_result`
+        `SELECT COUNT(*) AS count FROM ${TableName.queryResult}`
     );
-    this.queryResultCount = Number(queryResult[0]['count']);
+    const queryResultCount = Number(queryResult[0]['count']);
 
-    const table = 'query_result';
     const readFromFile = false;
-    this.paginator = new DuckDBPaginator(
+    this.queryResultPaginator = new DuckDBPaginator(
         this.backend, 
-        table, 
-        this.queryResultCount,
+        TableName.queryResult, 
+        queryResultCount,
         readFromFile
     );
 
-    const result = await (this.paginator.firstPage(msg.pageSize));
+    const result = await (this.queryResultPaginator.firstPage(msg.pageSize));
     const values = replacePeriodWithUnderscoreInKey(result);
     const headers = createHeadersFromData(values);
 
     return {
       headers: headers,
       result: values,
-      rowCount: this.queryResultCount
+      rowCount: queryResultCount
     };
   }
 
@@ -140,22 +179,22 @@ class BackendWorker {
     if (exportType === 'csv') {
       parsedPath.base = `${parsedPath.name}-${id}.csv`;
       newPath = path.format(parsedPath);
-      query = `COPY query_result TO '${newPath}' WITH (HEADER, DELIMITER ',');`;
+      query = `COPY ${TableName.queryResult} TO '${newPath}' WITH (HEADER, DELIMITER ',');`;
     }
     else if (exportType === 'json') {
       parsedPath.base = `${parsedPath.name}-${id}.json`;
       newPath = path.format(parsedPath);
-      query = `COPY query_result TO '${newPath}' (FORMAT JSON, ARRAY true);`;
+      query = `COPY ${TableName.queryResult} TO '${newPath}' (FORMAT JSON, ARRAY true);`;
     }
     else if (exportType === 'ndjson') {
       parsedPath.base = `${parsedPath.name}-${id}.json`;
       newPath = path.format(parsedPath);
-      query = `COPY query_result TO '${newPath}' (FORMAT JSON, ARRAY false);`;
+      query = `COPY ${TableName.queryResult} TO '${newPath}' (FORMAT JSON, ARRAY false);`;
     }
     else if (exportType === 'parquet') {
       parsedPath.base = `${parsedPath.name}-${id}.parquet`;
       newPath = path.format(parsedPath);
-      query = `COPY query_result TO '${newPath}' (FORMAT PARQUET);`;
+      query = `COPY ${TableName.queryResult} TO '${newPath}' (FORMAT PARQUET);`;
     }
     else {
       throw Error(`unknown export type: ${exportType}`);
@@ -174,62 +213,80 @@ class BackendWorker {
 
     if (workerData.initialize){
       await worker.backend.initializeTable();
+      await worker.initializeDataPaginator();
+      
       worker.isInitialized = true;
+      
       parentPort?.postMessage({
-        type: 'initialized'
+        type: MessageType.initialized
       });
     }
 
-    parentPort.on('message', async (message: any) => {
-        switch (message.source) {
-          case 'query': {
-            try{ 
+    parentPort?.on('message', async (message: any) => {
+        switch (message.type) {
+          case MessageType.query: {
+            try{
                 const {headers, result, rowCount} = await worker.query(message);
                 const pageNumber = 1; 
                 const pageSize = message.pageSize;
                 const pageCount = Math.ceil(rowCount / pageSize);
-                parentPort.postMessage({
+                parentPort?.postMessage({
                     result: result,
                     headers: headers,
-                    type: 'query',
+                    type: MessageType.query,
                     pageNumber: pageNumber,
                     pageCount: pageCount,
                     rowCount: rowCount,
                     pageSize: pageSize
                 });
             } catch (err: any) {
-                parentPort.postMessage({
-                    type: 'query',
+                parentPort?.postMessage({
+                    type: MessageType.query,
                     err: err
                 });
             }
             
             break;
           }
-          case 'paginator': {
-            const {headers, result, rowCount} = await worker.getQueryResultPage(message);
-            const pageCount = Math.ceil(rowCount / message.pageSize);
-            const pageNumber = worker.paginator.getPageNumber();
-            parentPort.postMessage({
-              result: result,
-              headers: headers,
-              type: 'paginator',
+          case MessageType.paginator: {
+            let page;
+            let pageNumber;
+            console.log(message);
+            if (message.source === RequestSource.dataTab) {
+              page = await worker.getDataPage(message);
+              pageNumber = worker.dataPaginator.getPageNumber();
+            } else if (message.source === RequestSource.queryTab) {
+              page = await worker.getQueryResultPage(message);
+              pageNumber = worker.queryResultPaginator.getPageNumber();
+            }
+            console.log(`rowCount: ${page?.rowCount}`);
+            const pageCount = Math.ceil(page?.rowCount ?? 0 / message.pageSize);
+            console.log(`pageCount: ${pageCount}`);
+
+            parentPort?.postMessage({
+              type: MessageType.paginator,
+              source: message.source,
+              result: page?.result,
+              headers: page?.headers,
               pageNumber: pageNumber,
               pageCount: pageCount,
               pageSize: message.pageSize,
             });
             break;
           }
-          case 'exportQueryResults': {
+          case MessageType.exportQueryResults: {
             const exportType = message.exportType;
             const exportPath = await worker.exportQueryResult(exportType);
 
-            parentPort.postMessage({
-              type: 'exportQueryResults',
+            parentPort?.postMessage({
+              type: MessageType.exportQueryResults,
               path: exportPath
             });
 
             break;
+          }
+          case MessageType.exit: {
+            worker.backend.dispose();
           }
           default: {
             throw Error(`Unknown source ${message.source}`);

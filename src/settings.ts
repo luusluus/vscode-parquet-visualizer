@@ -7,19 +7,25 @@ function settings(): vscode.WorkspaceConfiguration {
 }
 
 export function defaultPageSizes(): number[] {
-    return settings().get('defaultPageSizes');
+    return settings().get('defaultPageSizes') ?? [
+        20,
+        50,
+        100,
+        500
+      ];
 }
 
-export function defaultQuery(): string {
-    return settings().get('defaultQuery');
+export function defaultQuery(): string{
+    const defaultQuery = "SELECT *\r\nFROM data\r\nLIMIT 1000;";
+    return settings().get('defaultQuery') ?? defaultQuery;
 }
 
-export function defaultBackend(): string {
-    return settings().get('backend');
+export function defaultBackend(): string{
+    return settings().get('backend') ?? "duckdb";
 }
 
-export function defaultRunQueryKeyBinding(): string {
-    return settings().get('RunQueryKeyBinding');
+export function defaultRunQueryKeyBinding(): string{
+    return settings().get('RunQueryKeyBinding') ?? "Ctrl-Enter";
 }
   
 function settingsChanged(e: vscode.ConfigurationChangeEvent, sections: string[]): boolean {

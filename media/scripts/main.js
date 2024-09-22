@@ -52,6 +52,17 @@
         const id = e.currentTarget.id;
         if (id === 'data-tab') {
             document.getElementById('data-tab-panel').style.display = "block";
+
+            // fetch data
+            const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSourceDataTab}`));
+            const selectedIndex = numRecordsDropdown.selectedIndex;
+            const selectedOption = numRecordsDropdown.options[selectedIndex];
+            vscode.postMessage({
+                action: 'currentPage',
+                pageSize: Number(selectedOption.innerText),
+                source: requestSourceDataTab
+            });
+
         } else if (id === 'schema-tab'){
             document.getElementById('schema-tab-panel').style.display = "block";
         } else if (id === 'query-tab')  {
@@ -277,7 +288,7 @@
 
         const query = getTextFromEditor(editor);
         vscode.postMessage({
-            type: 'startQuery',
+            action: 'startQuery',
             data: query,
             pageSize: Number(selectedOption.innerText)
         });
@@ -533,6 +544,7 @@
     ) {
         if (requestSource === requestSourceDataTab){
             if (dataTableBuilt){
+                // https://github.com/olifolkerd/tabulator/issues/4214
                 dataTable.replaceData(data);
                 dataTable.clearAlert();
             }
@@ -651,7 +663,7 @@
                 }
 
                 vscode.postMessage({
-                    type: 'currentPage',
+                    action: 'gotoPage',
                     pageNumber: Number(e.target.innerHTML),
                     pageSize: Number(selectedOption.innerText),
                     source: requestSource
@@ -723,7 +735,7 @@
                 dataTable.alert("Loading...");
             }
             vscode.postMessage({
-                type: 'nextPage',
+                action: 'nextPage',
                 pageSize: Number(selectedOption.innerText),
                 source: requestSource
             });
@@ -736,7 +748,7 @@
                 dataTable.alert("Loading...");
             }
             vscode.postMessage({
-                type: 'prevPage',
+                action: 'prevPage',
                 pageSize: Number(selectedOption.innerText),
                 source: requestSource
             });
@@ -749,7 +761,7 @@
                 dataTable.alert("Loading...");
             }
             vscode.postMessage({
-                type: 'firstPage',
+                action: 'firstPage',
                 pageSize: Number(selectedOption.innerText),
                 source: requestSource
             });
@@ -762,7 +774,7 @@
                 dataTable.alert("Loading...");
             }
             vscode.postMessage({
-                type: 'lastPage',
+                action: 'lastPage',
                 pageSize: Number(selectedOption.innerText),
                 source: requestSource
             });
@@ -793,7 +805,7 @@
             if (event.target.tagName === 'SPAN') {
                 const selectedOption = event.target.getAttribute('data-value');
                 vscode.postMessage({
-                    type: 'exportQueryResults',
+                    action: 'exportQueryResults',
                     exportType: selectedOption
                 });
 
@@ -862,7 +874,7 @@
         copyResultsButton?.addEventListener('click', () => {
             resultsTable.copyToClipboard("all", true);
             vscode.postMessage({
-                type: 'copyQueryResults',
+                action: 'copyQueryResults',
             });
         });
 
@@ -877,7 +889,7 @@
                     dataTable.alert("Loading...");
                 }
                 vscode.postMessage({
-                    type: 'changePageSize',
+                    action: 'changePageSize',
                     data: {
                         newPageSize: Number(selectedOption.innerText),
                         source: requestSource
@@ -890,7 +902,7 @@
 
     // Handle messages from the extension
     window.addEventListener('message', async e => {
-        // console.log(e.data);
+        console.log(e.data);
         const { type, body } = e.data;
         switch (type) {
             case 'init':{
@@ -949,5 +961,5 @@
     });
 
     // Signal to VS Code that the webview is initialized.
-    vscode.postMessage({ type: 'ready' });
+    vscode.postMessage({ action: 'ready' });
 }());

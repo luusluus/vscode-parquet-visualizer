@@ -26,7 +26,7 @@ export class DuckDBBackend extends Backend{
     }
 
     dispose() {
-      // console.log("Duckdbbackend.dispose()");
+      console.log("Duckdbbackend.dispose()");
       // const splitted = this.filePath.split('/');
       // const filename = splitted[splitted.length-1];
       // const filePath = `${__dirname}/${filename}.duckdb`;

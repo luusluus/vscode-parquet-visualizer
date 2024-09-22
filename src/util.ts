@@ -95,7 +95,7 @@ export function createHeadersFromData(data: any) {
 }
 
 export function replacePeriodWithUnderscoreInKey(data: any) {
-  return data.map(obj => {
+  return data.map((obj: { [x: string]: any; }) => {
     const newObj: { [key: string]: any } = {};
 
     Object.keys(obj).forEach(key => {

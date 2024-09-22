@@ -56,6 +56,7 @@ export abstract class Paginator {
   }
 
   async gotoPage(pageNumber: number, pageSize: number): Promise<any[]> {
+    console.log(`gotoPage(${pageNumber}, ${pageSize})`);
     this.totalPages = this.getTotalPages(pageSize);
 
     if (pageNumber === undefined) {
@@ -106,5 +107,9 @@ export abstract class Paginator {
 
       this.currentPage = newPageNumber;
       this.pageSize = newPageSize;
+  }
+
+  getTotalItems() {
+    return this.totalItems;
   }
 }
