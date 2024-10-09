@@ -90,7 +90,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
           this.worker.terminate().then(() => {
             this.worker = this.memoryReaderWorker;
             this.dataIsLoaded = true;
-            vscode.window.showInformationMessage(`Parquet data loaded into memory`);
+            vscode.window.showInformationMessage(`Parquet data of ${this.uri} loaded into memory`);
           });
 
         }
