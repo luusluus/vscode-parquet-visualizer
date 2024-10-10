@@ -107,10 +107,21 @@
         onPopupOpened(parentContainerId);
     }
 
+    function escapeHtml(htmlString) {
+        return htmlString
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     function onPopupOpened(parentContainerId) {
         const element = document.getElementsByClassName("tabulator-popup tabulator-popup-container")[0];
         let innerHTML = element.innerHTML;
         let style = element.style;
+
+        element.innerHTML = escapeHtml(innerHTML);
 
         // Check if html contains JSON. Make it a little bit wider and horizontally scrollable
         if (innerHTML.includes('pre')) {
