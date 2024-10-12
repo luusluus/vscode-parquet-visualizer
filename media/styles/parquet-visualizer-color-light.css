@@ -44,10 +44,7 @@
     color: #242424;
 }
 
-#table .tabulator-popup, 
-#schema .tabulator-popup, 
-#metadata .tabulator-popup,
-#query-results .tabulator-popup{
+.tabulator-popup.tabulator-popup-container{
     background-color: #e0e0e0;
     color: #242424;
 }

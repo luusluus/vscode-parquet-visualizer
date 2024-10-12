@@ -40,10 +40,7 @@
     color: #d4d4d4;
 }
 
-#table .tabulator-popup, 
-#schema .tabulator-popup, 
-#metadata .tabulator-popup,
-#query-results .tabulator-popup{
+.tabulator-popup.tabulator-popup-container{
     background-color: #101010;
     color: #d4d4d4;
 }
