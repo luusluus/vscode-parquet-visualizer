@@ -27,11 +27,6 @@ input[type="radio"] {
     padding:5px 10px; 
     cursor:pointer;
 }
-.tab-frame .tab-buttons input:checked + label{ 
-    background:black; 
-    color:white; 
-    cursor:default;
-}
 .tab-frame .tab-buttons div.tab{ 
     display:none; 
     padding:5px 10px;

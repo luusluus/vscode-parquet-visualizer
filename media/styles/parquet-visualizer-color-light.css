@@ -1,0 +1,156 @@
+.tabulator-tableholder {
+    /* background-color: #ffffff; */
+}
+
+#table .tabulator-header .tabulator-col, 
+#schema .tabulator-header .tabulator-col, 
+#metadata .tabulator-header .tabulator-col,
+#query-results .tabulator-header .tabulator-col{
+    background-color: var(--vscode-tab-inactiveBackground);
+    color: #333333;
+}
+
+#table .tabulator-row, 
+#schema .tabulator-row, 
+#metadata .tabulator-row,
+#query-results .tabulator-row{
+    color: #242424
+}
+
+#table .tabulator-row-odd, 
+#schema .tabulator-row-odd, 
+#metadata .tabulator-row-odd,
+#query-results .tabulator-row-odd{
+    background-color: var(--vscode-list-activeSelectionBackground);
+}
+
+#table .tabulator-row-even, 
+#schema .tabulator-row-even, 
+#metadata .tabulator-row-even,
+#query-results .tabulator-row-even {
+    background-color: rgb(248, 248, 248);
+}
+
+#table .tabulator-footer *, 
+#schema .tabulator-footer *, 
+#metadata .tabulator-footer *,
+#query-results .tabulator-footer *{
+    background-color: var(--vscode-tab-inactiveBackground);
+    color: #242424;
+}
+
+#query-results .tabulator-footer * {
+    background-color: var(--vscode-tab-inactiveBackground);
+    color: #242424;
+}
+
+#table .tabulator-popup, 
+#schema .tabulator-popup, 
+#metadata .tabulator-popup,
+#query-results .tabulator-popup{
+    background-color: #e0e0e0;
+    color: #242424;
+}
+
+#table ::-webkit-scrollbar-thumb:hover,
+#query-results ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(172, 172, 172, 1)
+}
+
+#table ::-webkit-scrollbar-thumb,
+#query-results ::-webkit-scrollbar-thumb {
+    background-color: rgba(60, 60, 60, 0.4);
+}
+
+
+.flex-button {
+    background-color: #ffffff;
+    color: #242424;;
+    margin: 0 2px;
+    padding: 2px 7px;
+    border: 1px solid #aaa;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+
+
+/* Search container */
+.search-container {
+    display: flex;
+    align-items: center;
+    border: 1px solid #000000;
+    padding: 3px;
+    margin-right: 10px;
+}
+
+.search-icon circle, 
+.search-icon path {
+    fill: none; /* Ensure no fill on path */
+    stroke: #000000; /* Set stroke color to white */
+}
+
+
+.search-box::placeholder {
+    color: #999;
+}
+
+
+.clear-icon {
+    width: 13px;
+    height: 13px;
+    stroke: #000000; /* Set stroke color to black */
+}
+
+/* copy button */
+/* SVG icon styling */
+
+.copy-icon path {
+    fill: none; /* Ensure no fill on path */
+    stroke: #000000; /* Set stroke color to white */
+}
+
+/* dropdown export button */
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    background-color: black;
+    min-width: 80px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1000;
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.dropdown-menu li {
+    margin: 0 2px;
+    padding: 2px 5px;
+    border-left: 0.5px solid  #aaa;
+    border-right: 0.5px solid  #aaa;
+}
+
+.dropdown-menu li:last-child {
+    margin: 0 2px;
+    padding: 2px 5px;
+    border-left: 0.5px solid  #aaa;
+    border-right: 0.5px solid  #aaa;
+    border-bottom: 0.5px solid  #aaa;
+}
+
+.dropdown-menu li span {
+    display: block;
+    text-decoration: none;
+    color: black;
+    cursor: pointer; /* Make it look like a clickable item */
+}
+
+.dropdown-menu li span:hover {
+    background-color: #ddd;
+    font-weight: bolder;
+}
+
+.dropdown-icon path {
+    fill: none; /* Ensure no fill on path */
+    stroke: #000000; /* Set stroke color to white */
+}

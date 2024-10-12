@@ -121,19 +121,20 @@
         let innerHTML = element.innerHTML;
         let style = element.style;
 
-        element.innerHTML = escapeHtml(innerHTML);
-
         // Check if html contains JSON. Make it a little bit wider and horizontally scrollable
         if (innerHTML.includes('pre')) {
             style.width = '400px';
             style.overflowX  = 'auto';
+        } else {
+            element.innerHTML = escapeHtml(innerHTML);
         }
-        style.maxHeight = '400px';
+
+        style.minWidth = '400px';
+        style.maxHeight = '280px';
+
         if (style.top[0] === '-') { // negative top
             style.top = '0px';
         }
-        style.backgroundColor = '#101010';
-        style.color = '#d4d4d4';
 
         const container = document.getElementById(parentContainerId);
         const parentRect = container.getBoundingClientRect();
@@ -290,7 +291,7 @@
         });
     }
 
-    function initCodeEditor(isQueryable, defaultQuery, shortCutMapping) {
+    function initCodeEditor(isQueryable, defaultQuery, shortCutMapping, aceTheme) {
         const queryTabPanel = document.getElementById("query-tab-panel");
         if (!isQueryable) {
             const paragraph = document.createElement("p");
@@ -315,9 +316,8 @@
 
         var editor = ace.edit("editor");
 
-        editor.setTheme("ace/theme/idle_fingers");
-        editor.session.setMode("ace/mode/sql");
-
+        editor.setTheme(aceTheme);
+        editor.session.setMode("ace/mode/sql");        
         editor.setValue(defaultQuery);
 
         editor.commands.addCommand({
@@ -899,7 +899,8 @@
                     initCodeEditor(
                         tableData.isQueryable, 
                         tableData.settings.defaultQuery,
-                        tableData.settings.shortCutMapping
+                        tableData.settings.shortCutMapping,
+                        tableData.aceTheme
                     );
 
                     currentPageDataTab = tableData.currentPage;
