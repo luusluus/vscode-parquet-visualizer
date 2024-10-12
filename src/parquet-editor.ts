@@ -468,6 +468,15 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         const pageNumber = document.paginator.getPageNumber();
         const schema = document.backend.getSchema();
         const metadata = document.backend.getMetaData();
+
+        let aceTheme = '';
+        if (vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Light) {
+          // TODO: change theme for light
+          aceTheme = 'ace/theme/text_mate';
+        } else {
+          aceTheme = 'ace/theme/idle_fingers';
+        }
+
         const data = {
           headers: headers, 
           schema: schema, 
@@ -484,7 +493,8 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             defaultQuery: defaultQueryFromSettings,
             defaultPageSizes: defaultPageSizesFromSettings,
             shortCutMapping: shortCutMapping
-          }
+          },
+          aceTheme: aceTheme
         };
 
         // Wait for the webview to be properly ready before we init
@@ -504,7 +514,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
     }
 
     private readonly _onDidChangeCustomDocument = new vscode.EventEmitter<vscode.CustomDocumentEditEvent<CustomParquetDocument>>();
-	public readonly onDidChangeCustomDocument = this._onDidChangeCustomDocument.event;
+	  public readonly onDidChangeCustomDocument = this._onDidChangeCustomDocument.event;
 
     private postMessage(panel: vscode.WebviewPanel, type: string, body: any): void {
       panel.webview.postMessage({ type, body });
@@ -580,8 +590,21 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         const styleVSCodeUri = webview.asWebviewUri(vscode.Uri.joinPath(
             this.context.extensionUri, 'media', 'styles', 'vscode.css'));
 
+        let tabsColorCssFile = '';
+        let parquetEditorColorCssFile = '';
+        if (vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Light) {
+          tabsColorCssFile = 'tabs-color-light.css';
+          parquetEditorColorCssFile = 'parquet-visualizer-color-light.css';
+        } else {
+          tabsColorCssFile = 'tabs-color-dark.css';
+          parquetEditorColorCssFile = 'parquet-visualizer-color-dark.css';
+        }
+        
         const styleMainUri = webview.asWebviewUri(vscode.Uri.joinPath(
         	this.context.extensionUri, 'media', 'styles', 'parquet-visualizer.css'));
+        
+        const styleMainColorUri = webview.asWebviewUri(vscode.Uri.joinPath(
+        	this.context.extensionUri, 'media', 'styles', parquetEditorColorCssFile));
 
         const styleTabulatorUri = webview.asWebviewUri(vscode.Uri.joinPath(
         	this.context.extensionUri, 'media', 'styles', 'tabulator', 'tabulator.min.css'));
@@ -591,6 +614,9 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
         const styleTabsUri = webview.asWebviewUri(vscode.Uri.joinPath(
         	this.context.extensionUri, 'media', 'styles', 'tabs.css'));
+
+        const styleTabsColorUri = webview.asWebviewUri(vscode.Uri.joinPath(
+        	this.context.extensionUri, 'media', 'styles', tabsColorCssFile));
 
         const htmlUri = vscode.Uri.joinPath(
           this.context.extensionUri, 'media', 'index.html'
@@ -606,9 +632,11 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           styleResetUri: styleResetUri.toString(true),
           styleVSCodeUri: styleVSCodeUri.toString(true),
           styleMainUri: styleMainUri.toString(true),
+          styleMainColorUri: styleMainColorUri.toString(true),
           styleFontAwesomeUri: styleFontAwesomeUri.toString(true),
           styleTabulatorUri: styleTabulatorUri.toString(true),
           styleTabsUri : styleTabsUri.toString(true),
+          styleTabsColorUri : styleTabsColorUri.toString(true),
           nonce: nonce,
       };
 

@@ -1,0 +1,6 @@
+.tab-frame .tab-buttons input:checked + label{ 
+    background:black; 
+    color:white; 
+    cursor:default;
+}
+
