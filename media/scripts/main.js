@@ -23,7 +23,7 @@
     let defaultPageSizes = [];
 
     const requestSourceDataTab = 'dataTab';
-    const requestSourceResultTab = 'queryTab';
+    const requestSourceQueryTab = 'queryTab';
 
     document.getElementById("data-tab").addEventListener("click", handleTabChange);
     document.getElementById("schema-tab").addEventListener("click", handleTabChange);
@@ -204,7 +204,7 @@
                                     <path d="m15 15-4.5-4.5"></path>
                                 </svg>
                             </div>
-                            <input class="search-box" id="input-filter-values" type="text" placeholder="Search rows">
+                            <input class="search-box" id="input-filter-values" type="text" placeholder="Search rows" disabled>
                             <div class="clear-icon-element" id="clear-icon">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" class="clear-icon">
                                     <path d="m2 2 12 12M14 2 2 14" stroke="#ffffff"></path>
@@ -213,22 +213,22 @@
                         </div>
                     
 
-                        <span class="tabulator-paginator" id="pagination-${requestSourceResultTab}">
+                        <span class="tabulator-paginator" id="pagination-${requestSourceQueryTab}">
                             <label>Page Size</label>
-                            <select class="tabulator-page-size" id="dropdown-page-size-${requestSourceResultTab}" aria-label="Page Size" title="Page Size">
+                            <select class="tabulator-page-size" id="dropdown-page-size-${requestSourceQueryTab}" aria-label="Page Size" title="Page Size">
                                 ${options}
                             </select>
-                            <button class="tabulator-page" disabled id="btn-first-${requestSourceResultTab}" type="button" role="button" aria-label="First Page" title="First Page" data-page="first">First</button>
-                            <button class="tabulator-page" disabled id="btn-prev-${requestSourceResultTab}" type="button" role="button" aria-label="Prev Page" title="Prev Page" data-page="prev">Prev</button>
-                            <span class="tabulator-pages" id="tabulator-pages-${requestSourceResultTab}"></span>
-                            <button class="tabulator-page" disabled id="btn-next-${requestSourceResultTab}" type="button" role="button" aria-label="Next Page" title="Next Page" data-page="next">Next</button>
-                            <button class="tabulator-page" disabled id="btn-last-${requestSourceResultTab}" type="button" role="button" aria-label="Last Page" title="Last Page" data-page="last">Last</button>
+                            <button class="tabulator-page" disabled id="btn-first-${requestSourceQueryTab}" type="button" role="button" aria-label="First Page" title="First Page" data-page="first">First</button>
+                            <button class="tabulator-page" disabled id="btn-prev-${requestSourceQueryTab}" type="button" role="button" aria-label="Prev Page" title="Prev Page" data-page="prev">Prev</button>
+                            <span class="tabulator-pages" id="tabulator-pages-${requestSourceQueryTab}"></span>
+                            <button class="tabulator-page" disabled id="btn-next-${requestSourceQueryTab}" type="button" role="button" aria-label="Next Page" title="Next Page" data-page="next">Next</button>
+                            <button class="tabulator-page" disabled id="btn-last-${requestSourceQueryTab}" type="button" role="button" aria-label="Last Page" title="Last Page" data-page="last">Last</button>
                         </span>
                     </div>
                 </div>
             </div>
             <br>
-            <div id="table-${requestSourceResultTab}"></div>
+            <div id="table-${requestSourceQueryTab}"></div>
         `;
 
         let columns = headers.map(c => (
@@ -238,7 +238,7 @@
             }
         ));
 
-        resultsTable = new Tabulator(`#table-${requestSourceResultTab}`, {
+        resultsTable = new Tabulator(`#table-${requestSourceQueryTab}`, {
             columnDefaults:{
                 width:150, //set the width on all columns to 200px
             },
@@ -246,7 +246,7 @@
             data: data,
             columns: columns,
             clipboard: "copy", 
-            paginationElement: document.getElementById(`pagination-${requestSourceResultTab}`),
+            paginationElement: document.getElementById(`pagination-${requestSourceQueryTab}`),
         });
 
         resultsTable.on("popupOpened", onPopupOpenedQueryResultTab);
@@ -259,7 +259,7 @@
             tabulatorTableElement.style.zIndex = 1;
 
             resetQueryControl();
-            initializeFooter(rowCountQueryTab, requestSourceResultTab);
+            initializeFooter(rowCountQueryTab, requestSourceQueryTab);
         });
     }
 
@@ -279,7 +279,7 @@
         runQueryButton.setAttribute('disabled', '');
         runQueryButton.innerText = 'Running';
 
-        const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSourceResultTab}`));
+        const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSourceQueryTab}`));
         const selectedIndex = numRecordsDropdown.selectedIndex;
         const selectedOption = numRecordsDropdown.options[selectedIndex];
 
@@ -369,7 +369,7 @@
 
     function initSchema (/** @type {any} */  data) {
         const columns = [
-            {title:"#", field:"index", width: 150},
+            {title:"#", field:"index", width: 50},
             {title:"Column name", field:"name", width: 150},
             {
                 title:"Data type", 
@@ -545,7 +545,7 @@
                 dataTable.replaceData(data);
                 dataTable.clearAlert();
             }
-        } else if (requestSource === requestSourceResultTab) {
+        } else if (requestSource === requestSourceQueryTab) {
             if (requestType === 'query'){
                 rowCountQueryTab = rowCount;
                 initResultTable(data, headers);
@@ -555,6 +555,10 @@
 
                 const copyButton = document.getElementById(`copy-query-results`);
                 copyButton?.removeAttribute('disabled');
+
+                const searchContainer = document.getElementById(`input-filter-values`);
+                searchContainer?.removeAttribute('disabled');
+
             } else if (requestType === 'paginator') {
                 resultsTable.replaceData(data);
             }
