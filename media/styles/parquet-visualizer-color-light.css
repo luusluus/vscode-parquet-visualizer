@@ -39,6 +39,22 @@
     color: #242424;
 }
 
+#table .tabulator-footer .tabulator-page, 
+#schema .tabulator-footer .tabulator-page, 
+#metadata .tabulator-footer .tabulator-page,
+#query-results .tabulator-footer .tabulator-page{
+    background-color: white;
+    color: #242424;
+}
+
+#table .tabulator-footer .tabulator-page-size, 
+#schema .tabulator-footer .tabulator-page-size, 
+#metadata .tabulator-footer .tabulator-page-size,
+#query-results .tabulator-footer .tabulator-page-size{
+    background-color: white;
+    color: #242424;
+}
+
 #query-results .tabulator-footer * {
     background-color: var(--vscode-tab-inactiveBackground);
     color: #242424;
@@ -81,6 +97,16 @@
     margin-right: 10px;
 }
 
+#query-results .search-container,  
+#query-results .search-container *{
+    background-color: white;
+}
+
+
+#query-results .search-icon {
+    background-color: white;
+}
+
 .search-icon circle, 
 .search-icon path {
     fill: none; /* Ensure no fill on path */
@@ -101,6 +127,9 @@
 
 /* copy button */
 /* SVG icon styling */
+#query-results .copy-icon {
+    background-color: white;
+}
 
 .copy-icon path {
     fill: none; /* Ensure no fill on path */
@@ -145,6 +174,10 @@
 .dropdown-menu li span:hover {
     background-color: #ddd;
     font-weight: bolder;
+}
+
+#query-results .dropdown-icon {
+    background-color: white;
 }
 
 .dropdown-icon path {
