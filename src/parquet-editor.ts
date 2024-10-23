@@ -471,7 +471,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
         let aceTheme = '';
         if (vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Light) {
-          aceTheme = 'ace/theme/text_mate';
+          aceTheme = 'ace/theme/dawn';
         } else {
           aceTheme = 'ace/theme/idle_fingers';
         }
