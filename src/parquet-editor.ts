@@ -414,6 +414,47 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           throw Error(errorMessage);
       }
     }
+
+    getAceEditorCompletions(schema){
+      let formattedSchema = {};
+      for (const key in schema){
+        const columnName = schema[key].name;
+        const columnType = schema[key].typeValue;
+        
+        formattedSchema[columnName] = columnType;
+      }
+
+      function getCompletion(columnTypeValue: any, prevColumnName: string = ''){
+        let completions = {};
+        for (const key in columnTypeValue) {
+          if (!columnTypeValue.hasOwnProperty(key)) {
+            continue;
+          }
+
+          const newNamePrefix = prevColumnName ? `${prevColumnName}.${key}` : key;
+          
+          if (typeof columnTypeValue[key] === 'object' && !Array.isArray(columnTypeValue[key])) {
+            Object.assign(completions, getCompletion(columnTypeValue[key], newNamePrefix));
+
+          } else {
+            completions[newNamePrefix] = columnTypeValue[key];
+          }
+        }
+        return completions;
+      }
+
+      const completions = getCompletion(formattedSchema);
+      const aceEditorCompletions = Object.entries(completions).reverse().map((e, i) => {
+        return {
+          value: e[0],
+          score: i + 1000, // NOTE: just to get the column meta above the other meta.
+          meta: 'column',
+          docHTML: `${e[0]}: <b>${e[1]}</b>`,
+        };
+      });
+
+      return aceEditorCompletions;
+    }
     
     /**
      * Called when our custom editor is opened.
@@ -469,6 +510,9 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         const schema = document.backend.getSchema();
         const metadata = document.backend.getMetaData();
 
+        // get Code completions for the editor
+        const aceEditorCompletions = this.getAceEditorCompletions(schema);
+
         let aceTheme = '';
         if (vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Light) {
           aceTheme = 'ace/theme/dawn';
@@ -493,7 +537,8 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             defaultPageSizes: defaultPageSizesFromSettings,
             shortCutMapping: shortCutMapping
           },
-          aceTheme: aceTheme
+          aceTheme: aceTheme,
+          aceEditorCompletions
         };
 
         // Wait for the webview to be properly ready before we init

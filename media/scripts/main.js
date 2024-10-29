@@ -291,7 +291,9 @@
         });
     }
 
-    function initCodeEditor(isQueryable, defaultQuery, shortCutMapping, aceTheme) {
+    function initCodeEditor(
+        isQueryable, defaultQuery, shortCutMapping, aceTheme, aceEditorCompletions
+    ) {
         const queryTabPanel = document.getElementById("query-tab-panel");
         if (!isQueryable) {
             const paragraph = document.createElement("p");
@@ -319,6 +321,21 @@
         editor.setTheme(aceTheme);
         editor.session.setMode("ace/mode/sql");        
         editor.setValue(defaultQuery);
+        
+        editor.setOptions({
+            enableBasicAutocompletion: true,
+            enableSnippets: true,
+            enableLiveAutocompletion: true,
+        });
+
+        const completer = {
+            getCompletions: function(editor, session, pos, prefix, callback) {
+                callback(null, aceEditorCompletions);
+            }
+        };
+
+        var langTools = ace.require("ace/ext/language_tools");
+        langTools.addCompleter(completer);
 
         editor.commands.addCommand({
             name: 'runQuery',
@@ -904,7 +921,8 @@
                         tableData.isQueryable, 
                         tableData.settings.defaultQuery,
                         tableData.settings.shortCutMapping,
-                        tableData.aceTheme
+                        tableData.aceTheme,
+                        tableData.aceEditorCompletions
                     );
 
                     currentPageDataTab = tableData.currentPage;

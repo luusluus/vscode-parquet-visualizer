@@ -232,3 +232,8 @@ html, body {
     background-color: #ddd;
     font-weight: bolder;
 }
+
+/* ace tooltip*/
+#doc-tooltip {
+    overflow-wrap: anywhere;
+}
