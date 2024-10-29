@@ -204,7 +204,7 @@
                                     <path d="m15 15-4.5-4.5"></path>
                                 </svg>
                             </div>
-                            <input class="search-box" id="input-filter-values" type="text" placeholder="Search rows" disabled>
+                            <input class="search-box" id="input-filter-values" type="text" placeholder="Search rows in page" disabled>
                             <div class="clear-icon-element" id="clear-icon">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" class="clear-icon">
                                     <path d="m2 2 12 12M14 2 2 14" stroke="#ffffff"></path>
