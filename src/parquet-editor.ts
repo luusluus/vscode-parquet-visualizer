@@ -416,7 +416,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
     }
 
     getAceEditorCompletions(schema){
-      let formattedSchema = {};
+      let formattedSchema: any = {};
       for (const key in schema){
         const columnName = schema[key].name;
         const columnType = schema[key].typeValue;
@@ -425,7 +425,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
       }
 
       function getCompletion(columnTypeValue: any, prevColumnName: string = ''){
-        let completions = {};
+        let completions: any = {};
         for (const key in columnTypeValue) {
           if (!columnTypeValue.hasOwnProperty(key)) {
             continue;
@@ -434,9 +434,14 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           const newNamePrefix = prevColumnName ? `${prevColumnName}.${key}` : key;
           
           if (typeof columnTypeValue[key] === 'object' && !Array.isArray(columnTypeValue[key])) {
+            completions[newNamePrefix] = columnTypeValue[key];
+            
             Object.assign(completions, getCompletion(columnTypeValue[key], newNamePrefix));
 
-          } else {
+          } else if (Array.isArray(columnTypeValue[key])) {
+            completions[newNamePrefix] = columnTypeValue[key];
+          }
+          else {
             completions[newNamePrefix] = columnTypeValue[key];
           }
         }
@@ -445,11 +450,20 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
       const completions = getCompletion(formattedSchema);
       const aceEditorCompletions = Object.entries(completions).reverse().map((e, i) => {
+        let htmlForDataType: string;
+        if (typeof e[1] === 'object'){
+          htmlForDataType = `<pre>${JSON.stringify(e[1], undefined, 4)}</pre>`;
+        }
+        else {
+          htmlForDataType = `${e[1]}`;
+        }
+
+        let docHtml = `<strong>Name</strong> ${e[0]}<br><strong>Type</strong>: ${htmlForDataType}`;
         return {
           value: e[0],
           score: i + 1000, // NOTE: just to get the column meta above the other meta.
           meta: 'column',
-          docHTML: `${e[0]}: <b>${e[1]}</b>`,
+          docHTML: docHtml,
         };
       });
 
