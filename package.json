@@ -83,10 +83,6 @@
         "parquet-visualizer.dateTimeFormat": {
           "markdownDescription": "Set datetime format for columns of timestamp type. Defaults to ISO8601. You can set a custom format like `YYYY-MM-DD HH:mm:ss.SSS Z`. Find rules for formatting [here](https://www.npmjs.com/package/date-and-time#formatdateobj-arg-utc).",
           "type": "string",
-          "enumDescriptions": [
-            "ISO8601",
-            "RFC2822"
-          ],
           "default": "ISO8601"
         },
         "parquet-visualizer.outputDateTimeFormatInUTC": {
