@@ -366,11 +366,15 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           const pathMainCssFile = vscode.Uri.joinPath(
             this.context.extensionUri, 'media', 'styles', cssPathNames.mainCssFile
           );
+
           const pathTabsCssFile = vscode.Uri.joinPath(
             this.context.extensionUri, 'media', 'styles', cssPathNames.tabsCssFile
           );
+
+          const aceTheme = getAceTheme(e.kind);
           for (const webviewPanel of this.webviews.get(document.uri)) {
             this.postMessage(webviewPanel, 'colorThemeChange', {
+              aceTheme: aceTheme,
               pathMainCssFile: webviewPanel.webview.asWebviewUri(pathMainCssFile).toString(true),
               pathTabsCssFile: webviewPanel.webview.asWebviewUri(pathTabsCssFile).toString(true)
             });
@@ -554,12 +558,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         // get Code completions for the editor
         const aceEditorCompletions = this.getAceEditorCompletions(schema);
 
-        let aceTheme = '';
-        if (vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Light) {
-          aceTheme = 'ace/theme/dawn';
-        } else {
-          aceTheme = 'ace/theme/idle_fingers';
-        }
+        const aceTheme = getAceTheme(vscode.window.activeColorTheme.kind);
 
         const data = {
           headers: headers, 
@@ -757,6 +756,16 @@ class WebviewCollection {
 			this._webviews.delete(entry);
 		});
 	}
+}
+
+function getAceTheme(themeKind: vscode.ColorThemeKind){
+  let aceTheme = '';
+  if (themeKind === vscode.ColorThemeKind.Light) {
+    aceTheme = 'ace/theme/dawn';
+  } else {
+    aceTheme = 'ace/theme/idle_fingers';
+  }
+  return aceTheme;
 }
 
 function getCssPathNameByVscodeTheme(themeKind: vscode.ColorThemeKind){
