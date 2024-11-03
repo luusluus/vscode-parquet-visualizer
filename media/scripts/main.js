@@ -9,6 +9,8 @@
     let metadataTable;
     let resultsTable;
 
+    let aceEditor;
+
     let dataTableBuilt = false;
     let queryTableBuilt = false;
 
@@ -316,13 +318,13 @@
         queryResultsContainer.id = "query-results";
         queryTabPanel?.appendChild(queryResultsContainer);
 
-        var editor = ace.edit("editor");
+        aceEditor = ace.edit("editor");
 
-        editor.setTheme(aceTheme);
-        editor.session.setMode("ace/mode/sql");        
-        editor.setValue(defaultQuery);
+        aceEditor.setTheme(aceTheme);
+        aceEditor.session.setMode("ace/mode/sql");        
+        aceEditor.setValue(defaultQuery);
         
-        editor.setOptions({
+        aceEditor.setOptions({
             enableBasicAutocompletion: true,
             enableSnippets: true,
             enableLiveAutocompletion: true,
@@ -337,11 +339,11 @@
         var langTools = ace.require("ace/ext/language_tools");
         langTools.addCompleter(completer);
 
-        editor.commands.addCommand({
+        aceEditor.commands.addCommand({
             name: 'runQuery',
             bindKey: shortCutMapping,
-            exec: function(editor) {
-                runQuery(editor);
+            exec: function(aceEditor) {
+                runQuery(aceEditor);
             }
         });
 
@@ -353,7 +355,7 @@
         runQueryButton.classList.add("tabulator-page", "flex-button"); 
         
         runQueryButton?.addEventListener('click', (e) => {
-            runQuery(editor);
+            runQuery(aceEditor);
         });
         buttonContainer?.appendChild(runQueryButton);
 
@@ -363,7 +365,7 @@
         clearQueryTextButton.classList.add("tabulator-page", "flex-button"); 
 
         clearQueryTextButton?.addEventListener('click', (e) => {
-            editor.setValue("");
+            aceEditor.setValue("");
         });
 
         buttonContainer?.appendChild(clearQueryTextButton);
@@ -545,6 +547,13 @@
         // console.log("handleError()");
         // query error
         resetQueryControl();
+    }
+
+    function handleColorThemeChangeById(id, href){
+        var mainColorThemeLink = document.getElementById(id);
+        if (mainColorThemeLink.rel === "stylesheet"){
+            mainColorThemeLink.href = href;
+        }
     }
 
     function updateTable(
@@ -958,6 +967,16 @@
                         tableData.requestSource
                     );
                 }
+                break;
+            }
+            case 'colorThemeChange': {
+                console.log(body);
+                handleColorThemeChangeById("main-color-theme", body.pathMainCssFile);
+                handleColorThemeChangeById("tabs-color-theme", body.pathTabsCssFile);
+
+                // Set ace theme
+                aceEditor.setTheme(body.aceTheme);
+
                 break;
             }
             case 'error': {
