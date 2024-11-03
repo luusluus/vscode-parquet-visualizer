@@ -12,10 +12,18 @@ You can inspect the binary data of parquet files in a human readable tabular for
 
 ![data](media/inspect_data.gif)
 
+### Inspect Struct Value
+You can easily inspect complex struct values by clicking on the cell, which shows a popup containing the value of the struct.
+
+![complex](media/inspect_complex.gif)
+
 ### Run SQL Queries on a Parquet File
 You can query a parquet file with DuckDB SQL. You can also search within the result, paginate the result or change the page size. 
 
 ![sql](media/sql.gif)
+
+### Advanced Autocomplete in Query Editor
+By typing in the editor, an autocomplete box with column suggestions appear. This makes it much easier to write queries, by selecting the suggested columns.
 
 ### Search within rows of Query Result
 By typing free text in the search box, find specific values of the query result.
@@ -25,11 +33,6 @@ By clicking on the export button in the query tab, you can save your query resul
 
 ### Copy Query Result to Clipboard
 By clicking on the copy button in the querytab, you can copy the query result data to the clipboard.
-
-### Inspect Struct Value
-You can easily inspect complex struct values by clicking on the cell, which shows a popup containing the value of the struct.
-
-![complex](media/inspect_complex.gif)
 
 ### Inspect Schema
 You can inspect the schema of the parquet file by clicking on the Schema tab, in which you can paginate if the file has many columns.
