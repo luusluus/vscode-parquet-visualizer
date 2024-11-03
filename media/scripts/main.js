@@ -204,7 +204,7 @@
                                     <path d="m15 15-4.5-4.5"></path>
                                 </svg>
                             </div>
-                            <input class="search-box" id="input-filter-values" type="text" placeholder="Search rows" disabled>
+                            <input class="search-box" id="input-filter-values" type="text" placeholder="Search rows in page" disabled>
                             <div class="clear-icon-element" id="clear-icon">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" class="clear-icon">
                                     <path d="m2 2 12 12M14 2 2 14" stroke="#ffffff"></path>
@@ -291,7 +291,9 @@
         });
     }
 
-    function initCodeEditor(isQueryable, defaultQuery, shortCutMapping, aceTheme) {
+    function initCodeEditor(
+        isQueryable, defaultQuery, shortCutMapping, aceTheme, aceEditorCompletions
+    ) {
         const queryTabPanel = document.getElementById("query-tab-panel");
         if (!isQueryable) {
             const paragraph = document.createElement("p");
@@ -319,6 +321,21 @@
         editor.setTheme(aceTheme);
         editor.session.setMode("ace/mode/sql");        
         editor.setValue(defaultQuery);
+        
+        editor.setOptions({
+            enableBasicAutocompletion: true,
+            enableSnippets: true,
+            enableLiveAutocompletion: true,
+        });
+
+        const completer = {
+            getCompletions: function(editor, session, pos, prefix, callback) {
+                callback(null, aceEditorCompletions);
+            }
+        };
+
+        var langTools = ace.require("ace/ext/language_tools");
+        langTools.addCompleter(completer);
 
         editor.commands.addCommand({
             name: 'runQuery',
@@ -904,7 +921,8 @@
                         tableData.isQueryable, 
                         tableData.settings.defaultQuery,
                         tableData.settings.shortCutMapping,
-                        tableData.aceTheme
+                        tableData.aceTheme,
+                        tableData.aceEditorCompletions
                     );
 
                     currentPageDataTab = tableData.currentPage;

@@ -23,7 +23,7 @@ export abstract class Backend {
           let result: any = [];
           
           if (field.type.children.length > 0) {
-            result =  [this.parseSchema(field.type.children[0])]
+            result =  [this.parseSchema(field.type.children[0])];
             return result;
           }
           return result;
@@ -50,9 +50,12 @@ export abstract class Backend {
     public getSchema(): any { 
         const parsedSchema = this.arrowSchema.fields.map((f, index) => {
             let parsedType = this.parseSchema(f);
+            let typeName = parsedType;
+            let typeValue = parsedType;
         
             if (typeof parsedType === 'object'){
                 parsedType = JSON.stringify(parsedType);
+                typeName = 'object';
             }
         
             if(f.metadata.size > 0) {
@@ -62,6 +65,8 @@ export abstract class Backend {
                 'index': index + 1,
                 'name': f.name,
                 'type': parsedType,
+                'typeName': typeName,
+                'typeValue': typeValue,
                 'nullable': f.nullable,
                 'metadata': JSON.stringify(f.metadata)
             };

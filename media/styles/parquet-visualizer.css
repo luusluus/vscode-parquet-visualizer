@@ -232,3 +232,12 @@ html, body {
     background-color: #ddd;
     font-weight: bolder;
 }
+
+/* ace tooltip*/
+#doc-tooltip {
+    overflow-wrap: anywhere;
+    overflow-y: auto;
+    overflow-x: auto;
+    height: inherit;
+    min-width: 300px;
+}

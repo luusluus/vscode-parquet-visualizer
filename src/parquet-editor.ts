@@ -414,6 +414,61 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           throw Error(errorMessage);
       }
     }
+
+    getAceEditorCompletions(schema){
+      let formattedSchema: any = {};
+      for (const key in schema){
+        const columnName = schema[key].name;
+        const columnType = schema[key].typeValue;
+        
+        formattedSchema[columnName] = columnType;
+      }
+
+      function getCompletion(columnTypeValue: any, prevColumnName: string = ''){
+        let completions: any = {};
+        for (const key in columnTypeValue) {
+          if (!columnTypeValue.hasOwnProperty(key)) {
+            continue;
+          }
+
+          const newNamePrefix = prevColumnName ? `${prevColumnName}.${key}` : key;
+          
+          if (typeof columnTypeValue[key] === 'object' && !Array.isArray(columnTypeValue[key])) {
+            completions[newNamePrefix] = columnTypeValue[key];
+            
+            Object.assign(completions, getCompletion(columnTypeValue[key], newNamePrefix));
+
+          } else if (Array.isArray(columnTypeValue[key])) {
+            completions[newNamePrefix] = columnTypeValue[key];
+          }
+          else {
+            completions[newNamePrefix] = columnTypeValue[key];
+          }
+        }
+        return completions;
+      }
+
+      const completions = getCompletion(formattedSchema);
+      const aceEditorCompletions = Object.entries(completions).reverse().map((e, i) => {
+        let htmlForDataType: string;
+        if (typeof e[1] === 'object'){
+          htmlForDataType = `<pre>${JSON.stringify(e[1], undefined, 4)}</pre>`;
+        }
+        else {
+          htmlForDataType = `${e[1]}`;
+        }
+
+        let docHtml = `<strong>Name</strong> ${e[0]}<br><strong>Type</strong>: ${htmlForDataType}`;
+        return {
+          value: e[0],
+          score: i + 1000, // NOTE: just to get the column meta above the other meta.
+          meta: 'column',
+          docHTML: docHtml,
+        };
+      });
+
+      return aceEditorCompletions;
+    }
     
     /**
      * Called when our custom editor is opened.
@@ -469,6 +524,9 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         const schema = document.backend.getSchema();
         const metadata = document.backend.getMetaData();
 
+        // get Code completions for the editor
+        const aceEditorCompletions = this.getAceEditorCompletions(schema);
+
         let aceTheme = '';
         if (vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Light) {
           aceTheme = 'ace/theme/dawn';
@@ -493,7 +551,8 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             defaultPageSizes: defaultPageSizesFromSettings,
             shortCutMapping: shortCutMapping
           },
-          aceTheme: aceTheme
+          aceTheme: aceTheme,
+          aceEditorCompletions
         };
 
         // Wait for the webview to be properly ready before we init
