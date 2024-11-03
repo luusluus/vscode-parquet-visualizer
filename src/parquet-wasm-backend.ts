@@ -11,6 +11,7 @@ import { ParquetFile } from 'parquet-wasm';
 import { Backend } from './backend';
 import { Table } from 'apache-arrow/table';
 import { tableFromIPC } from 'apache-arrow';
+import { DateTimeFormatSettings } from './types';
 
 export class ParquetWasmBackend extends Backend {
   public parquetFile: ParquetFile;
@@ -18,16 +19,17 @@ export class ParquetWasmBackend extends Backend {
 
   private constructor(
     filePath: string,
+    dateTimeFormat: DateTimeFormatSettings,
     parquetFile: ParquetFile, 
     table: Table<any>
   ) {
-    super(filePath);
+    super(filePath, dateTimeFormat);
     this.parquetFile = parquetFile;
     this.arrowSchema = table.schema;
     this.metadata = this.getMetaDataImpl();
   }
 
-  public static override async createAsync (path: string) {
+  public static override async createAsync (path: string, dateTimeFormat: DateTimeFormatSettings) {
     const buffer = fs.readFileSync(path);
     const file = new File([buffer], "fileName", {
       type: "application/vnd.apache.parquet",
@@ -43,6 +45,7 @@ export class ParquetWasmBackend extends Backend {
 
     return new ParquetWasmBackend(
       path, 
+      dateTimeFormat,
       parquetFile, 
       table
     );

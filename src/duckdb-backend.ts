@@ -1,27 +1,27 @@
-import * as fs from 'fs';
-
 import * as duckdb from "duckdb-async";
-import { Backend } from "./backend";
 
 import { tableFromIPC, Schema } from "apache-arrow";
+
+import { Backend } from "./backend";
+import { DateTimeFormatSettings } from './types';
 
 export class DuckDBBackend extends Backend{
     private db: duckdb.Database;
     public arrowSchema: Schema<any>;
     public metadata: any;
 
-    constructor(filePath: string, db: duckdb.Database){
-      super(filePath);
+    constructor(filePath: string, dateTimeFormatSettings: DateTimeFormatSettings, db: duckdb.Database){
+      super(filePath, dateTimeFormatSettings);
       this.db = db;
     }
 
-    public static override async createAsync (path: string){
+    public static override async createAsync (path: string, dateTimeFormatSettings: DateTimeFormatSettings){
       const db = await duckdb.Database.create(":memory:");
       // const splitted = path.split('/');
       // const filename = splitted[splitted.length - 1];
       // const filePath = `${__dirname}/${filename}.duckdb`;
       // const db = await duckdb.Database.create(filePath);
-      return new DuckDBBackend(path, db);
+      return new DuckDBBackend(path, dateTimeFormatSettings, db);
     }
 
     dispose() {

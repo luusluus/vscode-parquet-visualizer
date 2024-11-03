@@ -1,3 +1,7 @@
+import date from 'date-and-time';
+
+import { DateTimeFormatSettings } from './types';
+
 export function getNonce() {
 	let text = '';
 	const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -17,21 +21,33 @@ export function convertToTabulatorData(array: any[]) {
     });
   }
 
-export function convertBigIntToString(obj: any): any {
+export function convertBigIntToString(obj: any, dateTimeFormatSettings: DateTimeFormatSettings): any {
   if (Array.isArray(obj)) {
-    return obj.map(item => convertBigIntToString(item));
+    return obj.map(item => convertBigIntToString(item, dateTimeFormatSettings));
   } 
   else if (obj instanceof Uint8Array) {
     return Array.from(obj.values());
   }
   else if (obj !== null && typeof obj === 'object') {
     if (obj instanceof Date) {
-      return obj.toUTCString();
+      if (dateTimeFormatSettings.format === "ISO8601") {
+        return obj.toISOString();
+      }
+      else if (dateTimeFormatSettings.format === "RFC2822") {
+        return obj.toUTCString();
+      }
+      else {
+        return date.format(
+          obj, 
+          dateTimeFormatSettings.format, 
+          dateTimeFormatSettings.useUTC
+        );
+      }
     }
     const newObj: { [key: string]: any } = {};
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
-          newObj[key] = convertBigIntToString(obj[key]);
+          newObj[key] = convertBigIntToString(obj[key], dateTimeFormatSettings);
       }
     }
     return newObj;
@@ -95,7 +111,7 @@ export function createHeadersFromData(data: any) {
 }
 
 export function replacePeriodWithUnderscoreInKey(data: any) {
-  return data.map(obj => {
+  return data.map((obj: { [x: string]: any; }) => {
     const newObj: { [key: string]: any } = {};
 
     Object.keys(obj).forEach(key => {

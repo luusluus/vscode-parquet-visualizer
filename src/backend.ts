@@ -1,18 +1,21 @@
 import { Schema, Field, Type } from "apache-arrow";
 
 import { convertBigIntToString, convertObjectsToJSONStrings } from './util';
-
+import { DateTimeFormatSettings } from './types';
 
 export abstract class Backend {
     public filePath: string;
     protected arrowSchema: Schema;
     protected metadata: any;
 
-    public constructor(filePath: string) {
+    private dateTimeFormat: DateTimeFormatSettings;
+
+    public constructor(filePath: string, dateTimeFormat: DateTimeFormatSettings) {
         this.filePath = filePath;
+        this.dateTimeFormat = dateTimeFormat;
     }
 
-    static createAsync(filePath: string): Promise<any> {
+    static createAsync(filePath: string, dateTimeFormat: DateTimeFormatSettings): Promise<any> {
         throw new Error("Method not implemented");
     };
 
@@ -107,7 +110,7 @@ export abstract class Backend {
                 key: 'footer_signing_key_metadata',
                 value: Number(this.metadata[0]["footer_signing_key_metadata"])
             },
-        ]
+        ];
     };
 
     abstract getMetaDataImpl(): Promise<any>;
@@ -119,7 +122,9 @@ export abstract class Backend {
 
         const queryResult = await this.queryImpl(query);
         const result = queryResult.map(v => {
-            return convertObjectsToJSONStrings(convertBigIntToString(v));
+            return convertObjectsToJSONStrings(
+                convertBigIntToString(v, this.dateTimeFormat)
+            );
         });
 
         const endTime = performance.now();
