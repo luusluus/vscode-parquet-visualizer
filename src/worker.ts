@@ -12,7 +12,7 @@ import { Paginator } from './paginator';
 import { DuckDBBackend } from './duckdb-backend';
 import { DuckDBPaginator } from './duckdb-paginator';
 import { createHeadersFromData, replacePeriodWithUnderscoreInKey } from './util';
-
+import { DateTimeFormatSettings } from './types';
 
 class BackendWorker {
   paginator: Paginator;
@@ -23,8 +23,8 @@ class BackendWorker {
     this.backend = backend;
   }
 
-  static async create(path: string) {
-    const backend = await DuckDBBackend.createAsync(path);
+  static async create(path: string, dateTimeFormatSettings: DateTimeFormatSettings) {
+    const backend = await DuckDBBackend.createAsync(path, dateTimeFormatSettings);
     await backend.initialize();
     return new BackendWorker(backend);
   }
@@ -140,7 +140,10 @@ class BackendWorker {
 }
 
 (async () => {
-    const worker = await BackendWorker.create(workerData.pathParquetFile);
+    const worker = await BackendWorker.create(
+      workerData.pathParquetFile,
+      workerData.dateTimeFormatSettings
+    );
 
     parentPort.on('message', async (message: any) => {
         switch (message.source) {

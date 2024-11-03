@@ -21,6 +21,14 @@ export function defaultBackend(): string {
 export function defaultRunQueryKeyBinding(): string {
     return settings().get('RunQueryKeyBinding');
 }
+
+export function dateTimeFormat(): string {
+    return settings().get('dateTimeFormat') as string;
+}
+
+export function outputDateTimeFormatInUTC(): boolean {
+    return settings().get<boolean>('outputDateTimeFormatInUTC') as boolean;
+}
   
 function settingsChanged(e: vscode.ConfigurationChangeEvent, sections: string[]): boolean {
     return sections.map(s => `${name}.${s}`).some(s => e.affectsConfiguration(s));

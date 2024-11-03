@@ -12,7 +12,8 @@ import { DuckDBBackend } from './duckdb-backend';
 import { DuckDBPaginator } from './duckdb-paginator';
 import { ParquetWasmBackend } from './parquet-wasm-backend';
 import { ParquetWasmPaginator } from './parquet-wasm-paginator';
-import { affectsDocument, defaultPageSizes, defaultQuery, defaultBackend, defaultRunQueryKeyBinding } from './settings';
+import { affectsDocument, defaultPageSizes, defaultQuery, defaultBackend, defaultRunQueryKeyBinding, dateTimeFormat, outputDateTimeFormatInUTC } from './settings';
+import { DateTimeFormatSettings } from './types';
 
 // import { getLogger } from './logger';
 
@@ -30,10 +31,14 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
     static async create(
       uri: vscode.Uri
     ): Promise<CustomParquetDocument | PromiseLike<CustomParquetDocument>> {
+        const dateTimeFormatSettings: DateTimeFormatSettings = {
+          format: dateTimeFormat(),
+          useUTC: outputDateTimeFormatInUTC()
+        };
         try{
             switch (defaultBackend()) {
               case 'duckdb': {
-                const backend = await DuckDBBackend.createAsync(uri.fsPath);
+                const backend = await DuckDBBackend.createAsync(uri.fsPath, dateTimeFormatSettings);
                 await backend.initialize();
                 const totalItems = backend.getRowCount();
                 const table = 'data';
@@ -42,7 +47,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
                 return new CustomParquetDocument(uri, backend, paginator);
               }
               case 'parquet-wasm': {
-                const backend = await ParquetWasmBackend.createAsync(uri.fsPath);
+                const backend = await ParquetWasmBackend.createAsync(uri.fsPath, dateTimeFormatSettings);
                 const paginator = new ParquetWasmPaginator(backend);
                 return new CustomParquetDocument(uri, backend, paginator);
               }
@@ -53,7 +58,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         } catch (err: any){
             console.log(err);
 
-            const backend = await ParquetWasmBackend.createAsync(uri.fsPath);
+            const backend = await ParquetWasmBackend.createAsync(uri.fsPath, dateTimeFormatSettings);
             const paginator = new ParquetWasmPaginator(backend);
             return new CustomParquetDocument(uri, backend, paginator);
         }
@@ -73,28 +78,34 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       if (this.backend instanceof DuckDBBackend) {
         this.isQueryAble = true;
 
+        const dateTimeFormatSettings: DateTimeFormatSettings = {
+          format: dateTimeFormat(),
+          useUTC: outputDateTimeFormatInUTC()
+        };
+
         this.worker = new Worker(__dirname + "/worker.js", {
-            workerData: {
-              pathParquetFile: this.uri.fsPath
-            }
-          });
-    
-          this.worker.on('message', (message) => {
-            if (message.type === 'query'){
-              this.emitQueryResult(message);
-            } else if (message.type === 'paginator') {
-              this.fireDataPaginatorEvent(
-                message.result, 
-                message.rowCount,
-                message.pageSize,
-                message.pageNumber,
-                message.pageCount,
-                requestSourceQueryTab
-              );
-            } else if (message.type === 'exportQueryResults') {
-              vscode.window.showInformationMessage(`Exported query result to ${message.path}`);
-            }
-          });
+          workerData: {
+            pathParquetFile: this.uri.fsPath,
+            dateTimeFormatSettings: dateTimeFormatSettings,
+          }
+        });
+  
+        this.worker.on('message', (message) => {
+          if (message.type === 'query'){
+            this.emitQueryResult(message);
+          } else if (message.type === 'paginator') {
+            this.fireDataPaginatorEvent(
+              message.result, 
+              message.rowCount,
+              message.pageSize,
+              message.pageNumber,
+              message.pageCount,
+              requestSourceQueryTab
+            );
+          } else if (message.type === 'exportQueryResults') {
+            vscode.window.showInformationMessage(`Exported query result to ${message.path}`);
+          }
+        });
       }
     }
 
