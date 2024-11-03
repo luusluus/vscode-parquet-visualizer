@@ -47,7 +47,7 @@ You can inspect the metadata in tabular format by clicking on the Metadata tab.
 ![metadata](media/inspect_metadata.gif)
 
 ### Color Theme
-The theme of the extension (black or white) is based on your VS Code Color theme. If the color theme is white, the extension will load it's light theme.
+The theme of the extension (dark or light) is based on your VS Code Color theme setting. If the color theme is light, the extension will load it's light theme. When you change your theme settings, all active documents will change theme automatically.
 
 ## Configuration
 The following configuration options are available:
