@@ -547,6 +547,13 @@
         resetQueryControl();
     }
 
+    function handleColorThemeChangeById(id, href){
+        var mainColorThemeLink = document.getElementById(id);
+        if (mainColorThemeLink.rel === "stylesheet"){
+            mainColorThemeLink.href = href;
+        }
+    }
+
     function updateTable(
         /** @type {any} */ data, 
         /** @type {any} */ headers, 
@@ -958,6 +965,12 @@
                         tableData.requestSource
                     );
                 }
+                break;
+            }
+            case 'colorThemeChange': {
+                console.log(body);
+                handleColorThemeChangeById("main-color-theme", body.pathMainCssFile);
+                handleColorThemeChangeById("tabs-color-theme", body.pathTabsCssFile);
                 break;
             }
             case 'error': {
