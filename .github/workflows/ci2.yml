@@ -42,7 +42,7 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 20.15.0
 
       - if: matrix.target != 'universal'
         name: Install dependencies (with binaries)
