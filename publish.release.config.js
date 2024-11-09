@@ -10,13 +10,13 @@ module.exports = {
         }
       ],
       '@semantic-release/git',
-    //   [
-    //     'semantic-release-vsce',
-    //     {
-    //       packageVsix: false,
-    //       publishPackagePath: '*/*.vsix',
-    //     },
-    //   ],
+      [
+        'semantic-release-vsce',
+        {
+          packageVsix: false,
+          publishPackagePath: '*/*.vsix',
+        },
+      ],
       [
         '@semantic-release/github',
         {
