@@ -1,5 +1,4 @@
-# .github/workflows/ci2.yaml
-# test feature commit to trigger semantic-release-vsce for packaging.
+# .github/workflows/ci.yaml
 name: ci
 
 on:
