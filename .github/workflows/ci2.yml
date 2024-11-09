@@ -57,10 +57,6 @@ jobs:
           VSCE_TARGET: ${{ matrix.target }}
           # All tokens are required since semantic-release needs to validate them
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          # In case you want to publish to Visual Studio Marketplace
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-          # In case you want to publish to Open VSX Registry
-          # OVSX_PAT: ${{ secrets.OVSX_PAT }}
 
       - uses: actions/upload-artifact@v3
         with:
