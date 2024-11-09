@@ -58,7 +58,7 @@ jobs:
         env:
           VSCE_TARGET: ${{ matrix.target }}
           # All tokens are required since semantic-release needs to validate them
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           # In case you want to publish to Visual Studio Marketplace
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
           # In case you want to publish to Open VSX Registry
@@ -85,7 +85,7 @@ jobs:
 
       - run: npx semantic-release --extends ./publish.release.config.js
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           # In case you want to publish to Visual Studio Marketplace
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
           # In case you want to publish to Open VSX Registry
