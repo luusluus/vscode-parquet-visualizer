@@ -41,7 +41,6 @@ function getCIConfig() {
 }
 
 function isDryRun() {
-    console.log("isDryRun()");
   return process.argv.includes('--dry-run');
 }
 
