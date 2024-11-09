@@ -74,7 +74,7 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 20.15.0
 
       - run: npm ci
 
@@ -84,6 +84,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           # In case you want to publish to Visual Studio Marketplace
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          # VSCE_PAT: ${{ secrets.VSCE_PAT }}
           # In case you want to publish to Open VSX Registry
           # OVSX_PAT: ${{ secrets.OVSX_PAT }}
