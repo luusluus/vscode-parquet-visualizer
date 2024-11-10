@@ -127,6 +127,23 @@
         if (innerHTML.includes('pre')) {
             style.width = '400px';
             style.overflowX  = 'auto';
+
+            let tab = '';
+            if (parentContainerId === "metadata") {
+                tab = "metadataTab";
+            } else if (parentContainerId === "schema") {
+                tab = "schemaTab";
+            } else if (parentContainerId === "table-queryTab") {
+                tab = "queryTab";
+            } else {
+                tab = "dataTab";
+            }
+            
+            vscode.postMessage({
+                type: "onPopupOpened",
+                tab: tab
+            });
+
         } else {
             element.innerHTML = escapeHtml(innerHTML);
         }
