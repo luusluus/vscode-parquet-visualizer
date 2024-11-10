@@ -76,3 +76,18 @@ The tables of the frontend are powered by [tabulator](https://tabulator.info/).
 
 The query editor of the frontend is powered by [ace](https://github.com/ajaxorg/ace).
 
+
+## Release Notes
+See the [CHANGELOG.MD](CHANGELOG.md)
+
+## Telemetry
+To improve the quality of Parquet Visualizer, the extension collects the following analytics such as:
+- Extension load times
+- File parsing success or failure
+- Frequency of features like Data tab or query tab
+
+Our telemetry implementation [respects](https://code.visualstudio.com/api/extension-guides/telemetry#dos-and-donts) the vscode `isTelemetryEnabled` and `onDidChangeTelemetryEnabled` API, which allows you to disable telemetry dynamically and zero telemetry will be sent. 
+
+You can disable it via the settings by following the instructions [here](https://code.visualstudio.com/docs/supporting/FAQ#_how-to-disable-telemetry-reporting).
+
+You can view all the possible telemetry events that are sent by following instructions [here](https://code.visualstudio.com/docs/getstarted/telemetry#_viewing-all-telemetry-events).
