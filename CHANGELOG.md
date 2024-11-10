@@ -1,3 +1,14 @@
+# [0.12.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.11.0...v0.12.0) (2024-11-10)
+
+
+### Features
+
+* add publishing to openvsx ([4ffacc3](https://github.com/luusluus/vscode-parquet-visualizer/commit/4ffacc33b0d70ccf6712e33c850ebbe6b8f152f9))
+* add telemetry manager ([2cbebfd](https://github.com/luusluus/vscode-parquet-visualizer/commit/2cbebfd5376bf31442fccffca039cb4f1b6282cc))
+* initialize telemetry manager ([11cab24](https://github.com/luusluus/vscode-parquet-visualizer/commit/11cab2417ba79ba1715c35ea26ded23dcc664188))
+* integrate telemetry manager ([b341926](https://github.com/luusluus/vscode-parquet-visualizer/commit/b341926a1502a596eb7a19ec989e7471b591bf3a))
+* send onPopupOpened to vscode server ([16fd7db](https://github.com/luusluus/vscode-parquet-visualizer/commit/16fd7dbb40721dc44ec0b7c5dd411109c24fa2d9))
+
 # [0.11.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.10.1...v0.11.0) (2024-11-09)
 
 
