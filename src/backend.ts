@@ -5,7 +5,7 @@ import { DateTimeFormatSettings } from './types';
 
 export abstract class Backend {
     public filePath: string;
-    protected arrowSchema: Schema;
+    public arrowSchema: Schema;
     protected metadata: any;
 
     private dateTimeFormat: DateTimeFormatSettings;
