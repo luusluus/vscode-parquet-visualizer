@@ -15,6 +15,7 @@ import { ParquetWasmPaginator } from './parquet-wasm-paginator';
 import { affectsDocument, defaultPageSizes, defaultQuery, defaultBackend, defaultRunQueryKeyBinding, dateTimeFormat, outputDateTimeFormatInUTC } from './settings';
 import { DateTimeFormatSettings } from './types';
 
+import { TelemetryManager } from './telemetry';
 // import { getLogger } from './logger';
 
 // TODO: Put in constants.ts
@@ -43,11 +44,27 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
                 const totalItems = backend.getRowCount();
                 const table = 'data';
                 const readFromFile = true;
+                
+                const columnCount = backend.arrowSchema.fields.length;
+                TelemetryManager.sendEvent("fileOpened", {
+                  backend: 'duckdb',
+                  numRows: totalItems.toString(),
+                  numColumns: columnCount.toString()
+                });
+                
                 const paginator = new DuckDBPaginator(backend, table, totalItems, readFromFile);
                 return new CustomParquetDocument(uri, backend, paginator);
               }
               case 'parquet-wasm': {
                 const backend = await ParquetWasmBackend.createAsync(uri.fsPath, dateTimeFormatSettings);
+
+                const columnCount = backend.arrowSchema.fields.length;
+                TelemetryManager.sendEvent("fileOpened", {
+                  backend: 'parquet-wasm',
+                  numRows: backend.getRowCount().toString(),
+                  numColumns: columnCount.toString()
+                });
+
                 const paginator = new ParquetWasmPaginator(backend);
                 return new CustomParquetDocument(uri, backend, paginator);
               }
@@ -57,6 +74,11 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
 
         } catch (err: any){
             console.log(err);
+
+            TelemetryManager.sendEvent("fileParsingResult", {
+              result: "Failure",
+              error: err
+            });
 
             const backend = await ParquetWasmBackend.createAsync(uri.fsPath, dateTimeFormatSettings);
             const paginator = new ParquetWasmPaginator(backend);
@@ -446,7 +468,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
       }
     }
 
-    getAceEditorCompletions(schema){
+    getAceEditorCompletions(schema: any){
       let formattedSchema: any = {};
       for (const key in schema){
         const columnName = schema[key].name;
@@ -609,26 +631,38 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
       switch (message.type) {
         case 'nextPage': {
           await document.emitPage(message);
+
+          TelemetryManager.sendEvent("nextPageButtonClicked", {tabSource: message.source});
           break;
         }
         case 'prevPage': {
           await document.emitPage(message);
+
+          TelemetryManager.sendEvent("prevPageButtonClicked", {tabSource: message.source});
           break;
         }
         case 'firstPage': {
           await document.emitPage(message);
+
+          TelemetryManager.sendEvent("firstPageButtonClicked", {tabSource: message.source});
           break;
         }
         case 'lastPage': {
           await document.emitPage(message);
+
+          TelemetryManager.sendEvent("lastPageButtonClicked", {tabSource: message.source});
           break;
         }
         case 'currentPage': {
           await document.emitCurrentPage(message);
+
+          TelemetryManager.sendEvent("currentButtonClicked", {tabSource: message.source});
           break;
         }
         case 'changePageSize': {
           await document.changePageSize(message.data);
+
+          TelemetryManager.sendEvent("pageSizeChanged", {tabSource: message.data.source});
           break;
         }
         case 'startQuery': {
@@ -638,6 +672,8 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             path: document.uri.fsPath,
             pageSize: message.pageSize
           });
+
+          TelemetryManager.sendEvent("queryStarted");
           break;
         }
         case 'exportQueryResults': {
@@ -645,10 +681,25 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             source: message.type,
             exportType: message.exportType
           });
+
+          TelemetryManager.sendEvent("queryResultsExported", {
+              fromFileType: 'parquet',
+              toFileType: message.exportType
+            }
+          );
+
           break;
         }
         case 'copyQueryResults': {
           vscode.window.showInformationMessage("Query result data copied");
+
+          TelemetryManager.sendEvent("queryResultsCopied");
+          break;
+        }
+
+        case 'onPopupOpened': {
+          TelemetryManager.sendEvent("popupOpenened", {tabSource: message.tab});
+          break;
         }
       }
     }
