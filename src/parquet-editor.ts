@@ -36,8 +36,9 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
           format: dateTimeFormat(),
           useUTC: outputDateTimeFormatInUTC()
         };
+        const backendName = defaultBackend();
         try{
-            switch (defaultBackend()) {
+            switch (backendName) {
               case 'duckdb': {
                 const backend = await DuckDBBackend.createAsync(uri.fsPath, dateTimeFormatSettings);
                 await backend.initialize();
@@ -72,15 +73,25 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
                 throw Error("Unknown backend. Terminating");
             }
 
-        } catch (err: any){
-            console.log(err);
+        } catch (err: unknown){
+            console.error("An error occurred:", err);
 
+            const errorMessage = err instanceof Error ? err.message : "Unknown error";
+            const stackTrace = err instanceof Error ? err.stack : undefined;
             TelemetryManager.sendEvent("fileParsingResult", {
               result: "Failure",
-              error: err
+              path: uri.fsPath,
+              backend: backendName,
+              error: errorMessage,
+              stacktrace: stackTrace || "No stack trace available"
             });
 
             const backend = await ParquetWasmBackend.createAsync(uri.fsPath, dateTimeFormatSettings);
+            TelemetryManager.sendEvent("fileParsingFallback", {
+                path: uri.fsPath,
+                backend: 'parquet-wasm',
+              }
+            );
             const paginator = new ParquetWasmPaginator(backend);
             return new CustomParquetDocument(uri, backend, paginator);
         }
