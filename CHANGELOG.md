@@ -1,3 +1,10 @@
+## [0.13.1](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.13.0...v0.13.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* enable ovsx deployment again ([5dd61d2](https://github.com/luusluus/vscode-parquet-visualizer/commit/5dd61d2bf88b112bad713cc36ad522192f9b66e8))
+
 # [0.13.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.12.0...v0.13.0) (2024-11-11)
 
 
