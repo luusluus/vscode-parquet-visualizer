@@ -1,3 +1,10 @@
+# [0.13.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.12.0...v0.13.0) (2024-11-11)
+
+
+### Features
+
+* improved error handling at opening file ([aadb60d](https://github.com/luusluus/vscode-parquet-visualizer/commit/aadb60d4d988312be9243bffda641700ec884de0))
+
 # [0.12.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.11.0...v0.12.0) (2024-11-10)
 
 
