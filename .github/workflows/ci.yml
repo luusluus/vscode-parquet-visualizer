@@ -83,4 +83,4 @@ jobs:
           # In case you want to publish to Visual Studio Marketplace
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
           # In case you want to publish to Open VSX Registry
-          # OVSX_PAT: ${{ secrets.OVSX_PAT }}
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
