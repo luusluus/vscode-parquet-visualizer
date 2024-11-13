@@ -1,25 +1,25 @@
 import * as vscode from 'vscode';
 
-import { name, contributes } from '../package.json';
+const name = "parquet-visualizer";
 
 function settings(): vscode.WorkspaceConfiguration {
     return vscode.workspace.getConfiguration(name);
 }
 
 export function defaultPageSizes(): number[] {
-    return settings().get('defaultPageSizes');
+    return settings().get('defaultPageSizes') as number[];
 }
 
 export function defaultQuery(): string {
-    return settings().get('defaultQuery');
+    return settings().get('defaultQuery') as string;
 }
 
 export function defaultBackend(): string {
-    return settings().get('backend');
+    return settings().get('backend') as string;
 }
 
 export function defaultRunQueryKeyBinding(): string {
-    return settings().get('RunQueryKeyBinding');
+    return settings().get('RunQueryKeyBinding') as string;
 }
 
 export function dateTimeFormat(): string {
