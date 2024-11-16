@@ -18,7 +18,9 @@ fs.readdir(__dirname, (err, files) => {
 
 console.log(`${path.join(__dirname, 'build.bat')}`);
 
-const command = process.platform === 'win32' ? path.join(__dirname, 'build.bat') : './build.sh';
+const batPath = 'D:\\a\\vscode-parquet-visualizer\\vscode-parquet-visualizer\\build.bat';
+
+const command = process.platform === 'win32' ? batPath : './build.sh';
 
 const envVars = {
     ...process.env,
