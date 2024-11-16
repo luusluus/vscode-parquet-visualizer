@@ -801,6 +801,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
               <script nonce="{{nonce}}" type="text/javascript" src="{{scripts}}/ace/src-min/ace.js"></script>
               <script nonce="{{nonce}}" type="text/javascript" src="{{scripts}}/ace/src-min/theme-idle_fingers.js"></script>
               <script nonce="{{nonce}}" type="text/javascript" src="{{scripts}}/ace/src-min/theme-dawn.js"></script>
+              <script nonce="{{nonce}}" type="text/javascript" src="{{scripts}}/ace/src-min/snippets/sql.js"></script>
               <script nonce="{{nonce}}" type="text/javascript" src="{{scripts}}/ace/src-min/mode-sql.js"></script>
               <script nonce="{{nonce}}" type="text/javascript" src="{{scripts}}/ace/src-min/ext-language_tools.js"></script>
 
