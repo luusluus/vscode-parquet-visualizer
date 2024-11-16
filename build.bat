@@ -3,9 +3,8 @@
 echo Running build.bat
 
 echo clearing previous build
-rmdir /s /q out
-@REM mkdir out
-@REM mkdir out\binding
+mkdir out
+mkdir out\binding
 
 @REM REM Copy required files
 @REM copy /y node_modules\duckdb-async\node_modules\duckdb\lib\binding\duckdb.node out\binding\
