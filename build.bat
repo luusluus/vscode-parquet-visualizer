@@ -3,9 +3,7 @@
 echo Running build.bat
 
 echo clearing previous build
-@REM REM Clear previous build
-@REM rmdir /s /q out
-@REM echo making new build folder
+rmdir /s /q out
 @REM mkdir out
 @REM mkdir out\binding
 
