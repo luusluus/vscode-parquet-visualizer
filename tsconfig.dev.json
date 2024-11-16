@@ -1,6 +1,6 @@
 {
 	"include": [
-		"src/**/*.ts"
+		"src/**/*.ts",
 	],
 	"exclude": [
 		"node_modules",
@@ -12,6 +12,7 @@
 		"module": "commonjs",
 		"target": "es6",
 		"outDir": "out",
+		"rootDir": "./src",
 		"lib": [
 			"es6",
 			"DOM",
