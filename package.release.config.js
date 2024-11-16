@@ -1,5 +1,12 @@
 // package.release.config.js
 module.exports = {
+  branches: [
+    "master",
+    {
+      "name": "*",
+      "prerelease": true
+    }
+  ],
   plugins: [
     '@semantic-release/commit-analyzer',
     [
