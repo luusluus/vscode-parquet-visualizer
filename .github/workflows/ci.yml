@@ -11,26 +11,26 @@ jobs:
           - os: windows-latest
             target: win32-x64
             npm_config_arch: x64
-          # - os: ubuntu-latest
-          #   target: linux-x64
-          #   npm_config_arch: x64
-          # - os: ubuntu-latest
-          #   target: linux-arm64
-          #   npm_config_arch: arm64
-          # - os: ubuntu-latest
-          #   target: linux-armhf
-          #   npm_config_arch: arm
-          # - os: ubuntu-latest
-          #   target: alpine-x64
-          #   npm_config_arch: x64
-          # - os: macos-latest
-          #   target: darwin-x64
-          #   npm_config_arch: x64
-          # - os: macos-latest
-          #   target: darwin-arm64
-          #   npm_config_arch: arm64
-          # - os: ubuntu-latest
-          #   target: universal
+          - os: ubuntu-latest
+            target: linux-x64
+            npm_config_arch: x64
+          - os: ubuntu-latest
+            target: linux-arm64
+            npm_config_arch: arm64
+          - os: ubuntu-latest
+            target: linux-armhf
+            npm_config_arch: arm
+          - os: ubuntu-latest
+            target: alpine-x64
+            npm_config_arch: x64
+          - os: macos-latest
+            target: darwin-x64
+            npm_config_arch: x64
+          - os: macos-latest
+            target: darwin-arm64
+            npm_config_arch: arm64
+          - os: ubuntu-latest
+            target: universal
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
