@@ -1,5 +1,7 @@
 const { exec } = require('child_process');
 
+console.log(`Current working directory: ${process.cwd()}`);
+
 const command = process.platform === 'win32' ? 'build.bat' : './build.sh';
 
 const envVars = {
