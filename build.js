@@ -1,3 +1,4 @@
+const path = require('path');
 const { exec } = require('child_process');
 
 console.log(`Current working directory: ${process.cwd()}`);
