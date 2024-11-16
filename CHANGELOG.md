@@ -1,3 +1,15 @@
+## [0.13.2](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.13.1...v0.13.2) (2024-11-16)
+
+
+### Bug Fixes
+
+* add path import ([e93c039](https://github.com/luusluus/vscode-parquet-visualizer/commit/e93c0398e49668542e3cf0a1b4708c86d9a3d179))
+* adjust bat path in build.js ([5837b91](https://github.com/luusluus/vscode-parquet-visualizer/commit/5837b913cc6a8001a446c6aa5c25a821b181c03f))
+* exit if there's an error in build.js ([6a2ae58](https://github.com/luusluus/vscode-parquet-visualizer/commit/6a2ae58244955fde7470978a9029485149fa8e20))
+* try to build complete absolute path ([c77337f](https://github.com/luusluus/vscode-parquet-visualizer/commit/c77337f76489c87399eddbca7f308418810da4fc))
+* try to trigger semantic release on branches as prerelease ([355ca1f](https://github.com/luusluus/vscode-parquet-visualizer/commit/355ca1fad1a6aed96be268070cd0e772b0a9b7bb))
+* update csp ([3c78109](https://github.com/luusluus/vscode-parquet-visualizer/commit/3c781090d3b889dabdd48c62004cea4ce4937a2d))
+
 ## [0.13.1](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.13.0...v0.13.1) (2024-11-11)
 
 
