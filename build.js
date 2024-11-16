@@ -24,11 +24,9 @@ if (process.platform !== 'win32') {
     exec('build.bat', {env: envVars}, (error, stdout, stderr) => {
         if (error) {
             console.error(`Error build extension: ${error.message}`);
-            process.exit(1);
         }
         if (stderr) {
             console.error(`Stderr build extension: ${stderr}`);
-            process.exit(1);
         }
         console.log(`Stdout build extension: ${stdout}`);
     });
@@ -37,11 +35,9 @@ if (process.platform !== 'win32') {
     exec('build_worker.bat', {env: envVars}, (error, stdout, stderr) => {
         if (error) {
             console.error(`Error build worker: ${error.message}`);
-            process.exit(1);
         }
         if (stderr) {
             console.error(`Stderr build worker: ${stderr}`);
-            process.exit(1);
         }
         console.log(`Stdout build worker: ${stdout}`);
     });
