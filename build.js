@@ -1,26 +1,6 @@
-const fs = require('fs');
-const path = require('path');
 const { exec } = require('child_process');
 
-console.log(`Current working directory: ${process.cwd()}`);
-
-fs.readdir(__dirname, (err, files) => {
-    if (err) {
-        console.error('Error reading directory:', err.message);
-        return;
-    }
-
-    console.log('Contents of the directory:');
-    files.forEach(file => {
-        console.log(file);
-    });
-});
-
-console.log(`${path.join(__dirname, 'build.bat')}`);
-
-const batPath = 'D:\\a\\vscode-parquet-visualizer\\vscode-parquet-visualizer\\build.bat';
-
-const command = process.platform === 'win32' ? batPath : './build.sh';
+const command = process.platform === 'win32' ? 'build.bat' : './build.sh';
 
 const envVars = {
     ...process.env,
