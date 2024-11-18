@@ -320,7 +320,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
             message.pageNumber,
             message.pageCount
         );
-        vscode.window.showInformationMessage("Query succeeded");
+        // vscode.window.showInformationMessage("Query succeeded");
     }
 
     async changePageSize(message: any) {
@@ -832,7 +832,52 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
                           <div id="schema"></div>
                       </div>
 
-                      <div class="tab" id="query-tab-panel"></div>
+                      <div class="tab" id="query-tab-panel">
+                          <div id="query-tab-container">
+                            <div id="editor"></div>
+                            <div id="query-actions" class="button-container">
+                              <button id="run-query-btn" class="tabulator-page flex-button">Run</button>
+                              <button id="clear-query-btn" class="tabulator-page flex-button">Clear</button>
+                              
+                              <div class="flex-button search-container" style="margin-left: auto;">
+                                  <div class="search-icon-element">
+                                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" class="search-icon">
+                                          <circle cx="7" cy="7" r="5"></circle>
+                                          <path d="m15 15-4.5-4.5"></path>
+                                      </svg>
+                                  </div>
+                                  <input class="search-box" id="input-filter-values" type="text" placeholder="Search rows in page" disabled>
+                                  <div class="clear-icon-element" id="clear-icon">
+                                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" class="clear-icon">
+                                          <path d="m2 2 12 12M14 2 2 14" stroke="#ffffff"></path>
+                                      </svg>
+                                  </div>
+                              </div>
+                              <button class="tabulator-page flex-button" disabled id="copy-query-results" type="button" role="button" aria-label="Copy to clipboard" title="Copy to clipboard">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" width="16" height="16" class="copy-icon">
+                                    <path d="M2 5h9v9H2z" class="stroke-linejoin-round"></path>
+                                    <path d="M5 5V2h9v9h-3" class="stroke-linejoin-round"></path>
+                                </svg>
+                                Copy
+                              </button>
+                              <div class="dropdown">
+                                  <button class="flex-button" disabled id="export-query-results" type="button" role="button" aria-label="Export results" title="Export results">
+                                  Export results
+                                  <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" focusable="false" aria-hidden="true">
+                                      <path d="M4 5h8l-4 6-4-6z" fill="white" stroke="none"></path>
+                                  </svg>
+                                  </button>
+                                  <ul class="dropdown-menu" id="dropdown-menu">
+                                      <li><span data-value="csv" class="dropdown-item">To CSV</span></li>
+                                      <li><span data-value="parquet" class="dropdown-item">To Parquet</span></li>
+                                      <li><span data-value="json" class="dropdown-item">To JSON</span></li>
+                                      <li><span data-value="ndjson" class="dropdown-item">To ndJSON</span></li>
+                                  </ul>
+                              </div>
+                            </div>
+                            <div id="table-queryTab"></div>
+                          </div>
+                      </div>
                       
                       <div class="tab" id="metadata-tab-panel">
                           <div id="metadata"></div>
