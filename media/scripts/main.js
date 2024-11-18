@@ -12,7 +12,7 @@
     let aceEditor;
 
     let dataTableBuilt = false;
-    let queryTableBuilt = false;
+    let queryHasRun = false;
 
     let currentPageDataTab = 1;
     let currentPageQueryTab = 1;
@@ -169,93 +169,50 @@
         // TODO: What if child.left < parent. left?
     }
 
-    function resetQueryControl(){
-        // console.log("resetQueryControl");
-        const runQueryButton = document.getElementById("run-query");
+    function resetQueryControls(){
+        // console.log("resetQueryControl()");
+
+        const runQueryButton = document.getElementById("run-query-btn");
         runQueryButton?.removeAttribute('disabled');
         runQueryButton.innerText = 'Run';
         resultsTable.clearAlert();
     }
 
+    function resetQueryResultControls(rowCount){
+        // console.log("resetQueryResultControls()");
+
+        if (!queryHasRun) {
+            return;
+        }
+
+        const resultsCountElement = document.getElementById("query-count");
+        resultsCountElement.innerHTML = `<strong>Results</strong> (${rowCount})`;
+        
+        const exportResultsButton = document.getElementById(`export-query-results`);
+        exportResultsButton?.removeAttribute('disabled');
+
+        const copyButton = document.getElementById(`copy-query-results`);
+        copyButton?.removeAttribute('disabled');
+
+        const searchContainer = document.getElementById(`input-filter-values`);
+        searchContainer?.removeAttribute('disabled');
+
+        const nextButton = /** @type {HTMLElement} */ (document.getElementById(`btn-next-queryTab`));
+        nextButton.removeAttribute('disabled');
+
+        const lastButton = /** @type {HTMLElement} */ (document.getElementById(`btn-last-queryTab`));
+        lastButton.removeAttribute('disabled');
+    }
+
     function initResultTable(/** @type {any} */ data, /** @type {any} */ headers) {
-        const options = createOptionHTMLElementsString(defaultPageSizes);
-
-        document.getElementById("query-results").innerHTML = `
-            <div class="tabulator" style="z-index: 2; overflow: visible">
-                <div class="tabulator-footer">
-                    <div class="tabulator-footer-contents">
-                        <span class="tabulator-page-counter">
-                            <span>
-                                <span><strong>Results</strong></span>
-                                <span id="query-count"></span>
-                            </span>
-                        </span>
-                        <span class="tabulator-paginator">
-                            <button class="tabulator-page" disabled id="copy-query-results" type="button" role="button" aria-label="Copy to clipboard" title="Copy to clipboard">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" width="16" height="16" class="copy-icon">
-                                    <path d="M2 5h9v9H2z" class="stroke-linejoin-round"></path>
-                                    <path d="M5 5V2h9v9h-3" class="stroke-linejoin-round"></path>
-                                </svg>
-                                Copy
-                            </button>
-
-                            <div class="dropdown">
-                                <button class="tabulator-page" disabled id="export-query-results" type="button" role="button" aria-label="Export results" title="Export results">
-                                Export results
-                                <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" focusable="false" aria-hidden="true">
-                                    <path d="M4 5h8l-4 6-4-6z" fill="white" stroke="none"></path>
-                                </svg>
-                                </button>
-                                <ul class="dropdown-menu" id="dropdown-menu">
-                                    <li><span data-value="csv" class="dropdown-item">To CSV</span></li>
-                                    <li><span data-value="parquet" class="dropdown-item">To Parquet</span></li>
-                                    <li><span data-value="json" class="dropdown-item">To JSON</span></li>
-                                    <li><span data-value="ndjson" class="dropdown-item">To ndJSON</span></li>
-                                </ul>
-                            </div>
-                        </span>
-                    </div>
-                    <div class="tabulator-footer-contents">
-                        <div class="tabulator-paginator search-container">
-                            <div class="search-icon-element">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" class="search-icon">
-                                    <circle cx="7" cy="7" r="5"></circle>
-                                    <path d="m15 15-4.5-4.5"></path>
-                                </svg>
-                            </div>
-                            <input class="search-box" id="input-filter-values" type="text" placeholder="Search rows in page" disabled>
-                            <div class="clear-icon-element" id="clear-icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" class="clear-icon">
-                                    <path d="m2 2 12 12M14 2 2 14" stroke="#ffffff"></path>
-                                </svg>
-                            </div>
-                        </div>
-                    
-
-                        <span class="tabulator-paginator" id="pagination-${requestSourceQueryTab}">
-                            <label>Page Size</label>
-                            <select class="tabulator-page-size" id="dropdown-page-size-${requestSourceQueryTab}" aria-label="Page Size" title="Page Size">
-                                ${options}
-                            </select>
-                            <button class="tabulator-page" disabled id="btn-first-${requestSourceQueryTab}" type="button" role="button" aria-label="First Page" title="First Page" data-page="first">First</button>
-                            <button class="tabulator-page" disabled id="btn-prev-${requestSourceQueryTab}" type="button" role="button" aria-label="Prev Page" title="Prev Page" data-page="prev">Prev</button>
-                            <span class="tabulator-pages" id="tabulator-pages-${requestSourceQueryTab}"></span>
-                            <button class="tabulator-page" disabled id="btn-next-${requestSourceQueryTab}" type="button" role="button" aria-label="Next Page" title="Next Page" data-page="next">Next</button>
-                            <button class="tabulator-page" disabled id="btn-last-${requestSourceQueryTab}" type="button" role="button" aria-label="Last Page" title="Last Page" data-page="last">Last</button>
-                        </span>
-                    </div>
-                </div>
-            </div>
-            <br>
-            <div id="table-${requestSourceQueryTab}"></div>
-        `;
-
         let columns = headers.map(c => (
             {
                 ...c, 
                 cellClick:onCellClick,
             }
         ));
+
+        const options = createOptionHTMLElementsString(defaultPageSizes);
 
         resultsTable = new Tabulator(`#table-${requestSourceQueryTab}`, {
             columnDefaults:{
@@ -265,19 +222,26 @@
             data: data,
             columns: columns,
             clipboard: "copy", 
-            paginationElement: document.getElementById(`pagination-${requestSourceQueryTab}`),
+            footerElement: `<span class="tabulator-page-counter" id="query-count">
+                    </span>
+                    <span class="tabulator-paginator">
+                        <label>Page Size</label>
+                        <select class="tabulator-page-size" id="dropdown-page-size-${requestSourceQueryTab}" aria-label="Page Size" title="Page Size">
+                            ${options}
+                        </select>
+                        <button class="tabulator-page" disabled id="btn-first-${requestSourceQueryTab}" type="button" role="button" aria-label="First Page" title="First Page" data-page="first">First</button>
+                        <button class="tabulator-page" disabled id="btn-prev-${requestSourceQueryTab}" type="button" role="button" aria-label="Prev Page" title="Prev Page" data-page="prev">Prev</button>
+                    </span>
+                    <button class="tabulator-page" disabled id="btn-next-${requestSourceQueryTab}" type="button" role="button" aria-label="Next Page" title="Next Page" data-page="next">Next</button>
+                    <button class="tabulator-page" disabled id="btn-last-${requestSourceQueryTab}" type="button" role="button" aria-label="Last Page" title="Last Page" data-page="last">Last</button>
+            `,
         });
 
         resultsTable.on("popupOpened", onPopupOpenedQueryResultTab);
 
         resultsTable.on("tableBuilt", function(data){
-            const resultsCountElement = document.getElementById("query-count");
-            resultsCountElement.innerText = `(${rowCountQueryTab})`;
-
-            let tabulatorTableElement = document.getElementById("table-queryTab");
-            tabulatorTableElement.style.zIndex = 1;
-
-            resetQueryControl();
+            resetQueryControls();
+            resetQueryResultControls(rowCountQueryTab);
             initializeFooter(rowCountQueryTab, requestSourceQueryTab);
         });
     }
@@ -294,7 +258,7 @@
     function runQuery(editor) {
         resultsTable.alert("Loading...");
 
-        const runQueryButton = document.getElementById("run-query");
+        const runQueryButton = document.getElementById("run-query-btn");
         runQueryButton.setAttribute('disabled', '');
         runQueryButton.innerText = 'Running';
 
@@ -321,19 +285,6 @@
             return;
         }
 
-        const editorElement = document.createElement("div");
-        editorElement.id = "editor";
-        queryTabPanel?.appendChild(editorElement);
-
-        const buttonContainer = document.createElement("div");
-        buttonContainer.id = "query-actions";
-        buttonContainer.classList.add("button-container");
-        queryTabPanel?.appendChild(buttonContainer);
-
-        
-        const queryResultsContainer = document.createElement("div");
-        queryResultsContainer.id = "query-results";
-        queryTabPanel?.appendChild(queryResultsContainer);
 
         aceEditor = ace.edit("editor");
 
@@ -364,28 +315,17 @@
             }
         });
 
-        initResultTable([], []);
 
-        const runQueryButton = document.createElement("button");
-        runQueryButton.id = "run-query";
-        runQueryButton.innerText = "Run";
-        runQueryButton.classList.add("tabulator-page", "flex-button"); 
-        
+        const runQueryButton = document.getElementById("run-query-btn");
         runQueryButton?.addEventListener('click', (e) => {
             runQuery(aceEditor);
         });
-        buttonContainer?.appendChild(runQueryButton);
 
-        const clearQueryTextButton = document.createElement("button");
-        clearQueryTextButton.id = "clear-query";
-        clearQueryTextButton.innerText = "Clear";
-        clearQueryTextButton.classList.add("tabulator-page", "flex-button"); 
-
+        const clearQueryTextButton = document.getElementById("clear-query-btn");
         clearQueryTextButton?.addEventListener('click', (e) => {
             aceEditor.setValue("");
         });
 
-        buttonContainer?.appendChild(clearQueryTextButton);
     }
 
     function initMetaData (/** @type {any} */  data) {
@@ -563,7 +503,7 @@
     function handleError (){
         // console.log("handleError()");
         // query error
-        resetQueryControl();
+        resetQueryControls();
     }
 
     function handleColorThemeChangeById(id, href){
@@ -590,17 +530,9 @@
             }
         } else if (requestSource === requestSourceQueryTab) {
             if (requestType === 'query'){
+                queryHasRun = true;
                 rowCountQueryTab = rowCount;
                 initResultTable(data, headers);
-
-                const exportResultsButton = document.getElementById(`export-query-results`);
-                exportResultsButton?.removeAttribute('disabled');
-
-                const copyButton = document.getElementById(`copy-query-results`);
-                copyButton?.removeAttribute('disabled');
-
-                const searchContainer = document.getElementById(`input-filter-values`);
-                searchContainer?.removeAttribute('disabled');
 
             } else if (requestType === 'paginator') {
                 resultsTable.replaceData(data);
@@ -632,10 +564,15 @@
         const currentPageSpan = /** @type {HTMLElement} */ (document.querySelector(`#page-current-${requestSource}`));
         const countPageSpan = /** @type {HTMLElement} */ (document.querySelector(`#page-count-${requestSource}`));
 
-        if (currentPageSpan) {
+        if (requestSource === requestSourceQueryTab) {
+            if (!currentPageSpan && !countPageSpan) {
+                
+            } else {
+                currentPageSpan.innerText = currentPage.toString();
+                countPageSpan.innerText = amountOfPages.toString();
+            }
+        } else {
             currentPageSpan.innerText = currentPage.toString();
-        }
-        if (countPageSpan) {
             countPageSpan.innerText = amountOfPages.toString();
         }
     }
@@ -762,70 +699,9 @@
         }
     }
 
-    function initializeFooter(/** @type {Number} */ rowCount, /** @type {String} */ requestSource) {
-        // console.log(`initializeFooter(rowCount:${rowCount}, requestSource:${requestSource})`);
-        const nextButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-next-${requestSource}`));
-        const prevButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-prev-${requestSource}`));
-        const firstButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-first-${requestSource}`));
-        const lastButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-last-${requestSource}`));
-
-        nextButton.addEventListener('click', () => {
-            const selectedIndex = numRecordsDropdown.selectedIndex;
-            const selectedOption = numRecordsDropdown.options[selectedIndex];
-            if (requestSource === requestSourceDataTab) {
-                dataTable.alert("Loading...");
-            }
-            vscode.postMessage({
-                type: 'nextPage',
-                pageSize: Number(selectedOption.innerText),
-                source: requestSource
-            });
-        });
-    
-        prevButton.addEventListener('click', () => {
-            const selectedIndex = numRecordsDropdown.selectedIndex;
-            const selectedOption = numRecordsDropdown.options[selectedIndex];
-            if (requestSource === requestSourceDataTab) {
-                dataTable.alert("Loading...");
-            }
-            vscode.postMessage({
-                type: 'prevPage',
-                pageSize: Number(selectedOption.innerText),
-                source: requestSource
-            });
-        });
-    
-        firstButton.addEventListener('click', () => {
-            const selectedIndex = numRecordsDropdown.selectedIndex;
-            const selectedOption = numRecordsDropdown.options[selectedIndex];
-            if (requestSource === requestSourceDataTab) {
-                dataTable.alert("Loading...");
-            }
-            vscode.postMessage({
-                type: 'firstPage',
-                pageSize: Number(selectedOption.innerText),
-                source: requestSource
-            });
-        });
-    
-        lastButton.addEventListener('click', () => {
-            const selectedIndex = numRecordsDropdown.selectedIndex;
-            const selectedOption = numRecordsDropdown.options[selectedIndex];
-            if (requestSource === requestSourceDataTab) {
-                dataTable.alert("Loading...");
-            }
-            vscode.postMessage({
-                type: 'lastPage',
-                pageSize: Number(selectedOption.innerText),
-                source: requestSource
-            });
-        });
-    
-        const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSource}`));
-        numRecordsDropdown.value = `${defaultPageSizes[0]}`;
-
+    function initializeQueryResultControls() {
+        // console.log("initializeQueryResultControls()");
         const exportResultsButton = /** @type {HTMLElement} */ (document.querySelector(`#export-query-results`));
-
         // Toggle dropdown menu visibility
         exportResultsButton.addEventListener('click', (event) => {
             event.stopPropagation(); // Prevent the event from bubbling up
@@ -907,6 +783,69 @@
                 type: 'copyQueryResults',
             });
         });
+    }
+
+    function initializeFooter(/** @type {Number} */ rowCount, /** @type {String} */ requestSource) {
+        // console.log(`initializeFooter(rowCount:${rowCount}, requestSource:${requestSource})`);
+        const nextButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-next-${requestSource}`));
+        const prevButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-prev-${requestSource}`));
+        const firstButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-first-${requestSource}`));
+        const lastButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-last-${requestSource}`));
+
+        nextButton.addEventListener('click', () => {
+            const selectedIndex = numRecordsDropdown.selectedIndex;
+            const selectedOption = numRecordsDropdown.options[selectedIndex];
+            if (requestSource === requestSourceDataTab) {
+                dataTable.alert("Loading...");
+            }
+            vscode.postMessage({
+                type: 'nextPage',
+                pageSize: Number(selectedOption.innerText),
+                source: requestSource
+            });
+        });
+    
+        prevButton.addEventListener('click', () => {
+            const selectedIndex = numRecordsDropdown.selectedIndex;
+            const selectedOption = numRecordsDropdown.options[selectedIndex];
+            if (requestSource === requestSourceDataTab) {
+                dataTable.alert("Loading...");
+            }
+            vscode.postMessage({
+                type: 'prevPage',
+                pageSize: Number(selectedOption.innerText),
+                source: requestSource
+            });
+        });
+    
+        firstButton.addEventListener('click', () => {
+            const selectedIndex = numRecordsDropdown.selectedIndex;
+            const selectedOption = numRecordsDropdown.options[selectedIndex];
+            if (requestSource === requestSourceDataTab) {
+                dataTable.alert("Loading...");
+            }
+            vscode.postMessage({
+                type: 'firstPage',
+                pageSize: Number(selectedOption.innerText),
+                source: requestSource
+            });
+        });
+    
+        lastButton.addEventListener('click', () => {
+            const selectedIndex = numRecordsDropdown.selectedIndex;
+            const selectedOption = numRecordsDropdown.options[selectedIndex];
+            if (requestSource === requestSourceDataTab) {
+                dataTable.alert("Loading...");
+            }
+            vscode.postMessage({
+                type: 'lastPage',
+                pageSize: Number(selectedOption.innerText),
+                source: requestSource
+            });
+        });
+    
+        const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSource}`));
+        numRecordsDropdown.value = `${defaultPageSizes[0]}`;
 
         if (rowCount <= 10 ) {
             numRecordsDropdown.setAttribute('disabled', '');
@@ -950,6 +889,8 @@
                         tableData.aceTheme,
                         tableData.aceEditorCompletions
                     );
+                    initializeQueryResultControls();
+                    initResultTable([], []);
 
                     currentPageDataTab = tableData.currentPage;
                     amountOfPagesDataTab = tableData.pageCount;
@@ -987,7 +928,6 @@
                 break;
             }
             case 'colorThemeChange': {
-                console.log(body);
                 handleColorThemeChangeById("main-color-theme", body.pathMainCssFile);
                 handleColorThemeChangeById("tabs-color-theme", body.pathTabsCssFile);
 

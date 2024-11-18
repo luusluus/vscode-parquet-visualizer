@@ -2,6 +2,9 @@ html, body {
     height: 100%; /* Ensures that the body takes the full height of the viewport */
     margin: 0;    /* Removes default margin */
     padding: 0;   /* Removes default padding */
+    font-size: var(--vscode-font-size);
+	font-weight: var(--vscode-font-weight);
+	font-family: var(--vscode-font-family);
 }
 
 #container {
@@ -10,94 +13,61 @@ html, body {
     flex-direction: column; /* Aligns children vertically */
 }
 
-#editor {
-    position: relative;
-    /* width: 500px; */
-    height: 30%;
-}
 
 #table, #schema, #metadata {
-    font-size: var(--vscode-font-size);
-	font-weight: var(--vscode-font-weight);
-	font-family: var(--vscode-font-family);
-    height: 100%; /* Sets the height of the table and schema to be 100% of their parent */
+    height: 100%;
 }
 
-#table .tabulator-header .tabulator-col, 
-#schema .tabulator-header .tabulator-col, 
-#metadata .tabulator-header .tabulator-col,
-#query-results .tabulator-header .tabulator-col{
-    background-color:#080808;
-    color: #d4d4d4;
+#query-tab-container {
+    height: 100%;
+    display: flex; /* Using flexbox for easy alignment and distribution of children */
+    flex-direction: column; /* Aligns children vertically */
 }
 
-#table .tabulator-row, 
-#schema .tabulator-row, 
-#metadata .tabulator-row,
-#query-results .tabulator-row{
-    color: #d4d4d4;
+#editor {
+    flex: 0 0 20%; /* Fixed 20% of the viewport height */
+    box-sizing: border-box;
 }
 
-#table .tabulator-row-odd, 
-#schema .tabulator-row-odd, 
-#metadata .tabulator-row-odd,
-#query-results .tabulator-row-odd{
-    background-color: #151515;
+#query-actions {
+    flex: 0 0 auto; /* Respects its height */
+    /* min-height: 40px; Ensures it has a minimum height */
+    max-height: 5%; /* Maximum height relative to the viewport */
+    box-sizing: border-box;
 }
 
-#table .tabulator-row-even, 
-#schema .tabulator-row-even, 
-#metadata .tabulator-row-even,
-#query-results .tabulator-row-even {
-    background-color: #202020;
+#table-queryTab {
+    flex: 1; /* Fills remaining space */
+    max-height: calc(100vh - 20% - 40px); /* Ensures it won't overflow the viewport */
+    overflow: hidden; /* Allows scrolling inside if content overflows */
+    box-sizing: border-box;
 }
 
-#table .tabulator-footer *, 
-#schema .tabulator-footer *, 
-#metadata .tabulator-footer *,
-#query-results .tabulator-footer *{
-    background-color: #101010;
-    color: #d4d4d4;
-}
+@media (max-width: 1024px) {
+    #editor {
+        flex: 0 0 25%; /* Increase editor height */
+    }
 
-#query-results .tabulator-footer * {
-    background-color: #101010;
-    color: #d4d4d4;
-}
+    #query-actions {
+        flex: 0 0 auto;
+        min-height: 40px; /* Adjusted min-height */
+        max-height: 6%;
+    }
 
-#table .tabulator-popup, 
-#schema .tabulator-popup, 
-#metadata .tabulator-popup,
-#query-results .tabulator-popup{
-    background-color: #101010;
-    color: #d4d4d4;
+    #table-queryTab {
+        flex: 1; /* Dynamically fill remaining space */
+    }
 }
-
-#table .active,
-#query-results .active {
-    font-weight: bold;
-}
-
-#table ::-webkit-scrollbar-thumb:hover,
-#query-results ::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(172, 172, 172, 1)
-}
-
-#table ::-webkit-scrollbar-thumb,
-#query-results ::-webkit-scrollbar-thumb {
-    background-color: rgba(60, 60, 60, 0.4);
-}
-
 
 .button-container {
     display: flex;
-    justify-content: flex-start; /* Align buttons to the left */
     padding-top: 10px;
     padding-bottom: 10px;
     padding-left: 10px;
 }
 
 .flex-button {
+    max-height: 21px;
     background-color: #101010;
     color: #d4d4d4;
     margin: 0 2px;
@@ -115,6 +85,7 @@ html, body {
 
 .search-container {
     display: flex;
+    width: 50%;
     align-items: center;
     border: 1px solid #ccc;
     padding: 3px;
@@ -141,6 +112,7 @@ html, body {
     border: none;
     outline: none;
     width: 100%;
+    background-color: transparent;
 }
 
 /* Additional CSS to ensure no border or outline on focus */
@@ -192,7 +164,6 @@ html, body {
 .dropdown-menu {
     display: none;
     position: absolute;
-    background-color: white;
     min-width: 80px;
     box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
     z-index: 1000;
@@ -224,12 +195,10 @@ html, body {
 .dropdown-menu li span {
     display: block;
     text-decoration: none;
-    color: black;
     cursor: pointer; /* Make it look like a clickable item */
 }
 
 .dropdown-menu li span:hover {
-    background-color: #ddd;
     font-weight: bolder;
 }
 

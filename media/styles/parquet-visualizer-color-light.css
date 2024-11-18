@@ -5,7 +5,7 @@
 #table .tabulator-header .tabulator-col, 
 #schema .tabulator-header .tabulator-col, 
 #metadata .tabulator-header .tabulator-col,
-#query-results .tabulator-header .tabulator-col{
+#table-queryTab .tabulator-header .tabulator-col{
     background-color: var(--vscode-tab-inactiveBackground);
     color: #333333;
 }
@@ -13,28 +13,28 @@
 #table .tabulator-row, 
 #schema .tabulator-row, 
 #metadata .tabulator-row,
-#query-results .tabulator-row{
+#table-queryTab .tabulator-row{
     color: #242424
 }
 
 #table .tabulator-row-odd, 
 #schema .tabulator-row-odd, 
 #metadata .tabulator-row-odd,
-#query-results .tabulator-row-odd{
+#table-queryTab .tabulator-row-odd{
     background-color: var(--vscode-list-activeSelectionBackground);
 }
 
 #table .tabulator-row-even, 
 #schema .tabulator-row-even, 
 #metadata .tabulator-row-even,
-#query-results .tabulator-row-even {
+#table-queryTab .tabulator-row-even {
     background-color: rgb(248, 248, 248);
 }
 
 #table .tabulator-footer *, 
 #schema .tabulator-footer *, 
 #metadata .tabulator-footer *,
-#query-results .tabulator-footer *{
+#table-queryTab .tabulator-footer *{
     background-color: var(--vscode-tab-inactiveBackground);
     color: #242424;
 }
@@ -42,7 +42,7 @@
 #table .tabulator-footer .tabulator-page, 
 #schema .tabulator-footer .tabulator-page, 
 #metadata .tabulator-footer .tabulator-page,
-#query-results .tabulator-footer .tabulator-page{
+#table-queryTab .tabulator-footer .tabulator-page{
     background-color: white;
     color: #242424;
 }
@@ -50,12 +50,12 @@
 #table .tabulator-footer .tabulator-page-size, 
 #schema .tabulator-footer .tabulator-page-size, 
 #metadata .tabulator-footer .tabulator-page-size,
-#query-results .tabulator-footer .tabulator-page-size{
+#table-queryTab .tabulator-footer .tabulator-page-size{
     background-color: white;
     color: #242424;
 }
 
-#query-results .tabulator-footer * {
+#table-queryTab .tabulator-footer * {
     background-color: var(--vscode-tab-inactiveBackground);
     color: #242424;
 }
@@ -66,12 +66,12 @@
 }
 
 #table ::-webkit-scrollbar-thumb:hover,
-#query-results ::-webkit-scrollbar-thumb:hover {
+#table-queryTab ::-webkit-scrollbar-thumb:hover {
     background-color: rgba(172, 172, 172, 1)
 }
 
 #table ::-webkit-scrollbar-thumb,
-#query-results ::-webkit-scrollbar-thumb {
+#table-queryTab ::-webkit-scrollbar-thumb {
     background-color: rgba(60, 60, 60, 0.4);
 }
 
@@ -79,11 +79,6 @@
 .flex-button {
     background-color: #ffffff;
     color: #242424;;
-    margin: 0 2px;
-    padding: 2px 7px;
-    border: 1px solid #aaa;
-    border-radius: 3px;
-    cursor: pointer;
 }
 
 
@@ -97,13 +92,13 @@
     margin-right: 10px;
 }
 
-#query-results .search-container,  
-#query-results .search-container *{
+#table-queryTab .search-container,  
+#table-queryTab .search-container *{
     background-color: white;
 }
 
 
-#query-results .search-icon {
+#table-queryTab .search-icon {
     background-color: white;
 }
 
@@ -114,8 +109,8 @@
 }
 
 
-.search-box::placeholder {
-    color: #999;
+.search-box {
+    color: black;
 }
 
 
@@ -127,7 +122,7 @@
 
 /* copy button */
 /* SVG icon styling */
-#query-results .copy-icon {
+#table-queryTab .copy-icon {
     background-color: white;
 }
 
@@ -138,37 +133,11 @@
 
 /* dropdown export button */
 .dropdown-menu {
-    display: none;
-    position: absolute;
-    background-color: black;
-    min-width: 80px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-    z-index: 1000;
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-}
-
-.dropdown-menu li {
-    margin: 0 2px;
-    padding: 2px 5px;
-    border-left: 0.5px solid  #aaa;
-    border-right: 0.5px solid  #aaa;
-}
-
-.dropdown-menu li:last-child {
-    margin: 0 2px;
-    padding: 2px 5px;
-    border-left: 0.5px solid  #aaa;
-    border-right: 0.5px solid  #aaa;
-    border-bottom: 0.5px solid  #aaa;
+    background-color: white;
 }
 
 .dropdown-menu li span {
-    display: block;
-    text-decoration: none;
     color: black;
-    cursor: pointer; /* Make it look like a clickable item */
 }
 
 .dropdown-menu li span:hover {
@@ -176,7 +145,7 @@
     font-weight: bolder;
 }
 
-#query-results .dropdown-icon {
+#table-queryTab .dropdown-icon {
     background-color: white;
 }
 
