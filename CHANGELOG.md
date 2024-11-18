@@ -1,3 +1,10 @@
+# [0.14.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.13.2...v0.14.0) (2024-11-18)
+
+
+### Features
+
+* improve query tab design ([4bbee82](https://github.com/luusluus/vscode-parquet-visualizer/commit/4bbee8288aea5d79fe74c44f7984d6615df68fc8))
+
 ## [0.13.2](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.13.1...v0.13.2) (2024-11-16)
 
 
