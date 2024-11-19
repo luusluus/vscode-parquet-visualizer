@@ -135,6 +135,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
               requestSourceQueryTab
             );
           } else if (message.type === 'exportQueryResults') {
+            this.fireExportCompleteEvent();
             vscode.window.showInformationMessage(`Exported query result to ${message.path}`);
           }
         });
@@ -188,6 +189,13 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       this._onDidChangeDocument.fire(tableData);
     }
 
+    private readonly _onDidExport = this._register(new vscode.EventEmitter<{}>());
+
+    /**
+     * Fired to notify webviews that the document has changed.
+    */
+    public readonly onDidExport = this._onDidExport.event;
+
     private readonly _onError = this._register(new vscode.EventEmitter<{
       readonly error?: string;
     }>());
@@ -240,6 +248,10 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         pageNumber,
         pageCount
       );
+    }
+
+    fireExportCompleteEvent() {
+      this._onDidExport.fire({});
     }
 
     async emitPage(message: any) {
@@ -424,6 +436,15 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           for (const webviewPanel of this.webviews.get(document.uri)) {
             this.postMessage(webviewPanel, 'error', {
                 type: 'error'
+            });
+          }
+        }));
+
+        this.listeners.push(document.onDidExport(e => {
+          // Update all webviews when one document has an error
+          for (const webviewPanel of this.webviews.get(document.uri)) {
+            this.postMessage(webviewPanel, 'exportComplete', {
+                type: 'exportComplete'
             });
           }
         }));
@@ -862,13 +883,14 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
                               </button>
                               <div class="dropdown">
                                   <button class="flex-button" disabled id="export-query-results" type="button" role="button" aria-label="Export results" title="Export results">
-                                  Export results
+                                    <span id="export-query-results-text">Export results</span>
                                   <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" focusable="false" aria-hidden="true">
                                       <path d="M4 5h8l-4 6-4-6z" fill="white" stroke="none"></path>
                                   </svg>
                                   </button>
                                   <ul class="dropdown-menu" id="dropdown-menu">
                                       <li><span data-value="csv" class="dropdown-item">To CSV</span></li>
+                                      <li><span data-value="excel" class="dropdown-item">To Excel</span></li>
                                       <li><span data-value="parquet" class="dropdown-item">To Parquet</span></li>
                                       <li><span data-value="json" class="dropdown-item">To JSON</span></li>
                                       <li><span data-value="ndjson" class="dropdown-item">To ndJSON</span></li>
