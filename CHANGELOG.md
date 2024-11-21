@@ -1,3 +1,10 @@
+## [0.14.2](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.14.1...v0.14.2) (2024-11-21)
+
+
+### Bug Fixes
+
+* prevent styling table to be copied into clipboard ([e17c677](https://github.com/luusluus/vscode-parquet-visualizer/commit/e17c6773a129e36d9bcb17e7e8cbcbeeda2d08f5))
+
 ## [0.14.1](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.14.0...v0.14.1) (2024-11-21)
 
 
