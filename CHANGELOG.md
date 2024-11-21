@@ -1,3 +1,10 @@
+## [0.14.3](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.14.2...v0.14.3) (2024-11-21)
+
+
+### Bug Fixes
+
+* add correct styling for dark theme ([21c3eec](https://github.com/luusluus/vscode-parquet-visualizer/commit/21c3eec35678f5c276a475f1d8e9a9e79f327519))
+
 ## [0.14.2](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.14.1...v0.14.2) (2024-11-21)
 
 
