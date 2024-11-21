@@ -236,6 +236,23 @@
             columns: columns,
             clipboard: "copy", 
             clipboardCopyStyled:false,
+            clipboardCopyFormatter: function(type, output) {
+                if (type === "plain") {
+                    return output;
+                } else if (type === "html") {
+                    return "";
+                }
+                return output;
+            },
+            clipboardCopyConfig:{
+                columnHeaders:true,
+                columnGroups:false,
+                rowHeaders:false,
+                rowGroups:false,
+                columnCalcs:false,
+                dataTree:false,
+                formatCells:false,
+            },
             footerElement: `<span class="tabulator-page-counter" id="query-count"></span>
                     <span class="tabulator-page-counter" id="page-count"></span>
                     <span class="tabulator-paginator">
