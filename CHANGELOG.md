@@ -1,3 +1,11 @@
+## [0.14.1](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.14.0...v0.14.1) (2024-11-21)
+
+
+### Bug Fixes
+
+* fix bug query view. fixed other bugs in query view as well ([e1abdf1](https://github.com/luusluus/vscode-parquet-visualizer/commit/e1abdf1575e865394b05584ab86bfea75f66f8de))
+* return default value setting if setting are set to empty ([a629b90](https://github.com/luusluus/vscode-parquet-visualizer/commit/a629b90a60c42689aadecbbef066d154733ce5c0))
+
 # [0.14.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.13.2...v0.14.0) (2024-11-18)
 
 
