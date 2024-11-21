@@ -7,11 +7,21 @@ function settings(): vscode.WorkspaceConfiguration {
 }
 
 export function defaultPageSizes(): number[] {
-    return settings().get('defaultPageSizes') as number[];
+    const defaultPageSizes = settings().get('defaultPageSizes') as number[];
+    if (defaultPageSizes.length === 0) {
+        console.warn("setting parquet-visualizer.defaultPageSizes is set to empty array. Defaulting to [20,50,100,200]");
+        return [ 20, 50, 100, 500 ];
+    }
+    return defaultPageSizes;
 }
 
 export function defaultQuery(): string {
-    return settings().get('defaultQuery') as string;
+    const defaultQuery = settings().get('defaultQuery') as string;
+    if (!defaultQuery || defaultQuery.length === 0) {
+        console.warn("setting parquet-visualizer.defaultQuery is set to empty string. Defaulting to \r\nSELECT *\r\nFROM data\r\nLIMIT 1000;");
+        return "SELECT *\r\nFROM data\r\nLIMIT 1000;";
+    }
+    return defaultQuery;
 }
 
 export function defaultBackend(): string {
@@ -19,11 +29,21 @@ export function defaultBackend(): string {
 }
 
 export function defaultRunQueryKeyBinding(): string {
-    return settings().get('RunQueryKeyBinding') as string;
+    const runQueryKeyBinding = settings().get('RunQueryKeyBinding') as string;
+    if (!runQueryKeyBinding || runQueryKeyBinding.length === 0) {
+        console.warn("setting parquet-visualizer.RunQueryKeyBinding is set to empty string. Defaulting to Ctrl-Enter");
+        return "Ctrl-Enter";
+    }
+    return runQueryKeyBinding;
 }
 
 export function dateTimeFormat(): string {
-    return settings().get('dateTimeFormat') as string;
+    const dateTimeFormat = settings().get('dateTimeFormat') as string;
+    if (!dateTimeFormat || dateTimeFormat.length === 0) {
+        console.warn("setting parquet-visualizer.dateTimeFormat is set to empty string. Defaulting to ISO8601");
+        return "ISO8601";
+    }
+    return dateTimeFormat;
 }
 
 export function outputDateTimeFormatInUTC(): boolean {

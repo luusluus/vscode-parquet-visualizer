@@ -24,6 +24,9 @@
 
     let defaultPageSizes = [];
 
+    let numRecordsDropDownResultTableHasChanged = false;
+    let numRecordsDropdownSelectedIndex = 0;
+
     const requestSourceDataTab = 'dataTab';
     const requestSourceQueryTab = 'queryTab';
 
@@ -186,7 +189,18 @@
         }
 
         const resultsCountElement = document.getElementById("query-count");
-        resultsCountElement.innerHTML = `<strong>Results</strong> (${rowCount})`;
+        resultsCountElement.innerHTML = `<strong>Results</strong> (${rowCount})&nbsp;`;
+
+        const pageCountElement = document.getElementById("page-count");
+        pageCountElement.innerHTML = `<span>&nbsp;|&nbsp;</span>
+            <span>
+                <span>Showing</span>
+                <span id="page-current-${requestSourceQueryTab}"> ${currentPageQueryTab} </span>
+                <span>of</span>
+                <span id="page-count-${requestSourceQueryTab}"> ${amountOfPagesQueryTab} </span>
+                <span>pages</span>
+            </span>
+        `;
         
         const exportResultsButton = document.getElementById(`export-query-results`);
         exportResultsButton?.removeAttribute('disabled');
@@ -196,12 +210,6 @@
 
         const searchContainer = document.getElementById(`input-filter-values`);
         searchContainer?.removeAttribute('disabled');
-
-        const nextButton = /** @type {HTMLElement} */ (document.getElementById(`btn-next-queryTab`));
-        nextButton.removeAttribute('disabled');
-
-        const lastButton = /** @type {HTMLElement} */ (document.getElementById(`btn-last-queryTab`));
-        lastButton.removeAttribute('disabled');
     }
 
     function initResultTable(/** @type {any} */ data, /** @type {any} */ headers) {
@@ -211,6 +219,11 @@
                 cellClick:onCellClick,
             }
         ));
+
+        const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSourceQueryTab}`));
+        if (numRecordsDropdown) {
+            numRecordsDropdownSelectedIndex = numRecordsDropdown.selectedIndex;
+        }
 
         const options = createOptionHTMLElementsString(defaultPageSizes);
 
@@ -222,8 +235,8 @@
             data: data,
             columns: columns,
             clipboard: "copy", 
-            footerElement: `<span class="tabulator-page-counter" id="query-count">
-                    </span>
+            footerElement: `<span class="tabulator-page-counter" id="query-count"></span>
+                    <span class="tabulator-page-counter" id="page-count"></span>
                     <span class="tabulator-paginator">
                         <label>Page Size</label>
                         <select class="tabulator-page-size" id="dropdown-page-size-${requestSourceQueryTab}" aria-label="Page Size" title="Page Size">
@@ -243,6 +256,13 @@
             resetQueryControls();
             resetQueryResultControls(rowCountQueryTab);
             initializeFooter(rowCountQueryTab, requestSourceQueryTab);
+            updatePageCounterState(currentPageQueryTab, amountOfPagesQueryTab, requestSourceQueryTab);
+            updateNavigationButtonsState(currentPageQueryTab, amountOfPagesQueryTab, requestSourceQueryTab);
+
+            if (numRecordsDropDownResultTableHasChanged) {
+                const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSourceQueryTab}`));
+                numRecordsDropdown.selectedIndex = numRecordsDropdownSelectedIndex;
+            }
         });
     }
 
@@ -519,8 +539,8 @@
         /** @type {number} */ rowCount, 
         /** @type {string} */ requestSource,
         /** @type {string} */ requestType,
-        /** @type {number} */ pageSize,
-
+        /** @type {number} */ currentPage,
+        /** @type {number} */ pageCount,
     ) {
         // console.log("updateTable");
         if (requestSource === requestSourceDataTab){
@@ -532,10 +552,14 @@
             if (requestType === 'query'){
                 queryHasRun = true;
                 rowCountQueryTab = rowCount;
+
+                currentPageQueryTab = currentPage;
+                amountOfPagesQueryTab = pageCount;
                 initResultTable(data, headers);
 
             } else if (requestType === 'paginator') {
                 resultsTable.replaceData(data);
+                resultsTable.clearAlert();
             }
         }
     }
@@ -577,90 +601,12 @@
         }
     }
 
-    function updateNavigationNumberButtons(
-        /** @type {Number} */ currentPage, 
-        /** @type {Number} */ amountOfPages,
-        /** @type {String} */ requestSource
-    ){
-        // console.log(`updateNavigationNumberButtons(${currentPage}, ${amountOfPages}, ${requestSource})`);
-
-        if (!doesFooterExist()){
-            return;
-        }
-
-        var startPage = 1, endPage;
-
-        if (currentPage < 4) {
-            startPage = 1;
-            endPage = Math.min(amountOfPages, 5);
-        }
-        else if (currentPage > amountOfPages - 3){
-            startPage = amountOfPages - 4;
-            endPage = amountOfPages;
-        }
-        else {
-            startPage = currentPage - 2;
-            endPage = Math.min(currentPage + 2, amountOfPages);
-        }
-
-        const pageNumbers = Array.from({length: endPage - startPage + 1}, (_, a) => a + startPage);
-
-        const className = `page-number-${requestSource}`;
-        const elements = document.getElementsByClassName(className);
-        const elementsArray = Array.from(elements);
-        elementsArray.forEach(element => {
-            element.remove();
-          }
-        );
-
-        const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSource}`));
-        const selectedIndex = numRecordsDropdown.selectedIndex;
-        const selectedOption = numRecordsDropdown.options[selectedIndex];
-
-        const tabulatorPagesSpan = document.getElementById(`tabulator-pages-${requestSource}`);
-        pageNumbers.forEach(p => {
-            const button = document.createElement("button");
-
-            if (p === currentPage){
-                button.classList.add("tabulator-page", className, "active");
-            } else {
-                button.classList.add("tabulator-page", className);
-            }
-            button.setAttribute("type", "button");
-            button.setAttribute("role", "button");
-            button.setAttribute("aria-label", `Show Page ${p}`);
-            button.setAttribute("title", `Show Page ${p}`);
-            button.setAttribute("data-page", `${p}`);
-
-            if (amountOfPages === 1) {
-                button.setAttribute('disabled', '');
-            }
-
-            button.textContent = `${p}`;
-
-            button.addEventListener('click', (e) => {
-                if (requestSource === requestSourceDataTab) {
-                    dataTable.alert("Loading...");
-                }
-
-                vscode.postMessage({
-                    type: 'currentPage',
-                    pageNumber: Number(e.target.innerHTML),
-                    pageSize: Number(selectedOption.innerText),
-                    source: requestSource
-                });
-            });
-
-            tabulatorPagesSpan?.appendChild(button);
-        });
-    }
-
     function updateNavigationButtonsState(
         /** @type {Number} */ currentPage, 
         /** @type {Number} */ amountOfPages,
         /** @type {String} */ requestSource,
     ){
-        // console.log(`updateNavigationButtonsState(${currentPage}, ${amountOfPages})`);
+        // console.log(`updateNavigationButtonsState(currentPage: ${currentPage}, amountOfPages: ${amountOfPages})`);
 
         if (!doesFooterExist()){
             return;
@@ -797,6 +743,8 @@
             const selectedOption = numRecordsDropdown.options[selectedIndex];
             if (requestSource === requestSourceDataTab) {
                 dataTable.alert("Loading...");
+            } else {
+                resultsTable.alert("Loading...");
             }
             vscode.postMessage({
                 type: 'nextPage',
@@ -810,6 +758,8 @@
             const selectedOption = numRecordsDropdown.options[selectedIndex];
             if (requestSource === requestSourceDataTab) {
                 dataTable.alert("Loading...");
+            } else {
+                resultsTable.alert("Loading...");
             }
             vscode.postMessage({
                 type: 'prevPage',
@@ -823,6 +773,8 @@
             const selectedOption = numRecordsDropdown.options[selectedIndex];
             if (requestSource === requestSourceDataTab) {
                 dataTable.alert("Loading...");
+            } else {
+                resultsTable.alert("Loading...");
             }
             vscode.postMessage({
                 type: 'firstPage',
@@ -836,6 +788,8 @@
             const selectedOption = numRecordsDropdown.options[selectedIndex];
             if (requestSource === requestSourceDataTab) {
                 dataTable.alert("Loading...");
+            } else {
+                resultsTable.alert("Loading...");
             }
             vscode.postMessage({
                 type: 'lastPage',
@@ -856,6 +810,9 @@
                 const selectedOption = numRecordsDropdown.options[selectedIndex];
                 if (requestSource === requestSourceDataTab) {
                     dataTable.alert("Loading...");
+                } else {
+                    numRecordsDropDownResultTableHasChanged = true;
+                    resultsTable.alert("Loading...");
                 }
                 vscode.postMessage({
                     type: 'changePageSize',
@@ -906,15 +863,11 @@
                         tableData.rowCount, 
                         tableData.requestSource,
                         tableData.requestType,
-                        tableData.pageSize,
+                        tableData.currentPage,
+                        tableData.pageCount
                     );
                     
                     updatePageCounterState(
-                        tableData.currentPage, 
-                        tableData.pageCount,
-                        tableData.requestSource
-                    );
-                    updateNavigationNumberButtons(
                         tableData.currentPage, 
                         tableData.pageCount,
                         tableData.requestSource
