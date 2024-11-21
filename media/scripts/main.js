@@ -235,6 +235,7 @@
             data: data,
             columns: columns,
             clipboard: "copy", 
+            clipboardCopyStyled:false,
             footerElement: `<span class="tabulator-page-counter" id="query-count"></span>
                     <span class="tabulator-page-counter" id="page-count"></span>
                     <span class="tabulator-paginator">
