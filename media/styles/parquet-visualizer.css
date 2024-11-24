@@ -31,7 +31,7 @@ html, body {
 
 #query-actions {
     flex: 0 0 auto; /* Respects its height */
-    /* min-height: 40px; Ensures it has a minimum height */
+    min-height: 40px;
     max-height: 5%; /* Maximum height relative to the viewport */
     box-sizing: border-box;
 }
@@ -43,7 +43,7 @@ html, body {
     box-sizing: border-box;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1024px) and (min-width: 769px)  {
     #editor {
         flex: 0 0 25%; /* Increase editor height */
     }
@@ -59,6 +59,58 @@ html, body {
     }
 }
 
+@media (max-width: 768px) {
+    #editor {
+        flex: 0 0 25%; /* Increase editor height */
+    }
+
+    #query-actions {
+        flex: 0 0 auto;
+        min-height: 40px; /* Adjusted min-height */
+        max-height: 6%;
+    }
+
+    #table-queryTab {
+        flex: 1; /* Dynamically fill remaining space */
+    }
+
+    #copy-query-results {
+        display: flex;
+        align-items: center; /* Ensures proper alignment */
+        justify-content: center; /* Centers the SVG */
+    }
+
+    #copy-query-results::after {
+        display: none; /* If text is added via pseudo-elements, ensure it is hidden */
+    }
+
+    #copy-query-results svg {
+        margin-right: 0; /* Removes any spacing if present */
+    }
+
+    #copy-query-results {
+        font-size: 0; /* Hides text by collapsing its space */
+    }
+
+    #export-query-results {
+        display: flex;
+        align-items: center; /* Aligns icons properly */
+        justify-content: center; /* Centers content in the button */
+    }
+
+    #export-query-results {
+        font-size: 0; /* Hides the button text */
+    }
+
+    #export-query-results svg {
+        font-size: initial; /* Ensures SVGs remain visible */
+    }
+
+    #export-query-results .dropdown-icon {
+        margin-left: 4px; /* Adds slight spacing between icons */
+    }
+}
+
 .button-container {
     display: flex;
     padding-top: 10px;
@@ -67,6 +119,8 @@ html, body {
 }
 
 .flex-button {
+    display: flex;
+    align-items: center;
     max-height: 21px;
     background-color: #101010;
     color: #d4d4d4;
@@ -153,6 +207,9 @@ html, body {
 
 /* dropdown export button */
 
+.export-icon {
+    margin-right: 2px;
+}
 .dropdown-icon {
     vertical-align: middle;
 }
@@ -200,6 +257,12 @@ html, body {
 
 .dropdown-menu li span:hover {
     font-weight: bolder;
+}
+
+@media (max-width: 768px) {
+    .dropdown-menu {
+        right: 0;
+    }
 }
 
 /* ace tooltip*/

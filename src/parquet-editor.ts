@@ -903,10 +903,15 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
                               </button>
                               <div class="dropdown">
                                   <button class="flex-button" disabled id="export-query-results" type="button" role="button" aria-label="Export results" title="Export results">
-                                    <span id="export-query-results-text">Export results</span>
-                                  <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" focusable="false" aria-hidden="true">
-                                      <path d="M4 5h8l-4 6-4-6z" fill="white" stroke="none"></path>
-                                  </svg>
+                                    <svg class="export-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                                      <rect x="3" y="3" width="18" height="16" rx="2" ry="2" fill="none" stroke="white"/>
+                                      <path d="M12 5v12" stroke="white"/>
+                                      <path d="M8 8l4-4 4 4" stroke="white"/>
+                                    </svg>
+                                    Export results
+                                    <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" focusable="false" aria-hidden="true">
+                                        <path d="M4 5h8l-4 6-4-6z" fill="white" stroke="none"></path>
+                                    </svg>
                                   </button>
                                   <ul class="dropdown-menu" id="dropdown-menu">
                                       <li><span data-value="csv" class="dropdown-item">To CSV</span></li>
