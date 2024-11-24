@@ -117,11 +117,6 @@ class BackendWorker {
     else if (exportType === 'parquet') {
       query = `COPY query_result TO '${savedPath}' (FORMAT PARQUET);`;
     }
-    else {
-      throw Error(`unknown export type: ${exportType}`);
-    }
-    
-    await this.backend.query(query);
 
     return savedPath;
   }
@@ -150,7 +145,7 @@ class BackendWorker {
                     rowCount: rowCount,
                     pageSize: pageSize
                 });
-            } catch (err: any) {
+            } catch (err: unknown) {
                 parentPort.postMessage({
                     type: 'query',
                     err: err
