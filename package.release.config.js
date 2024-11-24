@@ -1,8 +1,7 @@
 // package.release.config.js
 module.exports = {
   branches: [
-    "master",
-    "69-sql-stopped-executing-properly-as-of-0110"
+    "master"
   ],
   plugins: [
     '@semantic-release/commit-analyzer',
