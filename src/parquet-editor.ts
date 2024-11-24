@@ -122,7 +122,6 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         });
   
         this.worker.on('message', (message) => {
-          console.log(`msg back: ${JSON.stringify(message)}`);
           if (message.type === 'query'){
             this.emitQueryResult(message);
           } else if (message.type === 'paginator') {
@@ -710,33 +709,36 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         case 'exportQueryResults': {
           const exportType = message.exportType as string;
           const parsedPath = path.parse(document.uri.fsPath);
-          parsedPath.base = `${parsedPath.name}.${exportType}`;
+
+          const extension = constants.FILENAME_SHORTNAME_EXTENSION_MAPPING[exportType];
+          parsedPath.base = `${parsedPath.name}.${extension}`;
           const suggestedPath = path.format(parsedPath);
           const suggestedUri = vscode.Uri.file(suggestedPath);
 
-          const fileNameExtensionfullName = constants.FILENAME_EXTENSION_FULLNAME_MAPPING[exportType];
+          const fileNameExtensionfullName = constants.FILENAME_SHORTNAME_FULLNAME_MAPPING[exportType];
           const savedPath = await vscode.window.showSaveDialog({
             title: `Export Query Results as ${exportType}`,
             filters: {
-              [fileNameExtensionfullName]: [exportType]
+              [fileNameExtensionfullName]: [extension]
             },
             defaultUri: suggestedUri
           });
 
           if (savedPath === undefined) {
+            document.fireExportCompleteEvent();
             vscode.window.showInformationMessage("Cancelled export");
             return;
           }
 
           document.worker.postMessage({
             source: message.type,
-            exportType: message.exportType,
+            exportType: exportType,
             savedPath: savedPath.fsPath
           });
 
           TelemetryManager.sendEvent("queryResultsExported", {
               fromFileType: 'parquet',
-              toFileType: message.exportType
+              toFileType: exportType
             }
           );
 
