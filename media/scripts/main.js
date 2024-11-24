@@ -236,6 +236,55 @@
             columns: columns,
             clipboard: "copy", 
             clipboardCopyStyled:false,
+            clipboardCopyFormatter: function(type, output) {
+                if (type === "plain") {
+                    return output;
+                } else if (type === "html") {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(output, 'text/html');
+
+                    const table = doc.querySelector('table');
+                    table.removeAttribute('class');
+
+                    table.querySelectorAll('tr').forEach((tr) => {
+                        tr.removeAttribute('class');
+                    });
+
+                    table.querySelectorAll('td').forEach((td) => {
+                        const content = td.textContent.trim();
+                        if (content.match(/^0+\d+/)) {
+                            // For leading zeros, wrap in quotes to force text format in Sheets
+                            td.textContent = `'${content}`;
+                        }
+
+                        td.classList.add('text');
+                    });
+
+                    const completeDoc = document.implementation.createHTMLDocument();
+                    const style = completeDoc.createElement('style');
+                    style.textContent = `
+                        th, td { white-space: nowrap; font-weight: normal; }
+                        td.text { mso-number-format:"\\@";} 
+                    `;
+
+                    completeDoc.head.appendChild(style);
+                    completeDoc.body.appendChild(table);
+
+                    const serializer = new XMLSerializer();
+                    const outputHtml = serializer.serializeToString(completeDoc);
+                    return outputHtml;
+                }
+                return output;
+            },
+            clipboardCopyConfig:{
+                columnHeaders:true,
+                columnGroups:false,
+                rowHeaders:false,
+                rowGroups:false,
+                columnCalcs:false,
+                dataTree:false,
+                formatCells:false,
+            },
             footerElement: `<span class="tabulator-page-counter" id="query-count"></span>
                     <span class="tabulator-page-counter" id="page-count"></span>
                     <span class="tabulator-paginator">
