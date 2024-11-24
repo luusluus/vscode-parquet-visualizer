@@ -104,36 +104,62 @@ class BackendWorker {
   }
 
   async exportQueryResult(exportType: string) {
+    // console.log(`exportQueryResult worker thread: ${exportType}`);
     const parsedPath = path.parse(this.backend.filePath);
     const id: string = randomUUID();
 
     let query = '';
     let newPath = '';
-    if (exportType === 'csv') {
-      parsedPath.base = `${parsedPath.name}-${id}.csv`;
-      newPath = path.format(parsedPath);
-      query = `COPY query_result TO '${newPath}' WITH (HEADER, DELIMITER ',');`;
+
+    try{
+      if (exportType === 'csv') {
+        parsedPath.base = `${parsedPath.name}-${id}.csv`;
+        newPath = path.format(parsedPath);
+        query = `COPY query_result TO '${newPath}' WITH (HEADER, DELIMITER ',');`;
+      }
+      else if (exportType === 'json') {
+        parsedPath.base = `${parsedPath.name}-${id}.json`;
+        newPath = path.format(parsedPath);
+        query = `COPY query_result TO '${newPath}' (FORMAT JSON, ARRAY true);`;
+      }
+      else if (exportType === 'ndjson') {
+        parsedPath.base = `${parsedPath.name}-${id}.json`;
+        newPath = path.format(parsedPath);
+        query = `COPY query_result TO '${newPath}' (FORMAT JSON, ARRAY false);`;
+      }
+      else if (exportType === 'parquet') {
+        parsedPath.base = `${parsedPath.name}-${id}.parquet`;
+        newPath = path.format(parsedPath);
+        query = `COPY query_result TO '${newPath}' (FORMAT PARQUET);`;
+      }
+      else if (exportType === 'excel') {
+        parsedPath.base = `${parsedPath.name}-${id}.xlsx`;
+        newPath = path.format(parsedPath);
+
+        // NOTE: The spatial extension can't export STRUCT types.
+        const dynamicQuery = `
+          SELECT string_agg('"' || column_name || '"', ', ') as columns
+          FROM (
+              SELECT column_name
+              FROM information_schema.columns
+              WHERE table_name = 'query_result' AND data_type NOT LIKE 'STRUCT%'
+          ) AS non_struct_columns;
+        `;
+        const dynamicColumnsQueryResult = await this.backend.query(dynamicQuery);
+        const columns = dynamicColumnsQueryResult[0]["columns"];
+        query = `
+          COPY (SELECT ${columns} from query_result) TO '${newPath}' (FORMAT GDAL, DRIVER 'xlsx');
+        `;
+      }
+      else {
+        throw Error(`unknown export type: ${exportType}`);
+      }
+      
+      await this.backend.query(query);
     }
-    else if (exportType === 'json') {
-      parsedPath.base = `${parsedPath.name}-${id}.json`;
-      newPath = path.format(parsedPath);
-      query = `COPY query_result TO '${newPath}' (FORMAT JSON, ARRAY true);`;
+    catch (e: unknown) {
+      console.error(e);
     }
-    else if (exportType === 'ndjson') {
-      parsedPath.base = `${parsedPath.name}-${id}.json`;
-      newPath = path.format(parsedPath);
-      query = `COPY query_result TO '${newPath}' (FORMAT JSON, ARRAY false);`;
-    }
-    else if (exportType === 'parquet') {
-      parsedPath.base = `${parsedPath.name}-${id}.parquet`;
-      newPath = path.format(parsedPath);
-      query = `COPY query_result TO '${newPath}' (FORMAT PARQUET);`;
-    }
-    else {
-      throw Error(`unknown export type: ${exportType}`);
-    }
-    
-    await this.backend.query(query);
 
     return newPath;
   }
@@ -162,7 +188,7 @@ class BackendWorker {
                     rowCount: rowCount,
                     pageSize: pageSize
                 });
-            } catch (err: any) {
+            } catch (err: unknown) {
                 parentPort.postMessage({
                     type: 'query',
                     err: err

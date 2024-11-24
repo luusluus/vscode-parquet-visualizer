@@ -665,6 +665,13 @@
             event.stopPropagation();
             if (event.target.tagName === 'SPAN') {
                 const selectedOption = event.target.getAttribute('data-value');
+
+                // 
+                const exportQueryResultsButton = document.getElementById("export-query-results");
+                exportQueryResultsButton.setAttribute('disabled', '');
+
+                const exportQueryResultsButtonText = document.getElementById("export-query-results-text");
+                exportQueryResultsButtonText.innerText = 'Exporting...';
                 vscode.postMessage({
                     type: 'exportQueryResults',
                     exportType: selectedOption
@@ -888,6 +895,14 @@
                 // Set ace theme
                 aceEditor.setTheme(body.aceTheme);
 
+                break;
+            }
+            case 'exportComplete' : {
+                const exportQueryResultsButton = document.getElementById("export-query-results");
+                exportQueryResultsButton?.removeAttribute('disabled');
+
+                const exportQueryResultsButtonText = document.getElementById("export-query-results-text");
+                exportQueryResultsButtonText.innerText = 'Export results';
                 break;
             }
             case 'error': {
