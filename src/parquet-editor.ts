@@ -1,3 +1,4 @@
+const path = require('path');
 import { Worker } from 'worker_threads';
 
 import * as vscode from 'vscode';
@@ -17,9 +18,7 @@ import { DateTimeFormatSettings } from './types';
 import { TelemetryManager } from './telemetry';
 // import { getLogger } from './logger';
 
-// TODO: Put in constants.ts
-const requestSourceDataTab = 'dataTab';
-const requestSourceQueryTab = 'queryTab';
+import * as constants from './constants';
 
 class CustomParquetDocument extends Disposable implements vscode.CustomDocument {
     uri: vscode.Uri;
@@ -132,7 +131,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
               message.pageSize,
               message.pageNumber,
               message.pageCount,
-              requestSourceQueryTab
+              constants.REQUEST_SOURCE_QUERY_TAB
             );
           } else if (message.type === 'exportQueryResults') {
             this.fireExportCompleteEvent();
@@ -256,14 +255,14 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
 
     async emitPage(message: any) {
       let values;
-      if (message.source === requestSourceQueryTab) {
+      if (message.source === constants.REQUEST_SOURCE_DATA_TAB) {
         this.worker.postMessage({
             source: 'paginator',
             type: message.type,
             pageSize: Number(message.pageSize)
         });
 
-      } else if (message.source === requestSourceDataTab) {
+      } else if (message.source === constants.REQUEST_SOURCE_DATA_TAB) {
             if (message.type === 'nextPage') {
                 values = await this.paginator.nextPage(message.pageSize);
             } else if (message.type === 'prevPage') {
@@ -284,20 +283,20 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
                 Number(message.pageSize),
                 this.paginator.getPageNumber(),
                 this.paginator.getTotalPages(message.pageSize),
-                requestSourceDataTab
+                constants.REQUEST_SOURCE_DATA_TAB
             );
       }
     }
     
     async emitCurrentPage(message: any) {
-        if (message.source === requestSourceQueryTab) {
+        if (message.source === constants.REQUEST_SOURCE_QUERY_TAB) {
             this.worker.postMessage({
                 source: 'paginator',
                 type: message.type,
                 pageSize: Number(message.pageSize),
                 pageNumber: message.pageNumber
             });
-        } else if (message.source === requestSourceDataTab) {
+        } else if (message.source === constants.REQUEST_SOURCE_DATA_TAB) {
             const values = await this.paginator.gotoPage(message.pageNumber, message.pageSize);
             const rowCount = 0;
             this.fireDataPaginatorEvent(
@@ -306,7 +305,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
                 Number(message.pageSize),
                 this.paginator.getPageNumber(),
                 this.paginator.getTotalPages(message.pageSize),
-                requestSourceDataTab
+                constants.REQUEST_SOURCE_DATA_TAB
             );
         }
     }
@@ -326,7 +325,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
             message.result, 
             message.headers, 
             message.rowCount,
-            requestSourceQueryTab,
+            constants.REQUEST_SOURCE_QUERY_TAB,
             requestType,
             message.pageSize,
             message.pageNumber,
@@ -336,14 +335,14 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
     }
 
     async changePageSize(message: any) {
-      if (message.source === requestSourceQueryTab) {
+      if (message.source === constants.REQUEST_SOURCE_QUERY_TAB) {
         this.worker.postMessage({
             source: 'paginator',
             type: 'currentPage',
             pageSize: Number(message.newPageSize),
         });
       }
-      else if (message.source === requestSourceDataTab) {
+      else if (message.source === constants.REQUEST_SOURCE_DATA_TAB) {
         const page = await this.paginator.getCurrentPage(Number(message.newPageSize));
         const values = replacePeriodWithUnderscoreInKey(page);
         let headers: any[] = [];
@@ -353,7 +352,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
           values, 
           headers, 
           values.length,
-          requestSourceDataTab,
+          constants.REQUEST_SOURCE_DATA_TAB,
           requestType,
           Number(message.newPageSize),
           this.paginator.getPageNumber(), // TODO: Handle ChangePageSize for both query and datatab
@@ -622,7 +621,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           rowCount: document.backend.getRowCount(),
           pageCount: document.paginator.getTotalPages(pageSize),
           currentPage: pageNumber,
-          requestSource: requestSourceDataTab,
+          requestSource: constants.REQUEST_SOURCE_DATA_TAB,
           requestType: 'paginator',
           isQueryable: document.isQueryAble,
           settings: {
@@ -708,9 +707,30 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           break;
         }
         case 'exportQueryResults': {
+          const exportType = message.exportType as string;
+          const parsedPath = path.parse(document.uri.fsPath);
+          parsedPath.base = `${parsedPath.name}.${exportType}`;
+          const suggestedPath = path.format(parsedPath);
+          const suggestedUri = vscode.Uri.file(suggestedPath);
+
+          const fileNameExtensionfullName = constants.FILENAME_EXTENSION_FULLNAME_MAPPING[exportType];
+          const savedPath = await vscode.window.showSaveDialog({
+            title: `Export Query Results as ${exportType}`,
+            filters: {
+              [fileNameExtensionfullName]: [exportType]
+            },
+            defaultUri: suggestedUri
+          });
+
+          if (savedPath === undefined) {
+            vscode.window.showInformationMessage("Cancelled export");
+            return;
+          }
+
           document.worker.postMessage({
             source: message.type,
-            exportType: message.exportType
+            exportType: message.exportType,
+            savedPath: savedPath.fsPath
           });
 
           TelemetryManager.sendEvent("queryResultsExported", {

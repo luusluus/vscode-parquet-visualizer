@@ -103,65 +103,22 @@ class BackendWorker {
     };
   }
 
-  async exportQueryResult(exportType: string) {
-    // console.log(`exportQueryResult worker thread: ${exportType}`);
-    const parsedPath = path.parse(this.backend.filePath);
-    const id: string = randomUUID();
-
+  async exportQueryResult(exportType: string, savedPath: string) {
     let query = '';
-    let newPath = '';
-
-    try{
-      if (exportType === 'csv') {
-        parsedPath.base = `${parsedPath.name}-${id}.csv`;
-        newPath = path.format(parsedPath);
-        query = `COPY query_result TO '${newPath}' WITH (HEADER, DELIMITER ',');`;
-      }
-      else if (exportType === 'json') {
-        parsedPath.base = `${parsedPath.name}-${id}.json`;
-        newPath = path.format(parsedPath);
-        query = `COPY query_result TO '${newPath}' (FORMAT JSON, ARRAY true);`;
-      }
-      else if (exportType === 'ndjson') {
-        parsedPath.base = `${parsedPath.name}-${id}.json`;
-        newPath = path.format(parsedPath);
-        query = `COPY query_result TO '${newPath}' (FORMAT JSON, ARRAY false);`;
-      }
-      else if (exportType === 'parquet') {
-        parsedPath.base = `${parsedPath.name}-${id}.parquet`;
-        newPath = path.format(parsedPath);
-        query = `COPY query_result TO '${newPath}' (FORMAT PARQUET);`;
-      }
-      else if (exportType === 'excel') {
-        parsedPath.base = `${parsedPath.name}-${id}.xlsx`;
-        newPath = path.format(parsedPath);
-
-        // NOTE: The spatial extension can't export STRUCT types.
-        const dynamicQuery = `
-          SELECT string_agg('"' || column_name || '"', ', ') as columns
-          FROM (
-              SELECT column_name
-              FROM information_schema.columns
-              WHERE table_name = 'query_result' AND data_type NOT LIKE 'STRUCT%'
-          ) AS non_struct_columns;
-        `;
-        const dynamicColumnsQueryResult = await this.backend.query(dynamicQuery);
-        const columns = dynamicColumnsQueryResult[0]["columns"];
-        query = `
-          COPY (SELECT ${columns} from query_result) TO '${newPath}' (FORMAT GDAL, DRIVER 'xlsx');
-        `;
-      }
-      else {
-        throw Error(`unknown export type: ${exportType}`);
-      }
-      
-      await this.backend.query(query);
+    if (exportType === 'csv') {
+      query = `COPY query_result TO '${savedPath}' WITH (HEADER, DELIMITER ',');`;
     }
-    catch (e: unknown) {
-      console.error(e);
+    else if (exportType === 'json') {
+      query = `COPY query_result TO '${savedPath}' (FORMAT JSON, ARRAY true);`;
+    }
+    else if (exportType === 'ndjson') {
+      query = `COPY query_result TO '${savedPath}' (FORMAT JSON, ARRAY false);`;
+    }
+    else if (exportType === 'parquet') {
+      query = `COPY query_result TO '${savedPath}' (FORMAT PARQUET);`;
     }
 
-    return newPath;
+    return savedPath;
   }
 }
 
@@ -213,7 +170,8 @@ class BackendWorker {
           }
           case 'exportQueryResults': {
             const exportType = message.exportType;
-            const exportPath = await worker.exportQueryResult(exportType);
+            const savedPath = message.savedPath;
+            const exportPath = await worker.exportQueryResult(exportType, savedPath);
 
             parentPort.postMessage({
               type: 'exportQueryResults',
