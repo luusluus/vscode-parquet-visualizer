@@ -150,7 +150,6 @@ class BackendWorker {
     );
 
     parentPort.on('message', async (message: any) => {
-        console.log(`rcv msg: ${JSON.stringify(message)}`);
         switch (message.source) {
           case 'query': {
             try{ 
@@ -158,7 +157,6 @@ class BackendWorker {
                 const pageNumber = 1; 
                 const pageSize = message.pageSize;
                 const pageCount = Math.ceil(rowCount / pageSize);
-                console.log(`posting back query result`);
                 parentPort.postMessage({
                     result: result,
                     headers: headers,
@@ -181,7 +179,6 @@ class BackendWorker {
             const {headers, result, rowCount} = await worker.getQueryResultPage(message);
             const pageCount = Math.ceil(rowCount / message.pageSize);
             const pageNumber = worker.paginator.getPageNumber();
-            console.log(`posting back page query result`);
             parentPort.postMessage({
               result: result,
               headers: headers,
@@ -196,7 +193,6 @@ class BackendWorker {
             const exportType = message.exportType;
             const savedPath = message.savedPath;
             const exportPath = await worker.exportQueryResult(exportType, savedPath);
-            console.log(`posting back export query result`);
             parentPort.postMessage({
               type: 'exportQueryResults',
               path: exportPath
