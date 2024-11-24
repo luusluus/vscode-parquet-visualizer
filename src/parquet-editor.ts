@@ -122,6 +122,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         });
   
         this.worker.on('message', (message) => {
+          console.log(`msg back: ${JSON.stringify(message)}`);
           if (message.type === 'query'){
             this.emitQueryResult(message);
           } else if (message.type === 'paginator') {
@@ -908,7 +909,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
                                       <path d="M12 5v12" stroke="white"/>
                                       <path d="M8 8l4-4 4 4" stroke="white"/>
                                     </svg>
-                                    Export results
+                                    <span id="export-query-results-text">Export results</span>
                                     <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" focusable="false" aria-hidden="true">
                                         <path d="M4 5h8l-4 6-4-6z" fill="white" stroke="none"></path>
                                     </svg>

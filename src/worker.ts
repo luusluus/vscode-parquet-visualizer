@@ -117,7 +117,28 @@ class BackendWorker {
     else if (exportType === 'parquet') {
       query = `COPY query_result TO '${savedPath}' (FORMAT PARQUET);`;
     }
-
+    else if (exportType === 'excel') {
+      // NOTE: The spatial extension can't export STRUCT types.
+      const dynamicQuery = `
+        SELECT string_agg('"' || column_name || '"', ', ') as columns
+        FROM (
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'query_result' AND data_type NOT LIKE 'STRUCT%'
+        ) AS non_struct_columns;
+      `;
+      const dynamicColumnsQueryResult = await this.backend.query(dynamicQuery);
+      const columns = dynamicColumnsQueryResult[0]["columns"];
+      query = `
+        COPY (SELECT ${columns} from query_result) TO '${savedPath}' (FORMAT GDAL, DRIVER 'xlsx');
+      `;
+    }
+    try {
+      await this.backend.query(query);
+    } 
+    catch (e: unknown) {
+      console.error(e);
+    }
     return savedPath;
   }
 }
@@ -129,6 +150,7 @@ class BackendWorker {
     );
 
     parentPort.on('message', async (message: any) => {
+        console.log(`rcv msg: ${JSON.stringify(message)}`);
         switch (message.source) {
           case 'query': {
             try{ 
@@ -136,6 +158,7 @@ class BackendWorker {
                 const pageNumber = 1; 
                 const pageSize = message.pageSize;
                 const pageCount = Math.ceil(rowCount / pageSize);
+                console.log(`posting back query result`);
                 parentPort.postMessage({
                     result: result,
                     headers: headers,
@@ -158,6 +181,7 @@ class BackendWorker {
             const {headers, result, rowCount} = await worker.getQueryResultPage(message);
             const pageCount = Math.ceil(rowCount / message.pageSize);
             const pageNumber = worker.paginator.getPageNumber();
+            console.log(`posting back page query result`);
             parentPort.postMessage({
               result: result,
               headers: headers,
@@ -172,7 +196,7 @@ class BackendWorker {
             const exportType = message.exportType;
             const savedPath = message.savedPath;
             const exportPath = await worker.exportQueryResult(exportType, savedPath);
-
+            console.log(`posting back export query result`);
             parentPort.postMessage({
               type: 'exportQueryResults',
               path: exportPath
