@@ -256,7 +256,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
 
     async emitPage(message: any) {
       let values;
-      if (message.source === constants.REQUEST_SOURCE_DATA_TAB) {
+      if (message.source === constants.REQUEST_SOURCE_QUERY_TAB) {
         this.worker.postMessage({
             source: 'paginator',
             type: message.type,
