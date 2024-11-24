@@ -25,6 +25,7 @@ export class DuckDBBackend extends Backend{
     public async initialize (){
         await this.db.all(`
             INSTALL arrow; LOAD arrow;
+            INSTALL spatial; LOAD spatial;
           `
         );
         

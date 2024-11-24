@@ -103,39 +103,22 @@ class BackendWorker {
     };
   }
 
-  async exportQueryResult(exportType: string) {
-    const parsedPath = path.parse(this.backend.filePath);
-    const id: string = randomUUID();
-
+  async exportQueryResult(exportType: string, savedPath: string) {
     let query = '';
-    let newPath = '';
     if (exportType === 'csv') {
-      parsedPath.base = `${parsedPath.name}-${id}.csv`;
-      newPath = path.format(parsedPath);
-      query = `COPY query_result TO '${newPath}' WITH (HEADER, DELIMITER ',');`;
+      query = `COPY query_result TO '${savedPath}' WITH (HEADER, DELIMITER ',');`;
     }
     else if (exportType === 'json') {
-      parsedPath.base = `${parsedPath.name}-${id}.json`;
-      newPath = path.format(parsedPath);
-      query = `COPY query_result TO '${newPath}' (FORMAT JSON, ARRAY true);`;
+      query = `COPY query_result TO '${savedPath}' (FORMAT JSON, ARRAY true);`;
     }
     else if (exportType === 'ndjson') {
-      parsedPath.base = `${parsedPath.name}-${id}.json`;
-      newPath = path.format(parsedPath);
-      query = `COPY query_result TO '${newPath}' (FORMAT JSON, ARRAY false);`;
+      query = `COPY query_result TO '${savedPath}' (FORMAT JSON, ARRAY false);`;
     }
     else if (exportType === 'parquet') {
-      parsedPath.base = `${parsedPath.name}-${id}.parquet`;
-      newPath = path.format(parsedPath);
-      query = `COPY query_result TO '${newPath}' (FORMAT PARQUET);`;
+      query = `COPY query_result TO '${savedPath}' (FORMAT PARQUET);`;
     }
-    else {
-      throw Error(`unknown export type: ${exportType}`);
-    }
-    
-    await this.backend.query(query);
 
-    return newPath;
+    return savedPath;
   }
 }
 
@@ -162,7 +145,7 @@ class BackendWorker {
                     rowCount: rowCount,
                     pageSize: pageSize
                 });
-            } catch (err: any) {
+            } catch (err: unknown) {
                 parentPort.postMessage({
                     type: 'query',
                     err: err
@@ -187,7 +170,8 @@ class BackendWorker {
           }
           case 'exportQueryResults': {
             const exportType = message.exportType;
-            const exportPath = await worker.exportQueryResult(exportType);
+            const savedPath = message.savedPath;
+            const exportPath = await worker.exportQueryResult(exportType, savedPath);
 
             parentPort.postMessage({
               type: 'exportQueryResults',
