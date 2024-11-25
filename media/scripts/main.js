@@ -275,9 +275,9 @@
                     const style = completeDoc.createElement('style');
                     style.textContent = `
                         th { font-weight: normal; }
-                        td { white-space: nowrap; }
+                        td, th { white-space: nowrap; }
                         td.text { mso-number-format:"\\@";} 
-                        td.float { mso-number-format: "#\\,##0.00";}
+                        td.float { mso-number-format: "#,##0.00";}
                         td.integer { mso-number-format: "#,##0"; }
                     `;
 
