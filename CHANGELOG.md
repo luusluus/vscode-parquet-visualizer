@@ -1,3 +1,22 @@
+# [0.15.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.14.3...v0.15.0) (2024-11-25)
+
+
+### Bug Fixes
+
+* disable html bold in header ([d2321b2](https://github.com/luusluus/vscode-parquet-visualizer/commit/d2321b28b858ba5856ea1522f4b81c4165061752))
+* fix styling bug and improve styling based on smaller screen widths ([5e59e1f](https://github.com/luusluus/vscode-parquet-visualizer/commit/5e59e1fd82e92d61d8fbe6f703d64df387ed631a))
+* prevent styling table to be copied into clipboard ([0824e83](https://github.com/luusluus/vscode-parquet-visualizer/commit/0824e83c0f4dffcb2dfe4361b0ca6bf550b6c88f))
+
+
+### Features
+
+* add constants.ts file ([56725b3](https://github.com/luusluus/vscode-parquet-visualizer/commit/56725b3a9e95430e47acc4f3366d37c41d1e4fd0))
+* add custom html styling to clipboard table for excel ([4cc11ac](https://github.com/luusluus/vscode-parquet-visualizer/commit/4cc11aca3efcbed00e9b557a5d605980bdd1c85f))
+* add date32 support. ([f4bf119](https://github.com/luusluus/vscode-parquet-visualizer/commit/f4bf119fe08ce6801ace68a364fb5d3df71e0161))
+* add excel export ([28729b0](https://github.com/luusluus/vscode-parquet-visualizer/commit/28729b0a3f3dc4452edd0f3ad03b2996eabd77a0))
+* add export svg icon ([a0c4311](https://github.com/luusluus/vscode-parquet-visualizer/commit/a0c431182719651df50185e714a683277be06396))
+* add save dialog/prompt for saving files to specific location ([88b3da3](https://github.com/luusluus/vscode-parquet-visualizer/commit/88b3da38f24eae89d087af529e6fe49060394c46))
+
 ## [0.14.3](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.14.2...v0.14.3) (2024-11-21)
 
 
