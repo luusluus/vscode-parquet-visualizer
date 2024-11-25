@@ -1,12 +1,9 @@
 // worker.ts
-const path = require('path');
-
-import { randomUUID } from 'crypto';
-
 const {
   parentPort, workerData
 } = require('node:worker_threads');
 
+import { DuckDbError } from 'duckdb-async';
 
 import { Paginator } from './paginator';
 import { DuckDBBackend } from './duckdb-backend';
@@ -132,9 +129,9 @@ class BackendWorker {
       // eslint-disable-next-line @typescript-eslint/naming-convention
       const columns = schema.map(({ column_name, data_type }) => {
           if (data_type.includes('STRUCT')) {
-              return `TO_JSON(${column_name}) AS ${column_name}`;
+              return `TO_JSON("${column_name}") AS ${column_name}`;
           }
-          return column_name;
+          return `"${column_name}"`;
       });
 
       const selectQuery = `SELECT ${columns.join(', ')} FROM query_result`;
@@ -143,12 +140,9 @@ class BackendWorker {
         COPY (${selectQuery}) TO '${savedPath}' (FORMAT GDAL, DRIVER 'xlsx');
       `;
     }
-    try {
-      await this.backend.query(query);
-    } 
-    catch (e: unknown) {
-      console.error(e);
-    }
+
+    await this.backend.query(query);
+
     return savedPath;
   }
 }
@@ -202,11 +196,23 @@ class BackendWorker {
           case 'exportQueryResults': {
             const exportType = message.exportType;
             const savedPath = message.savedPath;
-            const exportPath = await worker.exportQueryResult(exportType, savedPath);
-            parentPort.postMessage({
-              type: 'exportQueryResults',
-              path: exportPath
-            });
+
+            try{
+              const exportPath = await worker.exportQueryResult(exportType, savedPath);
+              parentPort.postMessage({
+                type: 'exportQueryResults',
+                path: exportPath
+              });
+
+            }
+            catch (e: unknown) {
+              console.error(e);
+              const error = e as DuckDbError;
+              parentPort.postMessage({
+                type: 'exportQueryResults',
+                error: error.message,
+              });
+            }
 
             break;
           }
