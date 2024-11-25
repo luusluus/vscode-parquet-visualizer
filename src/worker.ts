@@ -119,18 +119,27 @@ class BackendWorker {
     }
     else if (exportType === 'excel') {
       // NOTE: The spatial extension can't export STRUCT types.
-      const dynamicQuery = `
-        SELECT string_agg('"' || column_name || '"', ', ') as columns
-        FROM (
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_name = 'query_result' AND data_type NOT LIKE 'STRUCT%'
-        ) AS non_struct_columns;
+
+      // Get the schema of the table
+      const schemaQuery = `
+          SELECT column_name, data_type
+          FROM information_schema.columns
+          WHERE table_name = 'query_result'
       `;
-      const dynamicColumnsQueryResult = await this.backend.query(dynamicQuery);
-      const columns = dynamicColumnsQueryResult[0]["columns"];
+      const schema = await this.backend.query(schemaQuery);
+
+      // Build the SELECT query
+      const columns = schema.map(({ column_name, data_type }) => {
+          if (data_type.includes('STRUCT')) {
+              return `TO_JSON(${column_name}) AS ${column_name}`;
+          }
+          return column_name;
+      });
+
+      const selectQuery = `SELECT ${columns.join(', ')} FROM query_result`;
+
       query = `
-        COPY (SELECT ${columns} from query_result) TO '${savedPath}' (FORMAT GDAL, DRIVER 'xlsx');
+        COPY (${selectQuery}) TO '${savedPath}' (FORMAT GDAL, DRIVER 'xlsx');
       `;
     }
     try {
