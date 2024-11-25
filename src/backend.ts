@@ -1,6 +1,6 @@
 import { Schema, Field, Type } from "apache-arrow";
+import date from 'date-and-time';
 
-import { convertBigIntToString, convertObjectsToJSONStrings } from './util';
 import { DateTimeFormatSettings } from './types';
 
 export abstract class Backend {
@@ -121,9 +121,9 @@ export abstract class Backend {
         const startTime = performance.now();
 
         const queryResult = await this.queryImpl(query);
-        const result = queryResult.map(v => {
-            return convertObjectsToJSONStrings(
-                convertBigIntToString(v, this.dateTimeFormat)
+        const result = Object.entries(queryResult).map(([k,v]) => {
+            return this.convertObjectsToJSONStrings(
+                this.convertBigIntToString(k, v)
             );
         });
 
@@ -138,4 +138,69 @@ export abstract class Backend {
 
     abstract dispose(): any;
 
+    private convertObjectsToJSONStrings(obj: any) {
+        for (let key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                if (typeof obj[key] === 'object' && obj[key] !== null) {
+                    obj[key] = JSON.stringify(obj[key]);
+                }
+            }
+        }
+        return obj;
+      }
+
+      private convertBigIntToString(key: string, obj: any): any {
+        if (Array.isArray(obj)) {
+          return Object.entries(obj).map(([key, value]) => this.convertBigIntToString(key, value));
+        } 
+        else if (obj instanceof Uint8Array) {
+          return Array.from(obj.values());
+        }
+        else if (obj !== null && typeof obj === 'object') {
+          if (obj instanceof Date) {
+            const field = this.arrowSchema.fields.find(f => f.name === key);
+            if (field?.typeId === Type.Date && field?.type.unit === 0) {
+                if (this.dateTimeFormat.format === "ISO8601") {
+                    return date.format(
+                        obj, 'YYYY-MM-DD', true
+                    );
+                }
+                else if (this.dateTimeFormat.format === "RFC2822") {
+                    return date.format(
+                        obj, 'ddd, DD MMM YYYY', true
+                    );
+                }
+            }
+            else {
+                if (this.dateTimeFormat.format === "ISO8601") {
+                    return obj.toISOString();
+                }
+                else if (this.dateTimeFormat.format === "RFC2822") {
+                    return obj.toUTCString();
+                }
+                else {
+                    return date.format(
+                        obj, 
+                        this.dateTimeFormat.format, 
+                        this.dateTimeFormat.useUTC
+                    );
+                }
+            }
+          }
+
+          const newObj: { [key: string]: any } = {};
+          for (const [key, value] of Object.entries(obj)) {
+            if (obj.hasOwnProperty(key)) {
+                newObj[key] = this.convertBigIntToString(key, value);
+            }
+          }
+          return newObj;
+        } 
+        else if (typeof obj === 'bigint') {
+          return obj.toString();
+        } 
+        else {
+          return obj;
+        }
+      }
 }
