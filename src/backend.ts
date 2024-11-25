@@ -170,6 +170,9 @@ export abstract class Backend {
                         obj, 'ddd, DD MMM YYYY', true
                     );
                 }
+                else {
+                    return obj.toDateString();
+                }
             }
             else {
                 if (this.dateTimeFormat.format === "ISO8601") {
