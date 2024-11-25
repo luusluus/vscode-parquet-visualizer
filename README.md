@@ -26,15 +26,13 @@ You can query a parquet file with DuckDB SQL. You can also search within the res
 By typing in the editor, an autocomplete box with column suggestions appear. This makes it much easier to write queries, by selecting the suggested columns.
 
 ### Search within rows of Query Result
-By typing free text in the search box, find specific values of the query result.
+By typing free text in the search box, find specific values of the query result page.
 
 ### Export Query Result as CSV, Excel, JSON, ndJSON or Parquet to Disk
-By clicking on the export button in the query tab, you can save your query result in CSV, Excel, JSON, ndJSON or Parquet format to disk.
-
-The export to excel will exclude columns that are of STRUCT type. It is currently not supported by DuckDB package.
+By clicking on the export button in the query tab, you can save your query result to a specified location in CSV, Excel, JSON, ndJSON or Parquet format to disk.
 
 ### Copy Query Result to Clipboard
-By clicking on the copy button in the querytab, you can copy the query result data to the clipboard.
+By clicking on the copy button in the Query tab, you can copy the query result page data to the clipboard.
 
 ### Inspect Schema
 You can inspect the schema of the parquet file by clicking on the Schema tab, in which you can paginate if the file has many columns.
