@@ -252,19 +252,33 @@
 
                     table.querySelectorAll('td').forEach((td) => {
                         const content = td.textContent.trim();
-                        if (content.match(/^0+\d+/)) {
-                            // For leading zeros, wrap in quotes to force text format in Sheets
-                            td.textContent = `'${content}`;
+                        
+                        // Check for numbers with leading zeros
+                        if (content.match(/^0+\d+$/)) {
+                            td.classList.add('text');
                         }
-
-                        td.classList.add('text');
+                        // Check for integer
+                        else if (content.match(/^-?\d+$/)) {
+                            td.classList.add('integer');
+                        }
+                        // Check for float
+                        else if (content.match(/^-?\d+\.\d+$/)) {
+                            td.classList.add('float');
+                        }
+                        // Fallback to text
+                        else {
+                            td.classList.add('text');
+                        }
                     });
 
                     const completeDoc = document.implementation.createHTMLDocument();
                     const style = completeDoc.createElement('style');
                     style.textContent = `
-                        th, td { white-space: nowrap; font-weight: normal; }
+                        th { font-weight: normal; }
+                        td { white-space: nowrap; }
                         td.text { mso-number-format:"\\@";} 
+                        td.float { mso-number-format: "#\\,##0.00";}
+                        td.integer { mso-number-format: "#,##0"; }
                     `;
 
                     completeDoc.head.appendChild(style);
@@ -272,6 +286,7 @@
 
                     const serializer = new XMLSerializer();
                     const outputHtml = serializer.serializeToString(completeDoc);
+                    console.log(outputHtml);
                     return outputHtml;
                 }
                 return output;
