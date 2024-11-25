@@ -252,7 +252,7 @@
 
                     table.querySelectorAll('td').forEach((td) => {
                         const content = td.textContent.trim();
-                        
+
                         // Check for numbers with leading zeros
                         if (content.match(/^0+\d+$/)) {
                             td.classList.add('text');
@@ -286,7 +286,6 @@
 
                     const serializer = new XMLSerializer();
                     const outputHtml = serializer.serializeToString(completeDoc);
-                    console.log(outputHtml);
                     return outputHtml;
                 }
                 return output;
