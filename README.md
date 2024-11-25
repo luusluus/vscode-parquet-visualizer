@@ -82,6 +82,10 @@ The query editor of the frontend is powered by [ace](https://github.com/ajaxorg/
 ## Release Notes
 See the [CHANGELOG.MD](CHANGELOG.md)
 
+## Contributors
+The following people have contributed time and effort to improve Parquet Visualizer:
+- [Darryl Thompson](https://github.com/darrylthom): Testing, Design
+
 ## Telemetry
 To improve the quality of Parquet Visualizer, the extension collects the following analytics such as:
 - Extension load times
