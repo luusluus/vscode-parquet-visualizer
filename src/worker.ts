@@ -129,6 +129,7 @@ class BackendWorker {
       const schema = await this.backend.query(schemaQuery);
 
       // Build the SELECT query
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       const columns = schema.map(({ column_name, data_type }) => {
           if (data_type.includes('STRUCT')) {
               return `TO_JSON(${column_name}) AS ${column_name}`;
