@@ -26,13 +26,13 @@ You can query a parquet file with DuckDB SQL. You can also search within the res
 By typing in the editor, an autocomplete box with column suggestions appear. This makes it much easier to write queries, by selecting the suggested columns.
 
 ### Search within rows of Query Result
-By typing free text in the search box, find specific values of the query result.
+By typing free text in the search box, find specific values of the query result page.
 
-### Export Query Result as CSV, JSON, ndJSON or Parquet to Disk
-By clicking on the export button in the query tab, you can save your query result in CSV, JSON, ndJSON or Parquet format to disk.
+### Export Query Result as CSV, Excel, JSON, ndJSON or Parquet to Disk
+By clicking on the export button in the query tab, you can save your query result to a specified location in CSV, Excel, JSON, ndJSON or Parquet format to disk.
 
 ### Copy Query Result to Clipboard
-By clicking on the copy button in the querytab, you can copy the query result data to the clipboard.
+By clicking on the copy button in the Query tab, you can copy the query result page data to the clipboard.
 
 ### Inspect Schema
 You can inspect the schema of the parquet file by clicking on the Schema tab, in which you can paginate if the file has many columns.
@@ -79,6 +79,10 @@ The query editor of the frontend is powered by [ace](https://github.com/ajaxorg/
 
 ## Release Notes
 See the [CHANGELOG.MD](CHANGELOG.md)
+
+## Contributors
+The following people have contributed time and effort to improve Parquet Visualizer:
+- [Darryl Thompson](https://github.com/darrylthom): Testing, Design
 
 ## Telemetry
 To improve the quality of Parquet Visualizer, the extension collects the following analytics such as:

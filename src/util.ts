@@ -1,7 +1,3 @@
-import date from 'date-and-time';
-
-import { DateTimeFormatSettings } from './types';
-
 export function getNonce() {
 	let text = '';
 	const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -21,55 +17,6 @@ export function convertToTabulatorData(array: any[]) {
     });
   }
 
-export function convertBigIntToString(obj: any, dateTimeFormatSettings: DateTimeFormatSettings): any {
-  if (Array.isArray(obj)) {
-    return obj.map(item => convertBigIntToString(item, dateTimeFormatSettings));
-  } 
-  else if (obj instanceof Uint8Array) {
-    return Array.from(obj.values());
-  }
-  else if (obj !== null && typeof obj === 'object') {
-    if (obj instanceof Date) {
-      if (dateTimeFormatSettings.format === "ISO8601") {
-        return obj.toISOString();
-      }
-      else if (dateTimeFormatSettings.format === "RFC2822") {
-        return obj.toUTCString();
-      }
-      else {
-        return date.format(
-          obj, 
-          dateTimeFormatSettings.format, 
-          dateTimeFormatSettings.useUTC
-        );
-      }
-    }
-    const newObj: { [key: string]: any } = {};
-    for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
-          newObj[key] = convertBigIntToString(obj[key], dateTimeFormatSettings);
-      }
-    }
-    return newObj;
-  } 
-  else if (typeof obj === 'bigint') {
-    return obj.toString();
-  } 
-  else {
-    return obj;
-  }
-}
-
-export function convertObjectsToJSONStrings(obj: any) {
-  for (let key in obj) {
-      if (obj.hasOwnProperty(key)) {
-          if (typeof obj[key] === 'object' && obj[key] !== null) {
-              obj[key] = JSON.stringify(obj[key]);
-          }
-      }
-  }
-  return obj;
-}
 
 function convertArrayToString(array: any): any{
   try {

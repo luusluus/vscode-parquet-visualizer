@@ -1,12 +1,9 @@
 // worker.ts
-const path = require('path');
-
-import { randomUUID } from 'crypto';
-
 const {
   parentPort, workerData
 } = require('node:worker_threads');
 
+import { DuckDbError } from 'duckdb-async';
 
 import { Paginator } from './paginator';
 import { DuckDBBackend } from './duckdb-backend';
@@ -103,39 +100,50 @@ class BackendWorker {
     };
   }
 
-  async exportQueryResult(exportType: string) {
-    const parsedPath = path.parse(this.backend.filePath);
-    const id: string = randomUUID();
-
+  async exportQueryResult(exportType: string, savedPath: string) {
     let query = '';
-    let newPath = '';
     if (exportType === 'csv') {
-      parsedPath.base = `${parsedPath.name}-${id}.csv`;
-      newPath = path.format(parsedPath);
-      query = `COPY query_result TO '${newPath}' WITH (HEADER, DELIMITER ',');`;
+      query = `COPY query_result TO '${savedPath}' WITH (HEADER, DELIMITER ',');`;
     }
     else if (exportType === 'json') {
-      parsedPath.base = `${parsedPath.name}-${id}.json`;
-      newPath = path.format(parsedPath);
-      query = `COPY query_result TO '${newPath}' (FORMAT JSON, ARRAY true);`;
+      query = `COPY query_result TO '${savedPath}' (FORMAT JSON, ARRAY true);`;
     }
     else if (exportType === 'ndjson') {
-      parsedPath.base = `${parsedPath.name}-${id}.json`;
-      newPath = path.format(parsedPath);
-      query = `COPY query_result TO '${newPath}' (FORMAT JSON, ARRAY false);`;
+      query = `COPY query_result TO '${savedPath}' (FORMAT JSON, ARRAY false);`;
     }
     else if (exportType === 'parquet') {
-      parsedPath.base = `${parsedPath.name}-${id}.parquet`;
-      newPath = path.format(parsedPath);
-      query = `COPY query_result TO '${newPath}' (FORMAT PARQUET);`;
+      query = `COPY query_result TO '${savedPath}' (FORMAT PARQUET);`;
     }
-    else {
-      throw Error(`unknown export type: ${exportType}`);
+    else if (exportType === 'excel') {
+      // NOTE: The spatial extension can't export STRUCT types.
+
+      // Get the schema of the table
+      const schemaQuery = `
+          SELECT column_name, data_type
+          FROM information_schema.columns
+          WHERE table_name = 'query_result'
+      `;
+      const schema = await this.backend.query(schemaQuery);
+
+      // Build the SELECT query
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      const columns = schema.map(({ column_name, data_type }) => {
+          if (data_type.includes('STRUCT')) {
+              return `TO_JSON("${column_name}") AS ${column_name}`;
+          }
+          return `"${column_name}"`;
+      });
+
+      const selectQuery = `SELECT ${columns.join(', ')} FROM query_result`;
+
+      query = `
+        COPY (${selectQuery}) TO '${savedPath}' (FORMAT GDAL, DRIVER 'xlsx');
+      `;
     }
-    
+
     await this.backend.query(query);
 
-    return newPath;
+    return savedPath;
   }
 }
 
@@ -162,7 +170,7 @@ class BackendWorker {
                     rowCount: rowCount,
                     pageSize: pageSize
                 });
-            } catch (err: any) {
+            } catch (err: unknown) {
                 parentPort.postMessage({
                     type: 'query',
                     err: err
@@ -187,12 +195,24 @@ class BackendWorker {
           }
           case 'exportQueryResults': {
             const exportType = message.exportType;
-            const exportPath = await worker.exportQueryResult(exportType);
+            const savedPath = message.savedPath;
 
-            parentPort.postMessage({
-              type: 'exportQueryResults',
-              path: exportPath
-            });
+            try{
+              const exportPath = await worker.exportQueryResult(exportType, savedPath);
+              parentPort.postMessage({
+                type: 'exportQueryResults',
+                path: exportPath
+              });
+
+            }
+            catch (e: unknown) {
+              console.error(e);
+              const error = e as DuckDbError;
+              parentPort.postMessage({
+                type: 'exportQueryResults',
+                error: error.message,
+              });
+            }
 
             break;
           }

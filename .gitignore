@@ -12,3 +12,5 @@ very_large_2.parquet
 binary_string.parquet
 weird_columns.parquet
 issue*.parquet
+number_leading_zeroes.parquet
+date32_date64_data.parquet

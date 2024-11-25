@@ -236,6 +236,69 @@
             columns: columns,
             clipboard: "copy", 
             clipboardCopyStyled:false,
+            clipboardCopyFormatter: function(type, output) {
+                if (type === "plain") {
+                    return output;
+                } else if (type === "html") {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(output, 'text/html');
+
+                    const table = doc.querySelector('table');
+                    table.removeAttribute('class');
+
+                    table.querySelectorAll('tr').forEach((tr) => {
+                        tr.removeAttribute('class');
+                    });
+
+                    table.querySelectorAll('td').forEach((td) => {
+                        const content = td.textContent.trim();
+
+                        // Check for numbers with leading zeros
+                        if (content.match(/^0+\d+$/)) {
+                            td.classList.add('text');
+                        }
+                        // Check for integer
+                        else if (content.match(/^-?\d+$/)) {
+                            td.classList.add('integer');
+                        }
+                        // Check for float
+                        else if (content.match(/^-?\d+\.\d+$/)) {
+                            td.classList.add('float');
+                        }
+                        // Fallback to text
+                        else {
+                            td.classList.add('text');
+                        }
+                    });
+
+                    const completeDoc = document.implementation.createHTMLDocument();
+                    const style = completeDoc.createElement('style');
+                    style.textContent = `
+                        th { font-weight: normal; }
+                        td, th { white-space: nowrap; }
+                        td.text { mso-number-format:"\\@";} 
+                        td.float { mso-number-format: "#,##0.00";}
+                        td.integer { mso-number-format: "#,##0"; }
+                    `;
+
+                    completeDoc.head.appendChild(style);
+                    completeDoc.body.appendChild(table);
+
+                    const serializer = new XMLSerializer();
+                    const outputHtml = serializer.serializeToString(completeDoc);
+                    return outputHtml;
+                }
+                return output;
+            },
+            clipboardCopyConfig:{
+                columnHeaders:true,
+                columnGroups:false,
+                rowHeaders:false,
+                rowGroups:false,
+                columnCalcs:false,
+                dataTree:false,
+                formatCells:false,
+            },
             footerElement: `<span class="tabulator-page-counter" id="query-count"></span>
                     <span class="tabulator-page-counter" id="page-count"></span>
                     <span class="tabulator-paginator">
@@ -665,6 +728,13 @@
             event.stopPropagation();
             if (event.target.tagName === 'SPAN') {
                 const selectedOption = event.target.getAttribute('data-value');
+
+                // 
+                const exportQueryResultsButton = document.getElementById("export-query-results");
+                exportQueryResultsButton.setAttribute('disabled', '');
+
+                const exportQueryResultsButtonText = document.getElementById("export-query-results-text");
+                exportQueryResultsButtonText.innerText = 'Exporting...';
                 vscode.postMessage({
                     type: 'exportQueryResults',
                     exportType: selectedOption
@@ -888,6 +958,14 @@
                 // Set ace theme
                 aceEditor.setTheme(body.aceTheme);
 
+                break;
+            }
+            case 'exportComplete' : {
+                const exportQueryResultsButton = document.getElementById("export-query-results");
+                exportQueryResultsButton?.removeAttribute('disabled');
+
+                const exportQueryResultsButtonText = document.getElementById("export-query-results-text");
+                exportQueryResultsButtonText.innerText = 'Export results';
                 break;
             }
             case 'error': {
