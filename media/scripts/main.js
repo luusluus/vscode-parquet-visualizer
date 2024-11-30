@@ -447,10 +447,6 @@
             placeholder:"No Data Available", //display message to user on empty table
             data: data,
             columns: columns,
-            pagination: true,
-            paginationSize: 20,
-            paginationSizeSelector: [20, 50, 100],
-            paginationCounter: "pages",
         });
 
         schemaTable.on("popupOpened", onPopupOpenedSchemaTab);
