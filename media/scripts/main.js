@@ -729,7 +729,6 @@
             if (event.target.tagName === 'SPAN') {
                 const selectedOption = event.target.getAttribute('data-value');
 
-                // 
                 const exportQueryResultsButton = document.getElementById("export-query-results");
                 exportQueryResultsButton.setAttribute('disabled', '');
 
