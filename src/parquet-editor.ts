@@ -1,4 +1,6 @@
 const path = require('path');
+import * as os from 'os';
+
 import { Worker } from 'worker_threads';
 
 import * as vscode from 'vscode';
@@ -821,7 +823,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           nonce: nonce,
         };
 
-        const html = `
+        let html = `
           <!DOCTYPE html>
           <html lang="en">
 
@@ -943,6 +945,16 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           </body>
           </html>
         `;
+
+        // Check the platform
+        if (os.platform() === 'win32') {
+          // Remove the "To Excel" <li> element
+          html = html.replace(
+              `<li><span data-value="excel" class="dropdown-item">To Excel</span></li>`,
+              ''
+          );
+        }
+
         return this.fillTemplate(html, vars);
         // Use a nonce to whitelist which scripts can be run
     }
