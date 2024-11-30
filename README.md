@@ -29,7 +29,7 @@ By typing in the editor, an autocomplete box with column suggestions appear. Thi
 By typing free text in the search box, find specific values of the query result page.
 
 ### Export Query Result as CSV, Excel, JSON, ndJSON or Parquet to Disk
-By clicking on the export button in the query tab, you can save your query result to a specified location in CSV, Excel, JSON, ndJSON or Parquet format to disk.
+By clicking on the export button in the query tab, you can save your query result to a specified location in CSV, Excel (Not supported on windows currently), JSON, ndJSON or Parquet format to disk.
 
 ### Copy Query Result to Clipboard
 By clicking on the copy button in the Query tab, you can copy the query result page data to the clipboard.
