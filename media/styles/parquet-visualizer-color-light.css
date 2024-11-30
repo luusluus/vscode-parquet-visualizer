@@ -149,7 +149,10 @@
     background-color: white;
 }
 
-.dropdown-icon path {
-    fill: none; /* Ensure no fill on path */
-    stroke: #000000; /* Set stroke color to white */
+.dropdown-icon path,
+.export-icon path,
+.export-icon rect
+ {
+    fill: none; 
+    stroke: #000000;
 }
