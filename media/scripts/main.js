@@ -795,7 +795,7 @@
 
         const copyResultsButton = /** @type {HTMLElement} */ (document.querySelector(`#copy-query-results`));
         copyResultsButton.addEventListener('click', () => {
-            resultsTable.copyToClipboard("all", true);
+            resultsTable.copyToClipboard("table");
             vscode.postMessage({
                 type: 'copyQueryResults',
             });
