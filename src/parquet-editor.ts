@@ -161,6 +161,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       readonly currentPage?: number;
       readonly requestSource?: string;
       readonly requestType?: string;
+      readonly schema?: any[];
 
     }>());
 
@@ -177,7 +178,8 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       requestType: string,
       pageSize: number,
       pageNumber: number,
-      pageCount: number
+      pageCount: number,
+      schema: any[] = []
     ) {
       // console.log(`fireChangedDocumentEvent(${this.uri}). Page {${this.currentPage}}`);
       const tableData = {
@@ -189,6 +191,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         currentPage: pageNumber,
         requestSource: requestSource,
         requestType: requestType,
+        schema: schema
       };
       this._onDidChangeDocument.fire(tableData);
     }
@@ -334,7 +337,8 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
             requestType,
             message.pageSize,
             message.pageNumber,
-            message.pageCount
+            message.pageCount,
+            message.schema
         );
         // vscode.window.showInformationMessage("Query succeeded");
     }
@@ -462,7 +466,8 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             pageSize: e.pageSize,
             currentPage: e.currentPage,
             requestSource: e.requestSource,
-            requestType: e.requestType
+            requestType: e.requestType,
+            schema: e.schema
           };
 
           // Update all webviews when the document changes

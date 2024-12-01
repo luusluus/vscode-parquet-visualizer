@@ -2,6 +2,9 @@
 const {
   parentPort, workerData
 } = require('node:worker_threads');
+import * as os from 'os';
+
+import * as exceljs from 'exceljs';
 
 import { DuckDbError } from 'duckdb-async';
 
@@ -93,11 +96,23 @@ class BackendWorker {
     const values = replacePeriodWithUnderscoreInKey(result);
     const headers = createHeadersFromData(values);
 
+    const querySchemaResult = await this.backend.query(
+      `DESCRIBE ${query}`
+    );
+
     return {
       headers: headers,
       result: values,
+      schema: querySchemaResult,
       rowCount: this.queryResultCount
     };
+  }
+
+  async createEmptyExcelFile(filePath: string) {
+    const workbook = new exceljs.Workbook();
+    workbook.addWorksheet('Sheet1');
+
+    await workbook.xlsx.writeFile(filePath);
   }
 
   async exportQueryResult(exportType: string, savedPath: string) {
@@ -141,6 +156,12 @@ class BackendWorker {
       `;
     }
 
+    if (os.platform() === 'win32') {
+      await this.createEmptyExcelFile(savedPath);
+      const tmpPath = savedPath.replace(/([^\\]+)\.xlsx$/, "tmp_$1.xlsx");
+      await this.createEmptyExcelFile(tmpPath);
+    }
+
     await this.backend.query(query);
 
     return savedPath;
@@ -157,11 +178,12 @@ class BackendWorker {
         switch (message.source) {
           case 'query': {
             try{ 
-                const {headers, result, rowCount} = await worker.query(message);
+                const {headers, result, schema, rowCount} = await worker.query(message);
                 const pageNumber = 1; 
                 const pageSize = message.pageSize;
                 const pageCount = Math.ceil(rowCount / pageSize);
                 parentPort.postMessage({
+                    schema: schema,
                     result: result,
                     headers: headers,
                     type: 'query',
