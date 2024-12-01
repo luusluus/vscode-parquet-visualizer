@@ -376,17 +376,8 @@
     }
 
     function initCodeEditor(
-        isQueryable, defaultQuery, shortCutMapping, aceTheme, aceEditorCompletions
+        defaultQuery, shortCutMapping, aceTheme, aceEditorCompletions
     ) {
-        const queryTabPanel = document.getElementById("query-tab-panel");
-        if (!isQueryable) {
-            const paragraph = document.createElement("p");
-            paragraph.innerText = "The loaded backend does not have SQL support.";
-            queryTabPanel?.appendChild(paragraph);
-            return;
-        }
-
-
         aceEditor = ace.edit("editor");
 
         aceEditor.setTheme(aceTheme);
@@ -927,7 +918,6 @@
                     initSchema(tableData.schema);
                     initMetaData(tableData.metaData);
                     initCodeEditor(
-                        tableData.isQueryable, 
                         tableData.settings.defaultQuery,
                         tableData.settings.shortCutMapping,
                         tableData.aceTheme,

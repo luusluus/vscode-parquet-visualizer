@@ -1,3 +1,31 @@
+## [0.16.2](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.16.1...v0.16.2) (2024-12-01)
+
+
+### Bug Fixes
+
+* show message in query tab that brotli codec doesn't support sql ([7dc75cc](https://github.com/luusluus/vscode-parquet-visualizer/commit/7dc75ccc00dfaa892fd9a5f69240d4ff852618c0))
+
+## [0.16.1](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.16.0...v0.16.1) (2024-12-01)
+
+
+### Bug Fixes
+
+* fix build ([2e69826](https://github.com/luusluus/vscode-parquet-visualizer/commit/2e69826572b80bbce61a9a2234ddf78f930d3903))
+
+# [0.16.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.15.0...v0.16.0) (2024-12-01)
+
+
+### Bug Fixes
+
+* create empty excel files called tmp_{name}.xlsx and {name}.xlsx before overwriting with duckdb ([a172659](https://github.com/luusluus/vscode-parquet-visualizer/commit/a17265950ad04941fe41a73a856b714666404a6f))
+* only copy table data to clipboard, not selections ([8a5fe1f](https://github.com/luusluus/vscode-parquet-visualizer/commit/8a5fe1f3b5a345929b8a7b2499d99da868654f2a))
+
+
+### Features
+
+* map duckdb types to excel types for copy ([7bee971](https://github.com/luusluus/vscode-parquet-visualizer/commit/7bee9714ccf189647c400ad28e08cf267e23c942))
+* remove pagination schema tab ([bbd8d5d](https://github.com/luusluus/vscode-parquet-visualizer/commit/bbd8d5d3ad1be3220237a43f7b53004e540ceff3))
+
 # [0.15.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.14.3...v0.15.0) (2024-11-25)
 
 
