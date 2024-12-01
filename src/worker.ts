@@ -96,9 +96,14 @@ class BackendWorker {
     const values = replacePeriodWithUnderscoreInKey(result);
     const headers = createHeadersFromData(values);
 
+    const querySchemaResult = await this.backend.query(
+      `DESCRIBE ${query}`
+    );
+
     return {
       headers: headers,
       result: values,
+      schema: querySchemaResult,
       rowCount: this.queryResultCount
     };
   }
@@ -173,11 +178,12 @@ class BackendWorker {
         switch (message.source) {
           case 'query': {
             try{ 
-                const {headers, result, rowCount} = await worker.query(message);
+                const {headers, result, schema, rowCount} = await worker.query(message);
                 const pageNumber = 1; 
                 const pageSize = message.pageSize;
                 const pageCount = Math.ceil(rowCount / pageSize);
                 parentPort.postMessage({
+                    schema: schema,
                     result: result,
                     headers: headers,
                     type: 'query',
