@@ -1,3 +1,10 @@
+## [0.16.2](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.16.1...v0.16.2) (2024-12-01)
+
+
+### Bug Fixes
+
+* show message in query tab that brotli codec doesn't support sql ([7dc75cc](https://github.com/luusluus/vscode-parquet-visualizer/commit/7dc75ccc00dfaa892fd9a5f69240d4ff852618c0))
+
 ## [0.16.1](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.16.0...v0.16.1) (2024-12-01)
 
 
