@@ -1,3 +1,10 @@
+## [0.16.1](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.16.0...v0.16.1) (2024-12-01)
+
+
+### Bug Fixes
+
+* fix build ([2e69826](https://github.com/luusluus/vscode-parquet-visualizer/commit/2e69826572b80bbce61a9a2234ddf78f930d3903))
+
 # [0.16.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.15.0...v0.16.0) (2024-12-01)
 
 
