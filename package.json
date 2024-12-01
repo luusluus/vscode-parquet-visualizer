@@ -145,6 +145,7 @@
     "apache-arrow": "^15.0.0",
     "date-and-time": "^3.6.0",
     "duckdb-async": "^1.0.0",
+    "exceljs": "^4.4.0",
     "parquet-wasm": "^0.6.0"
   },
   "binary": {
