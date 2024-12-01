@@ -25,7 +25,6 @@
     }
 
     try {
-        throw new Error("fail build intentionally");
         if (process.platform !== 'win32') {
             await execCommand('./build.sh', {env: envVars});
         } else {
