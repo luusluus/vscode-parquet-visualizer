@@ -581,7 +581,9 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             enableScripts: true,
         };
 
-        webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
+        webviewPanel.webview.html = this.getHtmlForWebview(
+          webviewPanel.webview, document.isQueryAble
+        );
       
         webviewPanel.webview.onDidReceiveMessage(e => this.onMessage(document, e));
 
@@ -633,7 +635,6 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           currentPage: pageNumber,
           requestSource: constants.REQUEST_SOURCE_DATA_TAB,
           requestType: 'paginator',
-          isQueryable: document.isQueryAble,
           settings: {
             defaultQuery: defaultQueryFromSettings,
             defaultPageSizes: defaultPageSizesFromSettings,
@@ -774,7 +775,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         });
     }
 
-    private getHtmlForWebview(webview: vscode.Webview): string {
+    private getHtmlForWebview(webview: vscode.Webview, isQueryAble: boolean): string {
         // Local path to script and css for the webview
         const scripts = webview.asWebviewUri(vscode.Uri.joinPath(
             this.context.extensionUri, 'media', 'scripts')
@@ -825,6 +826,64 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           styleTabsColorUri : styleTabsColorUri.toString(true),
           nonce: nonce,
         };
+
+        let queryActionsBodyHtml = '';
+
+        if (!isQueryAble) {
+          queryActionsBodyHtml = "<p>The loaded backend does not support SQL.</p>";
+        } else {
+          queryActionsBodyHtml = `
+              <div id="editor"></div>
+              <div id="query-actions" class="button-container">
+
+                <button id="run-query-btn" class="tabulator-page flex-button">Run</button>
+                <button id="clear-query-btn" class="tabulator-page flex-button">Clear</button>
+                
+                <div class="flex-button search-container" style="margin-left: auto;">
+                    <div class="search-icon-element">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" class="search-icon">
+                            <circle cx="7" cy="7" r="5"></circle>
+                            <path d="m15 15-4.5-4.5"></path>
+                        </svg>
+                    </div>
+                    <input class="search-box" id="input-filter-values" type="text" placeholder="Search rows in page" disabled>
+                    <div class="clear-icon-element" id="clear-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" class="clear-icon">
+                            <path d="m2 2 12 12M14 2 2 14" stroke="#ffffff"></path>
+                        </svg>
+                    </div>
+                </div>
+                <button class="tabulator-page flex-button" disabled id="copy-query-results" type="button" role="button" aria-label="Copy page to clipboard" title="Copy page to clipboard">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" width="16" height="16" class="copy-icon">
+                      <path d="M2 5h9v9H2z" class="stroke-linejoin-round"></path>
+                      <path d="M5 5V2h9v9h-3" class="stroke-linejoin-round"></path>
+                  </svg>
+                  Copy page
+                </button>
+                <div class="dropdown">
+                    <button class="flex-button" disabled id="export-query-results" type="button" role="button" aria-label="Export results" title="Export results">
+                      <svg class="export-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="16" rx="2" ry="2" fill="none" stroke="white"/>
+                        <path d="M12 5v12" stroke="white"/>
+                        <path d="M8 8l4-4 4 4" stroke="white"/>
+                      </svg>
+                      <span id="export-query-results-text">Export results</span>
+                      <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" focusable="false" aria-hidden="true">
+                          <path d="M4 5h8l-4 6-4-6z" fill="white" stroke="none"></path>
+                      </svg>
+                    </button>
+                    <ul class="dropdown-menu" id="dropdown-menu">
+                        <li><span data-value="csv" class="dropdown-item">To CSV</span></li>
+                        <li><span data-value="excel" class="dropdown-item">To Excel</span></li>
+                        <li><span data-value="parquet" class="dropdown-item">To Parquet</span></li>
+                        <li><span data-value="json" class="dropdown-item">To JSON</span></li>
+                        <li><span data-value="ndjson" class="dropdown-item">To ndJSON</span></li>
+                    </ul>
+                </div>
+              </div>
+              <div id="table-queryTab"></div>
+          `;
+        }
 
         const html = `
           <!DOCTYPE html>
@@ -888,54 +947,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
                       <div class="tab" id="query-tab-panel">
                           <div id="query-tab-container">
-                            <div id="editor"></div>
-                            <div id="query-actions" class="button-container">
-                              <button id="run-query-btn" class="tabulator-page flex-button">Run</button>
-                              <button id="clear-query-btn" class="tabulator-page flex-button">Clear</button>
-                              
-                              <div class="flex-button search-container" style="margin-left: auto;">
-                                  <div class="search-icon-element">
-                                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" class="search-icon">
-                                          <circle cx="7" cy="7" r="5"></circle>
-                                          <path d="m15 15-4.5-4.5"></path>
-                                      </svg>
-                                  </div>
-                                  <input class="search-box" id="input-filter-values" type="text" placeholder="Search rows in page" disabled>
-                                  <div class="clear-icon-element" id="clear-icon">
-                                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" class="clear-icon">
-                                          <path d="m2 2 12 12M14 2 2 14" stroke="#ffffff"></path>
-                                      </svg>
-                                  </div>
-                              </div>
-                              <button class="tabulator-page flex-button" disabled id="copy-query-results" type="button" role="button" aria-label="Copy page to clipboard" title="Copy page to clipboard">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" width="16" height="16" class="copy-icon">
-                                    <path d="M2 5h9v9H2z" class="stroke-linejoin-round"></path>
-                                    <path d="M5 5V2h9v9h-3" class="stroke-linejoin-round"></path>
-                                </svg>
-                                Copy page
-                              </button>
-                              <div class="dropdown">
-                                  <button class="flex-button" disabled id="export-query-results" type="button" role="button" aria-label="Export results" title="Export results">
-                                    <svg class="export-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-                                      <rect x="3" y="3" width="18" height="16" rx="2" ry="2" fill="none" stroke="white"/>
-                                      <path d="M12 5v12" stroke="white"/>
-                                      <path d="M8 8l4-4 4 4" stroke="white"/>
-                                    </svg>
-                                    <span id="export-query-results-text">Export results</span>
-                                    <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" focusable="false" aria-hidden="true">
-                                        <path d="M4 5h8l-4 6-4-6z" fill="white" stroke="none"></path>
-                                    </svg>
-                                  </button>
-                                  <ul class="dropdown-menu" id="dropdown-menu">
-                                      <li><span data-value="csv" class="dropdown-item">To CSV</span></li>
-                                      <li><span data-value="excel" class="dropdown-item">To Excel</span></li>
-                                      <li><span data-value="parquet" class="dropdown-item">To Parquet</span></li>
-                                      <li><span data-value="json" class="dropdown-item">To JSON</span></li>
-                                      <li><span data-value="ndjson" class="dropdown-item">To ndJSON</span></li>
-                                  </ul>
-                              </div>
-                            </div>
-                            <div id="table-queryTab"></div>
+                            ${queryActionsBodyHtml}
                           </div>
                       </div>
                       
