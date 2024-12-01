@@ -12,6 +12,7 @@
             exec(command, options, (error, stdout, stderr) => {
                 if (error) {
                     console.error(`Error executing ${command}: ${error.message}`);
+                    console.error(`$Error code: ${error.code}`);
                     return reject(error);
                 }
                 if (stderr) {
@@ -24,6 +25,7 @@
     }
 
     try {
+        throw new Error("fail build intentionally");
         if (process.platform !== 'win32') {
             await execCommand('./build.sh', {env: envVars});
         } else {
