@@ -2,6 +2,9 @@
 const {
   parentPort, workerData
 } = require('node:worker_threads');
+import * as os from 'os';
+
+import * as exceljs from 'exceljs';
 
 import { DuckDbError } from 'duckdb-async';
 
@@ -100,6 +103,13 @@ class BackendWorker {
     };
   }
 
+  async createEmptyExcelFile(filePath: string) {
+    const workbook = new exceljs.Workbook();
+    workbook.addWorksheet('Sheet1');
+
+    await workbook.xlsx.writeFile(filePath);
+  }
+
   async exportQueryResult(exportType: string, savedPath: string) {
     let query = '';
     if (exportType === 'csv') {
@@ -139,6 +149,12 @@ class BackendWorker {
       query = `
         COPY (${selectQuery}) TO '${savedPath}' (FORMAT GDAL, DRIVER 'xlsx');
       `;
+    }
+
+    if (os.platform() === 'win32') {
+      await this.createEmptyExcelFile(savedPath);
+      const tmpPath = savedPath.replace(/([^\\]+)\.xlsx$/, "tmp_$1.xlsx");
+      await this.createEmptyExcelFile(tmpPath);
     }
 
     await this.backend.query(query);
