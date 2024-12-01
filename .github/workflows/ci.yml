@@ -49,11 +49,8 @@ jobs:
         name: Install dependencies (without binaries)
         run: npm ci
 
-      - run: npx semantic-release --extends ./package.release.config.js
+      - run: npm run package
         env:
-          VSCE_TARGET: ${{ matrix.target }}
-          # All tokens are required since semantic-release needs to validate them
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           AZURE_APP_INSIGHTS_CONNECTION_STRING: ${{ secrets.AZURE_APP_INSIGHTS_CONNECTION_STRING }}
 
       - uses: actions/upload-artifact@v3
