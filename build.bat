@@ -1,7 +1,5 @@
 @echo on
 
-exit /b 1
-
 mkdir out
 mkdir out\binding
 
