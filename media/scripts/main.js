@@ -8,6 +8,7 @@
     let schemaTable;
     let metadataTable;
     let resultsTable;
+    let schemaQueryResult;
 
     let aceEditor;
 
@@ -251,19 +252,33 @@
                     });
 
                     table.querySelectorAll('td').forEach((td) => {
-                        const content = td.textContent.trim();
-
+                        const type = schemaQueryResult[td.cellIndex].column_type;
                         // Check for numbers with leading zeros
-                        if (content.match(/^0+\d+$/)) {
+                        if (type === "VARCHAR") {
                             td.classList.add('text');
                         }
                         // Check for integer
-                        else if (content.match(/^-?\d+$/)) {
+                        else if (type === "INTEGER" || type === "BIGINT") {
                             td.classList.add('integer');
                         }
                         // Check for float
-                        else if (content.match(/^-?\d+\.\d+$/)) {
+                        else if (type === "DOUBLE" || type === "FLOAT") {
                             td.classList.add('float');
+                        }
+                        else if (type.endsWith("[]")) {
+                            td.classList.add('text');
+                        }
+                        else if (type.includes("STRUCT")) {
+                            td.classList.add('text');
+                        }
+                        else if (type.includes("MAP")) {
+                            td.classList.add('text');
+                        }
+                        else if (type === "TIMESTAMP") {
+                            td.classList.add('time');
+                        }
+                        else if (type === "DATE") {
+                            td.classList.add('date');
                         }
                         // Fallback to text
                         else {
@@ -279,6 +294,8 @@
                         td.text { mso-number-format:"\\@";} 
                         td.float { mso-number-format: "#,##0.00";}
                         td.integer { mso-number-format: "#,##0"; }
+                        td.time { mso-number-format: "yyyy\-mm\-dd hh\:mm\:ss; }
+                        td.date { mso-number-format: "yyyy\-mm\-dd; }
                     `;
 
                     completeDoc.head.appendChild(style);
@@ -605,6 +622,7 @@
         /** @type {string} */ requestType,
         /** @type {number} */ currentPage,
         /** @type {number} */ pageCount,
+        /** @type {any} */ schema,
     ) {
         // console.log("updateTable");
         if (requestSource === requestSourceDataTab){
@@ -615,6 +633,8 @@
         } else if (requestSource === requestSourceQueryTab) {
             if (requestType === 'query'){
                 queryHasRun = true;
+
+                schemaQueryResult = schema; 
                 rowCountQueryTab = rowCount;
 
                 currentPageQueryTab = currentPage;
@@ -935,7 +955,8 @@
                         tableData.requestSource,
                         tableData.requestType,
                         tableData.currentPage,
-                        tableData.pageCount
+                        tableData.pageCount,
+                        tableData.schema,
                     );
                     
                     updatePageCounterState(
