@@ -27,6 +27,8 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
     worker: Worker;
     isQueryAble: boolean = false;
 
+    savedExporturi: vscode.Uri;
+
     static async create(
       uri: vscode.Uri
     ): Promise<CustomParquetDocument | PromiseLike<CustomParquetDocument>> {
@@ -724,7 +726,8 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           const extension = constants.FILENAME_SHORTNAME_EXTENSION_MAPPING[exportType];
           parsedPath.base = `${parsedPath.name}.${extension}`;
           const suggestedPath = path.format(parsedPath);
-          const suggestedUri = vscode.Uri.file(suggestedPath);
+
+          const suggestedUri = document.savedExporturi !== undefined ? document.savedExporturi : vscode.Uri.file(suggestedPath);
 
           const fileNameExtensionfullName = constants.FILENAME_SHORTNAME_FULLNAME_MAPPING[exportType];
           const savedPath = await vscode.window.showSaveDialog({
@@ -740,6 +743,8 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             vscode.window.showInformationMessage("Cancelled export");
             return;
           }
+
+          document.savedExporturi = savedPath;
 
           document.worker.postMessage({
             source: message.type,
