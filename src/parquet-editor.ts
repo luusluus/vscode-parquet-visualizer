@@ -1,6 +1,4 @@
 const path = require('path');
-const { exec } = require('child_process');
-
 import { Worker } from 'worker_threads';
 
 import * as vscode from 'vscode';
@@ -8,7 +6,7 @@ import { DuckDbError } from 'duckdb-async';
 
 import { Paginator } from './paginator';
 import { Backend } from './backend';
-import { createHeadersFromData, replacePeriodWithUnderscoreInKey, getNonce, isRunningInWSL } from './util';
+import { createHeadersFromData, replacePeriodWithUnderscoreInKey, getNonce } from './util';
 import { Disposable } from "./dispose";
 import { DuckDBBackend } from './duckdb-backend';
 import { DuckDBPaginator } from './duckdb-paginator';
@@ -99,21 +97,6 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         }
     }
 
-    openFolder(filePath: string) {
-      const folderPath = path.dirname(filePath);
-      if (process.platform === 'win32') {
-        exec(`explorer.exe "${folderPath}"`);
-      } else if (process.platform === 'darwin') {
-        exec(`open -R "${folderPath}"`);
-      } else if (process.platform === 'linux') {
-        if (isRunningInWSL()){
-          exec(`explorer.exe \`wslpath -w "${folderPath}"\``);
-        } else {
-          exec(`xdg-open "${folderPath}"`);
-        }
-      }
-    }
-
     private constructor(
       uri: vscode.Uri,
       backend: Backend,
@@ -158,13 +141,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
             if (message.error){
               vscode.window.showErrorMessage(`Export failed: ${message.error}`);
             } else {
-              vscode.window.showInformationMessage(
-                `Exported query result to ${message.path}`, "Open folder"
-              ).then(selection => {
-                if (selection === "Open folder") {
-                  this.openFolder(message.path);
-                }
-              });
+              vscode.window.showInformationMessage(`Exported query result to ${message.path}`);
             }
           }
         });

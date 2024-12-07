@@ -69,7 +69,3 @@ export function replacePeriodWithUnderscoreInKey(data: any) {
     return newObj; 
   });
 }
-
-export function isRunningInWSL() {
-  return !!process.env.WSL_INTEROP || !!process.env.WSL_DISTRO_NAME;
-}
