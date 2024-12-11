@@ -27,3 +27,6 @@ dist/test/**
 data/
 
 webpack.config.js
+
+duckdb-excel-export/
+*.zip
