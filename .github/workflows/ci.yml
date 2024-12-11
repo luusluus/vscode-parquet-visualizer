@@ -54,7 +54,7 @@ jobs:
           VSCE_TARGET: ${{ matrix.target }}
           # All tokens are required since semantic-release needs to validate them
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          # AZURE_APP_INSIGHTS_CONNECTION_STRING: ${{ secrets.AZURE_APP_INSIGHTS_CONNECTION_STRING }}
+          AZURE_APP_INSIGHTS_CONNECTION_STRING: ${{ secrets.AZURE_APP_INSIGHTS_CONNECTION_STRING }}
 
       - uses: actions/upload-artifact@v3
         with:
