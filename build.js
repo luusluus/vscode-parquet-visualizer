@@ -7,6 +7,11 @@
         AZURE_APP_INSIGHTS_CONNECTION_STRING: process.env.AZURE_APP_INSIGHTS_CONNECTION_STRING,
     };
 
+    if (!envVars.AZURE_APP_INSIGHTS_CONNECTION_STRING) {
+        console.error("Build failed. Azure App insights conn string not found");
+        process.exit(1);
+    }
+
     function execCommand(command, options) {
         return new Promise((resolve, reject) => {
             exec(command, options, (error, stdout, stderr) => {
