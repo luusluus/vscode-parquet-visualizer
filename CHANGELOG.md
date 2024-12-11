@@ -11,6 +11,19 @@
 
 * recall last export folder ([08e7b19](https://github.com/luusluus/vscode-parquet-visualizer/commit/08e7b19d34aa52dc06bb526888389b6d405b6133))
 
+# [0.17.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.16.2...v0.17.0) (2024-12-11)
+
+
+### Bug Fixes
+
+* return 1 if error happens in build.js ([065ff87](https://github.com/luusluus/vscode-parquet-visualizer/commit/065ff8760fd2313a5c024b02b12e1d24c49c0b69))
+* run different command to trigger build ([588605e](https://github.com/luusluus/vscode-parquet-visualizer/commit/588605e6fa45a4ede7e741c08cf66d294ba974d0))
+
+
+### Features
+
+* recall last export folder ([08e7b19](https://github.com/luusluus/vscode-parquet-visualizer/commit/08e7b19d34aa52dc06bb526888389b6d405b6133))
+
 ## [0.16.2](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.16.1...v0.16.2) (2024-12-01)
 
 
