@@ -49,11 +49,9 @@ jobs:
         name: Install dependencies (without binaries)
         run: npm ci
 
-      - run: npm run package
+      - run: npm install -g @vscode/vsce && vsce package
         env:
           AZURE_APP_INSIGHTS_CONNECTION_STRING: ${{ secrets.AZURE_APP_INSIGHTS_CONNECTION_STRING }}
-
-      - run: npm install -g @vscode/vsce && vsce package
 
       - uses: actions/upload-artifact@v3
         with:
