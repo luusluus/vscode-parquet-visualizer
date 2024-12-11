@@ -53,6 +53,8 @@ jobs:
         env:
           AZURE_APP_INSIGHTS_CONNECTION_STRING: ${{ secrets.AZURE_APP_INSIGHTS_CONNECTION_STRING }}
 
+      - run: vsce package
+
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.target }}
