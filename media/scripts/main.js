@@ -113,6 +113,11 @@
         onPopupOpened(parentContainerId);
     }
 
+    function containsHTML(str) {
+        const htmlTagRegex = /<\/?[a-z][\s\S]*>/i; // Matches opening or closing HTML tags
+        return htmlTagRegex.test(str);
+    }
+
     function escapeHtml(htmlString) {
         return htmlString
             .replace(/&/g, "&amp;")
@@ -149,7 +154,9 @@
             });
 
         } else {
-            element.innerHTML = escapeHtml(innerHTML);
+            if (containsHTML(innerHTML)) {
+                element.innerHTML = escapeHtml(innerHTML);
+            }
         }
 
         style.minWidth = '400px';
