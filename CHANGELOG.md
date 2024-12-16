@@ -1,3 +1,10 @@
+# [0.18.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.17.0...v0.18.0) (2024-12-16)
+
+
+### Features
+
+* add support for opening folder of exported file in wsl/windows ([6c7d17d](https://github.com/luusluus/vscode-parquet-visualizer/commit/6c7d17d161d76255be42c7e822e2682906d1d841))
+
 # [0.17.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.16.2...v0.17.0) (2024-12-11)
 
 
