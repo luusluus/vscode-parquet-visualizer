@@ -97,16 +97,23 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
     }
 
     openFolder(filePath: string) {
-      if (process.platform === 'win32') {
-        exec(`explorer.exe /select, "${filePath}"`);
-      } else if (process.platform === 'darwin') {
-        exec(`open -R "${filePath}"`);
-      } else if (process.platform === 'linux') {
-        if (isRunningInWSL()){
-          exec(`explorer.exe /select, \`wslpath -w "${filePath}"\``);
+      try {
+        if (process.platform === 'win32') {
+          exec(`explorer.exe /select, "${filePath}"`);
+        } else if (process.platform === 'darwin') {
+          exec(`open -R "${filePath}"`);
+        } else if (process.platform === 'linux') {
+          if (isRunningInWSL()){
+            exec(`explorer.exe /select, \`wslpath -w "${filePath}"\``);
+          } else {
+            exec(`xdg-open "${filePath}"`);
+          }
         } else {
-          exec(`xdg-open "${filePath}"`);
+          console.error(`Unsupported platform: ${process.platform} to open folder location ${filePath}`);
         }
+      }
+      catch (e: unknown) {
+        console.error(e);
       }
     }
 
