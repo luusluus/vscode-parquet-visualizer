@@ -297,7 +297,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         this.worker.postMessage({
             source: 'paginator',
             type: message.type,
-            pageSize: Number(message.pageSize)
+            pageSize: message.pageSize
         });
 
       } else if (message.source === constants.REQUEST_SOURCE_DATA_TAB) {
@@ -331,7 +331,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
             this.worker.postMessage({
                 source: 'paginator',
                 type: message.type,
-                pageSize: Number(message.pageSize),
+                pageSize: message.pageSize,
                 pageNumber: message.pageNumber
             });
         } else if (message.source === constants.REQUEST_SOURCE_DATA_TAB) {
@@ -378,11 +378,18 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         this.worker.postMessage({
             source: 'paginator',
             type: 'currentPage',
-            pageSize: Number(message.newPageSize),
+            pageSize: message.newPageSize,
         });
       }
       else if (message.source === constants.REQUEST_SOURCE_DATA_TAB) {
-        const page = await this.paginator.getCurrentPage(Number(message.newPageSize));
+        let newPageSize: number;
+        if (message.newPageSize.toLowerCase() === 'all') {
+          newPageSize = this.paginator.totalItems;
+        } else {
+          newPageSize = Number(message.newPageSize);
+        }
+
+        const page = await this.paginator.getCurrentPage(newPageSize);
         const values = replacePeriodWithUnderscoreInKey(page);
         let headers: any[] = [];
   
@@ -393,9 +400,9 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
           values.length,
           constants.REQUEST_SOURCE_DATA_TAB,
           requestType,
-          Number(message.newPageSize),
-          this.paginator.getPageNumber(), // TODO: Handle ChangePageSize for both query and datatab
-          this.paginator.getTotalPages(message.newPageSize)
+          newPageSize,
+          this.paginator.getPageNumber(),
+          this.paginator.getTotalPages(newPageSize)
         );
       }
     }
@@ -635,7 +642,13 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         // });
 
         const defaultPageSizesFromSettings = defaultPageSizes(); 
-        const pageSize = Number(defaultPageSizesFromSettings[0]);
+        const firstPageSize = defaultPageSizesFromSettings[0];
+        let pageSize: number;
+        if (firstPageSize.toLowerCase() === 'all'){
+          pageSize = document.paginator.totalItems;
+        } else {
+          pageSize = Number(firstPageSize);
+        }
 
         const defaultQueryFromSettings = defaultQuery();
 

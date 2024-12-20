@@ -30,17 +30,24 @@ class BackendWorker {
   }
 
   async getQueryResultPage(message: any) {
+    let pageSize: number;
+    if (message.pageSize.toLowerCase() === 'all') {
+        pageSize = this.paginator.totalItems;
+    } else {
+      pageSize = Number(message.pageSize);
+    }
+
     let result;
     if (message.type === 'nextPage') {
-      result = await this.paginator.nextPage(message.pageSize);
+      result = await this.paginator.nextPage(pageSize);
     } else if (message.type === 'prevPage') {
-      result = await this.paginator.previousPage(message.pageSize);
+      result = await this.paginator.previousPage(pageSize);
     } else if (message.type === 'firstPage') {
-      result = await this.paginator.firstPage(message.pageSize);
+      result = await this.paginator.firstPage(pageSize);
     } else if (message.type === 'lastPage') {
-      result = await this.paginator.lastPage(message.pageSize); 
+      result = await this.paginator.lastPage(pageSize); 
     } else if (message.type === 'currentPage') {
-      result = await this.paginator.gotoPage(message.pageNumber, message.pageSize);
+      result = await this.paginator.gotoPage(message.pageNumber, pageSize);
     } else {
       throw Error(`Unknown message type: ${message.type}`);
     }
@@ -92,7 +99,12 @@ class BackendWorker {
         readFromFile
     );
 
-    const result = await (this.paginator.firstPage(msg.pageSize));
+    let result;
+    if (msg.pageSize.toLowerCase() === 'all') {
+      result = await this.paginator.getPage(1, this.paginator.totalItems);
+    } else {
+      result = await (this.paginator.firstPage(Number(msg.pageSize)));
+    }
     const values = replacePeriodWithUnderscoreInKey(result);
     const headers = createHeadersFromData(values);
 
@@ -203,7 +215,14 @@ class BackendWorker {
           }
           case 'paginator': {
             const {headers, result, rowCount} = await worker.getQueryResultPage(message);
-            const pageCount = Math.ceil(rowCount / message.pageSize);
+
+            let pageCount: number;
+            if (message.pageSize.toLowerCase() === 'all'){
+              pageCount = 1;
+            }
+            else {
+              pageCount = Math.ceil(rowCount / Number(message.pageSize));
+            }
             const pageNumber = worker.paginator.getPageNumber();
             parentPort.postMessage({
               result: result,

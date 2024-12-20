@@ -371,7 +371,7 @@
         vscode.postMessage({
             type: 'startQuery',
             data: query,
-            pageSize: Number(selectedOption.innerText)
+            pageSize: selectedOption.innerText
         });
     }
 
@@ -826,7 +826,7 @@
             }
             vscode.postMessage({
                 type: 'nextPage',
-                pageSize: Number(selectedOption.innerText),
+                pageSize: selectedOption.innerText,
                 source: requestSource
             });
         });
@@ -841,7 +841,7 @@
             }
             vscode.postMessage({
                 type: 'prevPage',
-                pageSize: Number(selectedOption.innerText),
+                pageSize: selectedOption.innerText,
                 source: requestSource
             });
         });
@@ -856,7 +856,7 @@
             }
             vscode.postMessage({
                 type: 'firstPage',
-                pageSize: Number(selectedOption.innerText),
+                pageSize: selectedOption.innerText,
                 source: requestSource
             });
         });
@@ -871,7 +871,7 @@
             }
             vscode.postMessage({
                 type: 'lastPage',
-                pageSize: Number(selectedOption.innerText),
+                pageSize: selectedOption.innerText,
                 source: requestSource
             });
         });
@@ -895,7 +895,7 @@
                 vscode.postMessage({
                     type: 'changePageSize',
                     data: {
-                        newPageSize: Number(selectedOption.innerText),
+                        newPageSize: selectedOption.innerText,
                         source: requestSource
                     }
                 });
