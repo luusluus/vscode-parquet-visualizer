@@ -192,8 +192,16 @@ class BackendWorker {
             try{ 
                 const {headers, result, schema, rowCount} = await worker.query(message);
                 const pageNumber = 1; 
+
+                let pageCount: number;
+                if (message.pageSize.toLowerCase() === 'all'){
+                  pageCount = 1;
+                }
+                else {
+                  pageCount = Math.ceil(rowCount / Number(message.pageSize));
+                }
                 const pageSize = message.pageSize;
-                const pageCount = Math.ceil(rowCount / pageSize);
+
                 parentPort.postMessage({
                     schema: schema,
                     result: result,
@@ -224,6 +232,7 @@ class BackendWorker {
               pageCount = Math.ceil(rowCount / Number(message.pageSize));
             }
             const pageNumber = worker.paginator.getPageNumber();
+            
             parentPort.postMessage({
               result: result,
               headers: headers,
