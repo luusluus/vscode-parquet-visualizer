@@ -758,9 +758,18 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
           const extension = constants.FILENAME_SHORTNAME_EXTENSION_MAPPING[exportType];
           parsedPath.base = `${parsedPath.name}.${extension}`;
+          parsedPath.ext = extension;
           const suggestedPath = path.format(parsedPath);
 
-          const suggestedUri = document.savedExporturi !== undefined ? document.savedExporturi : vscode.Uri.file(suggestedPath);
+          let suggestedUri: vscode.Uri;
+          if (document.savedExporturi !== undefined) {
+            const parsedPath = path.parse(document.savedExporturi.fsPath);
+            parsedPath.base = `${parsedPath.name}.${extension}`;
+            parsedPath.ext = extension;
+            suggestedUri = vscode.Uri.file(path.format(parsedPath));
+          } else {
+            suggestedUri = vscode.Uri.file(suggestedPath);
+          }
 
           const fileNameExtensionfullName = constants.FILENAME_SHORTNAME_FULLNAME_MAPPING[exportType];
           const savedPath = await vscode.window.showSaveDialog({
