@@ -6,11 +6,11 @@ function settings(): vscode.WorkspaceConfiguration {
     return vscode.workspace.getConfiguration(name);
 }
 
-export function defaultPageSizes(): number[] {
-    const defaultPageSizes = settings().get('defaultPageSizes') as number[];
+export function defaultPageSizes(): string[] {
+    const defaultPageSizes = settings().get('defaultPageSizes') as string[];
     if (defaultPageSizes.length === 0) {
         console.warn("setting parquet-visualizer.defaultPageSizes is set to empty array. Defaulting to [20,50,100,200]");
-        return [ 20, 50, 100, 500 ];
+        return [ "20", "50", "100", "500", "all" ];
     }
     return defaultPageSizes;
 }

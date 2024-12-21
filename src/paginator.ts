@@ -1,7 +1,7 @@
 export abstract class Paginator {
   protected currentPage: number = 1;
   protected pageSize: number = 10;
-  protected totalItems: number;
+  public totalItems: number;
   protected totalPages: number;
 
   constructor(totalItems: number) {

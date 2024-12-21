@@ -297,7 +297,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         this.worker.postMessage({
             source: 'paginator',
             type: message.type,
-            pageSize: Number(message.pageSize)
+            pageSize: message.pageSize
         });
 
       } else if (message.source === constants.REQUEST_SOURCE_DATA_TAB) {
@@ -331,7 +331,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
             this.worker.postMessage({
                 source: 'paginator',
                 type: message.type,
-                pageSize: Number(message.pageSize),
+                pageSize: message.pageSize,
                 pageNumber: message.pageNumber
             });
         } else if (message.source === constants.REQUEST_SOURCE_DATA_TAB) {
@@ -378,11 +378,18 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         this.worker.postMessage({
             source: 'paginator',
             type: 'currentPage',
-            pageSize: Number(message.newPageSize),
+            pageSize: message.newPageSize,
         });
       }
       else if (message.source === constants.REQUEST_SOURCE_DATA_TAB) {
-        const page = await this.paginator.getCurrentPage(Number(message.newPageSize));
+        let newPageSize: number;
+        if (message.newPageSize.toLowerCase() === 'all') {
+          newPageSize = this.paginator.totalItems;
+        } else {
+          newPageSize = Number(message.newPageSize);
+        }
+
+        const page = await this.paginator.getCurrentPage(newPageSize);
         const values = replacePeriodWithUnderscoreInKey(page);
         let headers: any[] = [];
   
@@ -393,9 +400,9 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
           values.length,
           constants.REQUEST_SOURCE_DATA_TAB,
           requestType,
-          Number(message.newPageSize),
-          this.paginator.getPageNumber(), // TODO: Handle ChangePageSize for both query and datatab
-          this.paginator.getTotalPages(message.newPageSize)
+          newPageSize,
+          this.paginator.getPageNumber(),
+          this.paginator.getTotalPages(newPageSize)
         );
       }
     }
@@ -582,8 +589,13 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         }
 
         let docHtml = `<strong>Name</strong> ${e[0]}<br><strong>Type</strong>: ${htmlForDataType}`;
+        let value = e[0];
+        if (value.includes(' ')) {
+          value = `"${value}"`;
+        }
+
         return {
-          value: e[0],
+          value: value,
           score: i + 1000, // NOTE: just to get the column meta above the other meta.
           meta: 'column',
           docHTML: docHtml,
@@ -635,7 +647,13 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         // });
 
         const defaultPageSizesFromSettings = defaultPageSizes(); 
-        const pageSize = Number(defaultPageSizesFromSettings[0]);
+        const firstPageSize = defaultPageSizesFromSettings[0];
+        let pageSize: number;
+        if (firstPageSize.toLowerCase() === 'all'){
+          pageSize = document.paginator.totalItems;
+        } else {
+          pageSize = Number(firstPageSize);
+        }
 
         const defaultQueryFromSettings = defaultQuery();
 
@@ -753,9 +771,18 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
           const extension = constants.FILENAME_SHORTNAME_EXTENSION_MAPPING[exportType];
           parsedPath.base = `${parsedPath.name}.${extension}`;
+          parsedPath.ext = extension;
           const suggestedPath = path.format(parsedPath);
 
-          const suggestedUri = document.savedExporturi !== undefined ? document.savedExporturi : vscode.Uri.file(suggestedPath);
+          let suggestedUri: vscode.Uri;
+          if (document.savedExporturi !== undefined) {
+            const parsedPath = path.parse(document.savedExporturi.fsPath);
+            parsedPath.base = `${parsedPath.name}.${extension}`;
+            parsedPath.ext = extension;
+            suggestedUri = vscode.Uri.file(path.format(parsedPath));
+          } else {
+            suggestedUri = vscode.Uri.file(suggestedPath);
+          }
 
           const fileNameExtensionfullName = constants.FILENAME_SHORTNAME_FULLNAME_MAPPING[exportType];
           const savedPath = await vscode.window.showSaveDialog({
