@@ -1,3 +1,18 @@
+# [0.19.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.18.0...v0.19.0) (2024-12-21)
+
+
+### Bug Fixes
+
+* fix autocomplete for column names with spaces ([ca131c6](https://github.com/luusluus/vscode-parquet-visualizer/commit/ca131c66db79b76ad1865914d8f0136b6fa05903))
+* take extension of file into account ([7490bc9](https://github.com/luusluus/vscode-parquet-visualizer/commit/7490bc943881bd2164cdac5a24602436290a296b))
+
+
+### Features
+
+* add a check whether cell contains HTML ([6c73f10](https://github.com/luusluus/vscode-parquet-visualizer/commit/6c73f10774793e2f0ae7ae9c816a20eb89cdddec))
+* add all support to page size dropdown ([1bee437](https://github.com/luusluus/vscode-parquet-visualizer/commit/1bee4379c4d06ce995319a38e0541f294b7052ef))
+* make query editor resizable ([65975a3](https://github.com/luusluus/vscode-parquet-visualizer/commit/65975a37019b2ba145a2a2ba58748a0b1f4b909d))
+
 # [0.18.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.17.0...v0.18.0) (2024-12-16)
 
 
