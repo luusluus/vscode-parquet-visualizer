@@ -582,8 +582,13 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         }
 
         let docHtml = `<strong>Name</strong> ${e[0]}<br><strong>Type</strong>: ${htmlForDataType}`;
+        let value = e[0];
+        if (value.includes(' ')) {
+          value = `"${value}"`;
+        }
+
         return {
-          value: e[0],
+          value: value,
           score: i + 1000, // NOTE: just to get the column meta above the other meta.
           meta: 'column',
           docHTML: docHtml,
