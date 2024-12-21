@@ -25,7 +25,8 @@ html, body {
 }
 
 #editor {
-    flex: 0 0 20%; /* Fixed 20% of the viewport height */
+    resize: vertical; 
+    overflow: auto;
     box-sizing: border-box;
 }
 
@@ -38,14 +39,14 @@ html, body {
 
 #table-queryTab {
     flex: 1; /* Fills remaining space */
-    max-height: calc(100vh - 20% - 40px); /* Ensures it won't overflow the viewport */
+    max-height: calc(100vh - 15% - 40px); /* Ensures it won't overflow the viewport */
     overflow: hidden; /* Allows scrolling inside if content overflows */
     box-sizing: border-box;
 }
 
 @media (max-width: 1024px) and (min-width: 769px)  {
     #editor {
-        flex: 0 0 25%; /* Increase editor height */
+        height: 15%;
     }
 
     #query-actions {
@@ -61,7 +62,7 @@ html, body {
 
 @media (max-width: 768px) {
     #editor {
-        flex: 0 0 25%; /* Increase editor height */
+        height: 15%;
     }
 
     #query-actions {
