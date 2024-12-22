@@ -72,18 +72,29 @@ class BackendWorker {
     return query.replace(pattern, `FROM read_parquet('${this.backend.filePath}')`);
   }
 
-  async query(msg: any){
-    const query = this.formatQueryString(msg.query);
+  async query(queryObject: any){
+    let query = this.formatQueryString(queryObject.queryString);
+
+    if (queryObject.sort) {
+      const sort = queryObject.sort;
+
+      query = query.replace(';', '');
+      query = `
+        WITH cte as (
+          ${query}
+        )
+        SELECT * FROM cte
+        ORDER BY "${sort.field}" ${sort.direction.toUpperCase()}
+      `;
+    }
 
     await this.backend.query(`DROP TABLE IF EXISTS query_result`);
-    // console.log("table dropped");
 
     await this.backend.query(
         `CREATE TABLE query_result AS 
             ${query}
         `
     );
-    // console.log("ctas query done");
 
     const queryResult = await this.backend.query(
         `SELECT COUNT(*) AS count FROM query_result`
@@ -100,10 +111,10 @@ class BackendWorker {
     );
 
     let result;
-    if (msg.pageSize.toLowerCase() === 'all') {
+    if (queryObject.pageSize.toLowerCase() === 'all') {
       result = await this.paginator.getPage(1, this.paginator.totalItems);
     } else {
-      result = await (this.paginator.firstPage(Number(msg.pageSize)));
+      result = await (this.paginator.firstPage(Number(queryObject.pageSize)));
     }
     const values = replacePeriodWithUnderscoreInKey(result);
     const headers = createHeadersFromData(values);
@@ -118,6 +129,15 @@ class BackendWorker {
       schema: querySchemaResult,
       rowCount: this.queryResultCount
     };
+  }
+
+  async sortQueryResult (field: string, direction: string) {
+    const query = `SELECT * FROM query_result ORDER BY "${field}" ${direction.toUpperCase()}`;
+    console.log(query);
+    const result = await this.backend.query(query);
+
+    const values = replacePeriodWithUnderscoreInKey(result);
+    return values;
   }
 
   async createEmptyExcelFile(filePath: string) {
@@ -190,17 +210,18 @@ class BackendWorker {
         switch (message.source) {
           case 'query': {
             try{ 
-                const {headers, result, schema, rowCount} = await worker.query(message);
+                const query = message.query;
+                const {headers, result, schema, rowCount} = await worker.query(query);
                 const pageNumber = 1; 
+                const pageSize = query.pageSize;
 
                 let pageCount: number;
-                if (message.pageSize.toLowerCase() === 'all'){
+                if (pageSize.toLowerCase() === 'all'){
                   pageCount = 1;
                 }
                 else {
-                  pageCount = Math.ceil(rowCount / Number(message.pageSize));
+                  pageCount = Math.ceil(rowCount / Number(pageSize));
                 }
-                const pageSize = message.pageSize;
 
                 parentPort.postMessage({
                     schema: schema,
@@ -210,7 +231,8 @@ class BackendWorker {
                     pageNumber: pageNumber,
                     pageCount: pageCount,
                     rowCount: rowCount,
-                    pageSize: pageSize
+                    pageSize: pageSize,
+                    sort: query.sort
                 });
             } catch (err: unknown) {
                 parentPort.postMessage({

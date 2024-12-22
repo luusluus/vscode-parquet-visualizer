@@ -69,6 +69,25 @@
         e.currentTarget.checked = true;
     }
 
+    function onSort(query) {
+        const selectedOption = getSelectedPageSize();
+        const queryString = getTextFromEditor(aceEditor);
+
+        const sortObject = {
+            field: query.field,
+            direction: query.dir
+        };
+
+        vscode.postMessage({
+            type: 'startQuery',
+            query: {
+                queryString: queryString,
+                pageSize: selectedOption.innerText,
+                sort: sortObject
+            }
+        });
+    }
+
     function onCellClick(e, cell) {
         const val = cell.getValue();
 
@@ -224,7 +243,10 @@
         let columns = headers.map(c => (
             {
                 ...c, 
-                cellClick:onCellClick,
+                sorter: function(a, b, aRow, bRow, column, dir, sorterParams){
+                    return 0;
+                },
+                cellClick: onCellClick,
             }
         ));
 
@@ -242,6 +264,7 @@
             placeholder:"No results. Run a query to view results", //display message to user on empty table
             data: data,
             columns: columns,
+            headerSortClickElement:"icon",
             clipboard: "copy", 
             clipboardCopyStyled:false,
             clipboardCopyFormatter: function(type, output) {
@@ -341,6 +364,25 @@
         resultsTable.on("popupOpened", onPopupOpenedQueryResultTab);
 
         resultsTable.on("tableBuilt", function(data){
+            const elements = document.querySelectorAll('.tabulator-col-sorter.tabulator-col-sorter-element');
+
+            elements.forEach(e => {
+                e.addEventListener('click', (event) => {
+                    // Prevent other click listeners from firing
+                    event.stopPropagation();
+                    event.stopImmediatePropagation();
+    
+                    const parentWithClass = event.target.closest('.tabulator-col.tabulator-sortable');
+                    const ariaSort = parentWithClass.getAttribute('aria-sort');
+                    const tabulatorField = parentWithClass.getAttribute('tabulator-field');
+    
+                    onSort({
+                        field: tabulatorField,
+                        dir: ariaSort === 'ascending' ? 'asc' : 'desc'
+                    });
+                });
+            });
+
             resetQueryControls();
             resetQueryResultControls(rowCountQueryTab);
             initializeFooter(rowCountQueryTab, requestSourceQueryTab);
@@ -363,6 +405,12 @@
         }
     }
 
+    function getSelectedPageSize(){
+        const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSourceQueryTab}`));
+        const selectedIndex = numRecordsDropdown.selectedIndex;
+        return numRecordsDropdown.options[selectedIndex];
+    }
+
     function runQuery(editor) {
         resultsTable.alert("Loading...");
 
@@ -370,15 +418,15 @@
         runQueryButton.setAttribute('disabled', '');
         runQueryButton.innerText = 'Running';
 
-        const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSourceQueryTab}`));
-        const selectedIndex = numRecordsDropdown.selectedIndex;
-        const selectedOption = numRecordsDropdown.options[selectedIndex];
-
+        const selectedOption = getSelectedPageSize();
         const query = getTextFromEditor(editor);
+
         vscode.postMessage({
             type: 'startQuery',
-            data: query,
-            pageSize: selectedOption.innerText
+            query: {
+                queryString: query,
+                pageSize: selectedOption.innerText
+            }
         });
     }
 
@@ -617,6 +665,7 @@
         /** @type {number} */ currentPage,
         /** @type {number} */ pageCount,
         /** @type {any} */ schema,
+        /** @type {any} */ sort,
     ) {
         // console.log("updateTable");
         if (requestSource === requestSourceDataTab){
@@ -633,7 +682,12 @@
 
                 currentPageQueryTab = currentPage;
                 amountOfPagesQueryTab = pageCount;
-                initResultTable(data, headers);
+
+                if (sort) {
+                    resultsTable.replaceData(data);
+                } else {
+                    initResultTable(data, headers);
+                }
 
             } else if (requestType === 'paginator') {
                 resultsTable.replaceData(data);
@@ -950,6 +1004,7 @@
                         tableData.currentPage,
                         tableData.pageCount,
                         tableData.schema,
+                        tableData.sort
                     );
                     
                     updatePageCounterState(

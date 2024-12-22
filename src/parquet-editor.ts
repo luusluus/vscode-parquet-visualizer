@@ -192,6 +192,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       readonly requestSource?: string;
       readonly requestType?: string;
       readonly schema?: any[];
+      readonly sort?: any;
 
     }>());
 
@@ -209,7 +210,8 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       pageSize: number,
       pageNumber: number,
       pageCount: number,
-      schema: any[] = []
+      schema: any[] = [],
+      sort: any = undefined
     ) {
       // console.log(`fireChangedDocumentEvent(${this.uri}). Page {${this.currentPage}}`);
       const tableData = {
@@ -221,7 +223,8 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         currentPage: pageNumber,
         requestSource: requestSource,
         requestType: requestType,
-        schema: schema
+        schema: schema,
+        sort: sort
       };
       this._onDidChangeDocument.fire(tableData);
     }
@@ -368,7 +371,8 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
             message.pageSize,
             message.pageNumber,
             message.pageCount,
-            message.schema
+            message.schema,
+            message.sort
         );
         // vscode.window.showInformationMessage("Query succeeded");
     }
@@ -504,7 +508,8 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             currentPage: e.currentPage,
             requestSource: e.requestSource,
             requestType: e.requestType,
-            schema: e.schema
+            schema: e.schema,
+            sort: e.sort
           };
 
           // Update all webviews when the document changes
@@ -757,12 +762,17 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         case 'startQuery': {
           document.worker.postMessage({
             source: 'query',
-            query: message.data,
-            // uri: document.uri,
-            pageSize: message.pageSize
+            query: message.query,
           });
 
           TelemetryManager.sendEvent("queryStarted");
+          break;
+        }
+        case 'onSort': {
+          document.worker.postMessage({
+            source: 'query',
+            query: message.query,
+          });
           break;
         }
         case 'exportQueryResults': {
