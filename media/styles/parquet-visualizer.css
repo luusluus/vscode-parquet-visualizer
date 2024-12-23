@@ -25,6 +25,7 @@ html, body {
 }
 
 #editor {
+    height: 25%;
     resize: vertical; 
     overflow: auto;
     box-sizing: border-box;
@@ -39,14 +40,14 @@ html, body {
 
 #table-queryTab {
     flex: 1; /* Fills remaining space */
-    max-height: calc(100vh - 15% - 40px); /* Ensures it won't overflow the viewport */
+    max-height: calc(100vh - 20% - 40px); /* Ensures it won't overflow the viewport */
     overflow: hidden; /* Allows scrolling inside if content overflows */
     box-sizing: border-box;
 }
 
 @media (max-width: 1024px) and (min-width: 769px)  {
     #editor {
-        height: 15%;
+        height: 25%;
     }
 
     #query-actions {
@@ -62,7 +63,7 @@ html, body {
 
 @media (max-width: 768px) {
     #editor {
-        height: 15%;
+        height: 25%;
     }
 
     #query-actions {

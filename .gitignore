@@ -15,3 +15,5 @@ issue*.parquet
 number_leading_zeroes.parquet
 date32_date64_data.parquet
 amperstand_string.parquet
+spaced column.parquet
+userdata1.parquet
