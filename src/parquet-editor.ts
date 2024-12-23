@@ -410,6 +410,12 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         );
       }
     }
+
+    async sort() {
+      console.log("sort data view");
+      if (message.source === constants.REQUEST_SOURCE_QUERY_TAB) {}
+      
+    }
   }
 
 export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvider<CustomParquetDocument> {
@@ -759,6 +765,10 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           TelemetryManager.sendEvent("pageSizeChanged", {tabSource: message.data.source});
           break;
         }
+        case 'sort': {
+          await document.sort();
+          break;
+        }
         case 'startQuery': {
           document.worker.postMessage({
             source: 'query',
@@ -769,7 +779,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           break;
         }
         case 'onSort': {
-          document.worker.postMessage({
+          document.sort({
             source: 'query',
             query: message.query,
           });

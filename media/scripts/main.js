@@ -69,7 +69,7 @@
         e.currentTarget.checked = true;
     }
 
-    function onSort(query) {
+    function onSort(query, /** @type {String} */ requestSource) {
         const selectedOption = getSelectedPageSize();
         const queryString = getTextFromEditor(aceEditor);
 
@@ -79,7 +79,8 @@
         };
 
         vscode.postMessage({
-            type: 'startQuery',
+            type: 'onSort',
+            source: requestSource,
             query: {
                 queryString: queryString,
                 pageSize: selectedOption.innerText,
@@ -199,6 +200,26 @@
         // TODO: What if child.left < parent. left?
     }
 
+    function initializeSort(/** @type {String} */ requestSource) {
+        const elements = document.querySelectorAll(`#table-${requestSource} .tabulator-col-sorter.tabulator-col-sorter-element`);
+        elements.forEach(e => {
+            e.addEventListener('click', (event) => {
+                // Prevent other click listeners from firing
+                event.stopPropagation();
+                event.stopImmediatePropagation();
+
+                const parentWithClass = event.target.closest('.tabulator-col.tabulator-sortable');
+                const ariaSort = parentWithClass.getAttribute('aria-sort');
+                const tabulatorField = parentWithClass.getAttribute('tabulator-field');
+
+                onSort({
+                    field: tabulatorField,
+                    dir: ariaSort === 'ascending' ? 'asc' : 'desc'
+                });
+            });
+        });
+    }
+
     function resetQueryControls(){
         // console.log("resetQueryControl()");
 
@@ -264,7 +285,7 @@
             placeholder:"No results. Run a query to view results", //display message to user on empty table
             data: data,
             columns: columns,
-            headerSortClickElement:"icon",
+            headerSortClickElement: "icon",
             clipboard: "copy", 
             clipboardCopyStyled:false,
             clipboardCopyFormatter: function(type, output) {
@@ -364,25 +385,7 @@
         resultsTable.on("popupOpened", onPopupOpenedQueryResultTab);
 
         resultsTable.on("tableBuilt", function(data){
-            const elements = document.querySelectorAll('.tabulator-col-sorter.tabulator-col-sorter-element');
-
-            elements.forEach(e => {
-                e.addEventListener('click', (event) => {
-                    // Prevent other click listeners from firing
-                    event.stopPropagation();
-                    event.stopImmediatePropagation();
-    
-                    const parentWithClass = event.target.closest('.tabulator-col.tabulator-sortable');
-                    const ariaSort = parentWithClass.getAttribute('aria-sort');
-                    const tabulatorField = parentWithClass.getAttribute('tabulator-field');
-    
-                    onSort({
-                        field: tabulatorField,
-                        dir: ariaSort === 'ascending' ? 'asc' : 'desc'
-                    });
-                });
-            });
-
+            initializeSort(requestSourceQueryTab);
             resetQueryControls();
             resetQueryResultControls(rowCountQueryTab);
             initializeFooter(rowCountQueryTab, requestSourceQueryTab);
@@ -587,17 +590,24 @@
         let columns = data.headers.map(c => (
             {
                 ...c, 
-                cellClick:onCellClick,
-                headerMenu: headerMenu
+                sorter: function(a, b, aRow, bRow, column, dir, sorterParams){
+                    return 0;
+                },
+                cellClick: onCellClick,
+                // headerMenu: headerMenu
             }
         ));
 
         const options = createOptionHTMLElementsString(defaultPageSizes);
         dataTable = new Tabulator("#table", {
             columnDefaults:{
-                width:150, //set the width on all columns to 200px
+                width:150,
             },
-            placeholder:"No Data Available", //display message to user on empty table
+            placeholder:"No Data Available",
+            headerSortClickElement: "icon",
+            data: data.rawData,
+            columns: columns,
+            pagination: false,
             footerElement:`<span class="tabulator-page-counter">
                         <span>
                             <span>Showing</span>
@@ -619,13 +629,11 @@
                         <button class="tabulator-page" id="btn-last-${requestSourceDataTab}" type="button" role="button" aria-label="Last Page" title="Last Page" data-page="last">Last</button>
                     </span>
             `,
-            data: data.rawData,
-            columns: columns,
-            pagination: false,
         });
 
         dataTable.on("tableBuilt", () => {
             dataTableBuilt = true;
+            initializeSort(requestSourceDataTab);
             initializeFooter(rowCountDataTab, requestSourceDataTab);
             updatePageCounterState(currentPageDataTab, amountOfPagesDataTab, requestSourceDataTab);
             updateNavigationButtonsState(currentPageDataTab, amountOfPagesDataTab, requestSourceDataTab);
@@ -633,14 +641,6 @@
 
         dataTable.on("popupOpened", onPopupOpenedDataTab);
         dataTable.on("menuOpened", onMenuOpened);
-
-        // const filters = columns = columns.map(c => ({
-        //     field: c.field,
-        //     headerFilter: true,
-        //     type: 'like',
-        //     value: 'searchValue'
-        // }));
-        // table.setFilter([filters]);
     }
 
     function handleError (){
