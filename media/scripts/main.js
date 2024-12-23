@@ -199,16 +199,18 @@
         const resultsCountElement = document.getElementById("query-count");
         resultsCountElement.innerHTML = `<strong>Results</strong> (${rowCount})&nbsp;`;
 
-        const pageCountElement = document.getElementById("page-count");
-        pageCountElement.innerHTML = `<span>&nbsp;|&nbsp;</span>
-            <span>
-                <span>Showing</span>
-                <span id="page-current-${requestSourceQueryTab}"> ${currentPageQueryTab} </span>
-                <span>of</span>
-                <span id="page-count-${requestSourceQueryTab}"> ${amountOfPagesQueryTab} </span>
-                <span>pages</span>
-            </span>
-        `;
+        if (rowCount > 0) {
+            const pageCountElement = document.getElementById("page-count");
+            pageCountElement.innerHTML = `<span>&nbsp;|&nbsp;</span>
+                <span>
+                    <span>Showing</span>
+                    <span id="page-current-${requestSourceQueryTab}"> ${currentPageQueryTab} </span>
+                    <span>of</span>
+                    <span id="page-count-${requestSourceQueryTab}"> ${amountOfPagesQueryTab} </span>
+                    <span>pages</span>
+                </span>
+            `;
+        }
         
         const exportResultsButton = document.getElementById(`export-query-results`);
         exportResultsButton?.removeAttribute('disabled');
