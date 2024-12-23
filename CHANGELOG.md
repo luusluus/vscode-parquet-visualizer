@@ -1,3 +1,10 @@
+## [0.19.1](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.19.0...v0.19.1) (2024-12-23)
+
+
+### Bug Fixes
+
+* added anoter check for defaultPageSizes in settings ([51d29bd](https://github.com/luusluus/vscode-parquet-visualizer/commit/51d29bd4eee231bfd2d47ab5f6af5e377adcdee6))
+
 # [0.19.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.18.0...v0.19.0) (2024-12-21)
 
 
