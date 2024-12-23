@@ -1,3 +1,10 @@
+## [0.19.2](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.19.1...v0.19.2) (2024-12-23)
+
+
+### Bug Fixes
+
+* set height 25% for query view for viewports larger than 1024 px ([0316448](https://github.com/luusluus/vscode-parquet-visualizer/commit/03164482fc4e6b8df1ad06a576eeb69be099003b))
+
 ## [0.19.1](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.19.0...v0.19.1) (2024-12-23)
 
 
