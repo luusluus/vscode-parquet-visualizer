@@ -23,6 +23,9 @@
     let rowCountDataTab = 1;
     let rowCountQueryTab = 0;
 
+    let sortObjectDataTab;
+    let sortObjectQueryTab;
+
     let defaultPageSizes = [];
 
     let numRecordsDropDownResultTableHasChanged = false;
@@ -70,7 +73,7 @@
     }
 
     function onSort(query, /** @type {String} */ requestSource) {
-        const selectedOption = getSelectedPageSize();
+        const selectedOption = getSelectedPageSize(requestSource);
         const queryString = getTextFromEditor(aceEditor);
 
         const sortObject = {
@@ -78,11 +81,21 @@
             direction: query.dir
         };
 
+        let pageNumber;
+        if (requestSource === requestSourceDataTab) {
+            sortObjectDataTab = sortObject;
+            pageNumber = currentPageDataTab;
+        } else {
+            sortObjectQueryTab = sortObject;
+            pageNumber = currentPageQueryTab;
+        }
+
         vscode.postMessage({
             type: 'onSort',
             source: requestSource,
             query: {
                 queryString: queryString,
+                pageNumber: pageNumber,
                 pageSize: selectedOption.innerText,
                 sort: sortObject
             }
@@ -201,7 +214,14 @@
     }
 
     function initializeSort(/** @type {String} */ requestSource) {
-        const elements = document.querySelectorAll(`#table-${requestSource} .tabulator-col-sorter.tabulator-col-sorter-element`);
+        let selectors; 
+        if (requestSource === requestSourceQueryTab) {
+            selectors = `#table-${requestSource} .tabulator-col-sorter.tabulator-col-sorter-element`;
+        } else {
+            selectors = `#table .tabulator-col-sorter.tabulator-col-sorter-element`;
+        }
+        
+        const elements = document.querySelectorAll(selectors);
         elements.forEach(e => {
             e.addEventListener('click', (event) => {
                 // Prevent other click listeners from firing
@@ -212,10 +232,11 @@
                 const ariaSort = parentWithClass.getAttribute('aria-sort');
                 const tabulatorField = parentWithClass.getAttribute('tabulator-field');
 
-                onSort({
+                const sortQuery = {
                     field: tabulatorField,
                     dir: ariaSort === 'ascending' ? 'asc' : 'desc'
-                });
+                };
+                onSort(sortQuery, requestSource);
             });
         });
     }
@@ -408,8 +429,8 @@
         }
     }
 
-    function getSelectedPageSize(){
-        const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSourceQueryTab}`));
+    function getSelectedPageSize(requestSource){
+        const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSource}`));
         const selectedIndex = numRecordsDropdown.selectedIndex;
         return numRecordsDropdown.options[selectedIndex];
     }
@@ -421,14 +442,14 @@
         runQueryButton.setAttribute('disabled', '');
         runQueryButton.innerText = 'Running';
 
-        const selectedOption = getSelectedPageSize();
+        const selectedOption = getSelectedPageSize(requestSourceQueryTab);
         const query = getTextFromEditor(editor);
 
         vscode.postMessage({
             type: 'startQuery',
             query: {
                 queryString: query,
-                pageSize: selectedOption.innerText
+                pageSize: selectedOption.innerText,
             }
         });
     }
@@ -679,9 +700,9 @@
 
                 schemaQueryResult = schema; 
                 rowCountQueryTab = rowCount;
-
                 currentPageQueryTab = currentPage;
                 amountOfPagesQueryTab = pageCount;
+                sortObjectQueryTab = undefined;
 
                 if (sort) {
                     resultsTable.replaceData(data);
@@ -880,14 +901,25 @@
         nextButton.addEventListener('click', () => {
             const selectedIndex = numRecordsDropdown.selectedIndex;
             const selectedOption = numRecordsDropdown.options[selectedIndex];
+
+            let sort;
+            let pageNumber;
             if (requestSource === requestSourceDataTab) {
                 dataTable.alert("Loading...");
+                sort = sortObjectDataTab;
+                currentPageDataTab += 1;
+                pageNumber = currentPageDataTab;
             } else {
                 resultsTable.alert("Loading...");
+                sort = sortObjectQueryTab;
+                currentPageQueryTab += 1;
+                pageNumber = currentPageQueryTab;
             }
             vscode.postMessage({
                 type: 'nextPage',
                 pageSize: selectedOption.innerText,
+                pageNumber: pageNumber,
+                sort: sort,
                 source: requestSource
             });
         });
@@ -895,14 +927,25 @@
         prevButton.addEventListener('click', () => {
             const selectedIndex = numRecordsDropdown.selectedIndex;
             const selectedOption = numRecordsDropdown.options[selectedIndex];
+
+            let sort;
+            let pageNumber;
             if (requestSource === requestSourceDataTab) {
                 dataTable.alert("Loading...");
+                sort = sortObjectDataTab;
+                currentPageDataTab -= 1;
+                pageNumber = currentPageDataTab;
             } else {
                 resultsTable.alert("Loading...");
+                sort = sortObjectQueryTab;
+                currentPageQueryTab -= 1;
+                pageNumber = currentPageQueryTab;
             }
             vscode.postMessage({
                 type: 'prevPage',
                 pageSize: selectedOption.innerText,
+                pageNumber: pageNumber,
+                sort: sort,
                 source: requestSource
             });
         });
@@ -910,14 +953,24 @@
         firstButton.addEventListener('click', () => {
             const selectedIndex = numRecordsDropdown.selectedIndex;
             const selectedOption = numRecordsDropdown.options[selectedIndex];
+
+            let sort;
+            const pageNumber = 1;
             if (requestSource === requestSourceDataTab) {
                 dataTable.alert("Loading...");
+                sort = sortObjectDataTab;
+                currentPageDataTab = 1;
+
             } else {
                 resultsTable.alert("Loading...");
+                sort = sortObjectQueryTab;
+                currentPageQueryTab = 1;
             }
             vscode.postMessage({
                 type: 'firstPage',
                 pageSize: selectedOption.innerText,
+                pageNumber: pageNumber,
+                sort: sort,
                 source: requestSource
             });
         });
@@ -925,14 +978,25 @@
         lastButton.addEventListener('click', () => {
             const selectedIndex = numRecordsDropdown.selectedIndex;
             const selectedOption = numRecordsDropdown.options[selectedIndex];
+
+            let sort;
+            let pageNumber;
             if (requestSource === requestSourceDataTab) {
                 dataTable.alert("Loading...");
+                sort = sortObjectDataTab;
+                currentPageDataTab = amountOfPagesDataTab;
+                pageNumber = amountOfPagesDataTab;
             } else {
                 resultsTable.alert("Loading...");
+                sort = sortObjectQueryTab;
+                currentPageQueryTab = amountOfPagesQueryTab;
+                pageNumber = amountOfPagesQueryTab;
             }
             vscode.postMessage({
                 type: 'lastPage',
                 pageSize: selectedOption.innerText,
+                pageNumber: pageNumber,
+                sort: sort,
                 source: requestSource
             });
         });
@@ -947,16 +1011,30 @@
             numRecordsDropdown.addEventListener('change', (e) => {
                 const selectedIndex = numRecordsDropdown.selectedIndex;
                 const selectedOption = numRecordsDropdown.options[selectedIndex];
+
+                let sort;
+                const pageNumber = 1;
                 if (requestSource === requestSourceDataTab) {
                     dataTable.alert("Loading...");
+                    sort = sortObjectDataTab;
+                    if (selectedOption.innerText.toLowerCase() === 'all') {
+                        currentPageDataTab = 1;
+                    }
+
                 } else {
                     numRecordsDropDownResultTableHasChanged = true;
                     resultsTable.alert("Loading...");
+                    sort = sortObjectQueryTab;
+                    if (selectedOption.innerText.toLowerCase() === 'all') {
+                        currentPageQueryTab = 1;
+                    }
                 }
                 vscode.postMessage({
                     type: 'changePageSize',
                     data: {
                         newPageSize: selectedOption.innerText,
+                        pageNumber: pageNumber,
+                        sort: sort,
                         source: requestSource
                     }
                 });
@@ -987,7 +1065,7 @@
                     initializeQueryResultControls();
                     initResultTable([], []);
 
-                    currentPageDataTab = tableData.currentPage;
+                    // currentPageDataTab = tableData.currentPage;
                     amountOfPagesDataTab = tableData.pageCount;
                 }
                 break;

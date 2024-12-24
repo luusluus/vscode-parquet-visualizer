@@ -5,7 +5,7 @@ const { exec } = require('child_process');
 import * as vscode from 'vscode';
 import { DuckDbError } from 'duckdb-async';
 
-import { Paginator } from './paginator';
+import { Paginator, QueryObject } from './paginator';
 import { Backend } from './backend';
 import { createHeadersFromData, replacePeriodWithUnderscoreInKey, getNonce, isRunningInWSL } from './util';
 import { Disposable } from "./dispose";
@@ -300,32 +300,39 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         this.worker.postMessage({
             source: 'paginator',
             type: message.type,
-            pageSize: message.pageSize
+            pageSize: message.pageSize,
+            pageNumber: message.pageNumber,
+            sort: message.sort
         });
-
       } else if (message.source === constants.REQUEST_SOURCE_DATA_TAB) {
-            if (message.type === 'nextPage') {
-                values = await this.paginator.nextPage(message.pageSize);
-            } else if (message.type === 'prevPage') {
-                values = await this.paginator.previousPage(message.pageSize);
-            } else if (message.type === 'firstPage') {
-                values = await this.paginator.firstPage(message.pageSize);
-            } else if (message.type === 'lastPage') {
-                values = await this.paginator.lastPage(message.pageSize);
-            } else {
-                throw Error(`Unknown message type: ${message.type}`);
-            }
-            
-            values = replacePeriodWithUnderscoreInKey(values);
-            const rowCount = 0;
-            this.fireDataPaginatorEvent(
-                values,
-                rowCount, 
-                Number(message.pageSize),
-                this.paginator.getPageNumber(),
-                this.paginator.getTotalPages(message.pageSize),
-                constants.REQUEST_SOURCE_DATA_TAB
-            );
+          const query: QueryObject = {
+            pageNumber: message.pageNumber,
+            pageSize: message.pageSize,
+            sort: message.sort
+          };
+
+          if (message.type === 'nextPage') {
+              values = await this.paginator.nextPage(query);
+          } else if (message.type === 'prevPage') {
+              values = await this.paginator.previousPage(query);
+          } else if (message.type === 'firstPage') {
+              values = await this.paginator.firstPage(query);
+          } else if (message.type === 'lastPage') {
+              values = await this.paginator.lastPage(query);
+          } else {
+              throw Error(`Unknown message type: ${message.type}`);
+          }
+          
+          values = replacePeriodWithUnderscoreInKey(values);
+          const rowCount = 0;
+          this.fireDataPaginatorEvent(
+              values,
+              rowCount, 
+              Number(message.pageSize),
+              this.paginator.getPageNumber(),
+              this.paginator.getTotalPages(message.pageSize),
+              constants.REQUEST_SOURCE_DATA_TAB
+          );
       }
     }
     
@@ -335,10 +342,16 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
                 source: 'paginator',
                 type: message.type,
                 pageSize: message.pageSize,
-                pageNumber: message.pageNumber
+                pageNumber: message.pageNumber,
+                sort: message.sort
             });
         } else if (message.source === constants.REQUEST_SOURCE_DATA_TAB) {
-            const values = await this.paginator.gotoPage(message.pageNumber, message.pageSize);
+            const query: QueryObject = {
+              pageNumber: message.pageNumber, 
+              pageSize: message.pageSize,
+              sort: message.sort
+            };
+            const values = await this.paginator.gotoPage(query);
             const rowCount = 0;
             this.fireDataPaginatorEvent(
                 values, 
@@ -383,6 +396,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
             source: 'paginator',
             type: 'currentPage',
             pageSize: message.newPageSize,
+            sort: message.sort
         });
       }
       else if (message.source === constants.REQUEST_SOURCE_DATA_TAB) {
@@ -393,11 +407,19 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
           newPageSize = Number(message.newPageSize);
         }
 
-        const page = await this.paginator.getCurrentPage(newPageSize);
+        const query: QueryObject = {
+          pageSize: newPageSize,
+          pageNumber: 1,
+          sort: message.sort
+        };
+
+        const page = await this.paginator.getCurrentPage(query);
         const values = replacePeriodWithUnderscoreInKey(page);
-        let headers: any[] = [];
-  
+        
+        const headers: any[] = [];
         const requestType = 'paginator';
+        const pageNumber = this.paginator.getPageNumber();
+        const pageCount = this.paginator.getTotalPages(newPageSize);
         this.fireChangedDocumentEvent(
           values, 
           headers, 
@@ -405,16 +427,53 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
           constants.REQUEST_SOURCE_DATA_TAB,
           requestType,
           newPageSize,
-          this.paginator.getPageNumber(),
-          this.paginator.getTotalPages(newPageSize)
+          pageNumber,
+          pageCount
         );
       }
     }
 
-    async sort() {
-      console.log("sort data view");
-      if (message.source === constants.REQUEST_SOURCE_QUERY_TAB) {}
-      
+    async sort(message: any) {
+      if (message.source === constants.REQUEST_SOURCE_QUERY_TAB) {
+        this.worker.postMessage({
+          source: 'paginator',
+          type: 'firstPage',
+          pageSize: message.query.pageSize,
+          pageNumber: message.query.pageNumber,
+          sort: message.query.sort
+        });
+      } else {
+        let pageSize: number;
+        if (message.query.pageSize.toLowerCase() === 'all'){
+          pageSize = this.paginator.totalItems;
+        } else {
+          pageSize = Number(message.query.pageSize);
+        }
+        const query: QueryObject = {
+          pageSize: pageSize,
+          pageNumber: message.query.pageNumber,
+          sort: message.query.sort
+        };
+
+        const page = await this.paginator.getCurrentPage(query);
+        const values = replacePeriodWithUnderscoreInKey(page);
+        
+        const headers: any[] = [];
+        const requestType = 'paginator';
+        const pageNumber = this.paginator.getPageNumber();
+        const pageCount = this.paginator.getTotalPages(pageSize);
+
+        this.fireChangedDocumentEvent(
+          values, 
+          headers, 
+          values.length,
+          constants.REQUEST_SOURCE_DATA_TAB,
+          requestType,
+          query.pageSize,
+          pageNumber,
+          pageCount
+        );
+      }
     }
   }
 
@@ -671,7 +730,11 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         const defaultRunQueryKeyBindingFromSettings = defaultRunQueryKeyBinding();
         const shortCutMapping = this.createShortcutMapping(defaultRunQueryKeyBindingFromSettings);
 
-        const page = await document.paginator.getCurrentPage(pageSize);
+        const query: QueryObject = {
+          pageSize: pageSize,
+          pageNumber: 1
+        };
+        const page = await document.paginator.getCurrentPage(query);
         const values = replacePeriodWithUnderscoreInKey(page);
         const headers = createHeadersFromData(values);
         const pageNumber = document.paginator.getPageNumber();
@@ -765,10 +828,6 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           TelemetryManager.sendEvent("pageSizeChanged", {tabSource: message.data.source});
           break;
         }
-        case 'sort': {
-          await document.sort();
-          break;
-        }
         case 'startQuery': {
           document.worker.postMessage({
             source: 'query',
@@ -779,10 +838,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           break;
         }
         case 'onSort': {
-          document.sort({
-            source: 'query',
-            query: message.query,
-          });
+          await document.sort(message);
           break;
         }
         case 'exportQueryResults': {

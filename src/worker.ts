@@ -8,7 +8,7 @@ import * as exceljs from 'exceljs';
 
 import { DuckDbError } from 'duckdb-async';
 
-import { Paginator } from './paginator';
+import { Paginator, QueryObject } from './paginator';
 import { DuckDBBackend } from './duckdb-backend';
 import { DuckDBPaginator } from './duckdb-paginator';
 import { createHeadersFromData, replacePeriodWithUnderscoreInKey } from './util';
@@ -31,23 +31,31 @@ class BackendWorker {
 
   async getQueryResultPage(message: any) {
     let pageSize: number;
-    if (message.pageSize.toLowerCase() === 'all') {
+    const isPageSizeAll = message.pageSize.toLowerCase() === 'all';
+    if (isPageSizeAll) {
         pageSize = this.paginator.totalItems;
     } else {
       pageSize = Number(message.pageSize);
     }
 
+    let query: QueryObject = {
+      isPageSizeAll: isPageSizeAll,
+      pageSize: pageSize,
+      pageNumber: message.pageNumber,
+      sort: message.sort
+    };
+
     let result;
     if (message.type === 'nextPage') {
-      result = await this.paginator.nextPage(pageSize);
+      result = await this.paginator.nextPage(query);
     } else if (message.type === 'prevPage') {
-      result = await this.paginator.previousPage(pageSize);
+      result = await this.paginator.previousPage(query);
     } else if (message.type === 'firstPage') {
-      result = await this.paginator.firstPage(pageSize);
+      result = await this.paginator.firstPage(query);
     } else if (message.type === 'lastPage') {
-      result = await this.paginator.lastPage(pageSize); 
+      result = await this.paginator.lastPage(query); 
     } else if (message.type === 'currentPage') {
-      result = await this.paginator.gotoPage(message.pageNumber, pageSize);
+      result = await this.paginator.gotoPage(query);
     } else {
       throw Error(`Unknown message type: ${message.type}`);
     }
@@ -62,7 +70,7 @@ class BackendWorker {
     };
   }
 
-  formatQueryString(query: string): string {
+  formatQueryString(query: string = ""): string {
     const pattern = /FROM data/i;
     
     if (!pattern.test(query)) {
@@ -72,21 +80,8 @@ class BackendWorker {
     return query.replace(pattern, `FROM read_parquet('${this.backend.filePath}')`);
   }
 
-  async query(queryObject: any){
+  async query(queryObject: QueryObject){
     let query = this.formatQueryString(queryObject.queryString);
-
-    if (queryObject.sort) {
-      const sort = queryObject.sort;
-
-      query = query.replace(';', '');
-      query = `
-        WITH cte as (
-          ${query}
-        )
-        SELECT * FROM cte
-        ORDER BY "${sort.field}" ${sort.direction.toUpperCase()}
-      `;
-    }
 
     await this.backend.query(`DROP TABLE IF EXISTS query_result`);
 
@@ -110,12 +105,7 @@ class BackendWorker {
         readFromFile
     );
 
-    let result;
-    if (queryObject.pageSize.toLowerCase() === 'all') {
-      result = await this.paginator.getPage(1, this.paginator.totalItems);
-    } else {
-      result = await (this.paginator.firstPage(Number(queryObject.pageSize)));
-    }
+    const result = await this.paginator.firstPage(queryObject);
     const values = replacePeriodWithUnderscoreInKey(result);
     const headers = createHeadersFromData(values);
 
@@ -133,7 +123,6 @@ class BackendWorker {
 
   async sortQueryResult (field: string, direction: string) {
     const query = `SELECT * FROM query_result ORDER BY "${field}" ${direction.toUpperCase()}`;
-    console.log(query);
     const result = await this.backend.query(query);
 
     const values = replacePeriodWithUnderscoreInKey(result);
@@ -210,13 +199,24 @@ class BackendWorker {
         switch (message.source) {
           case 'query': {
             try{ 
-                const query = message.query;
-                const {headers, result, schema, rowCount} = await worker.query(query);
+                let pageSize: number;
+                const isPageSizeAll = message.query.pageSize.toLowerCase() === 'all';
+                if (isPageSizeAll) {
+                  pageSize = worker.paginator.totalItems;
+                } else {
+                  pageSize = Number(message.query.pageSize);
+                }
+                
+                const queryObject: QueryObject = {
+                  pageNumber: 1,
+                  pageSize: pageSize,
+                  queryString: message.query.queryString
+                };
+                const {headers, result, schema, rowCount} = await worker.query(queryObject);
                 const pageNumber = 1; 
-                const pageSize = query.pageSize;
 
                 let pageCount: number;
-                if (pageSize.toLowerCase() === 'all'){
+                if (isPageSizeAll){
                   pageCount = 1;
                 }
                 else {
@@ -232,7 +232,7 @@ class BackendWorker {
                     pageCount: pageCount,
                     rowCount: rowCount,
                     pageSize: pageSize,
-                    sort: query.sort
+                    sort: queryObject.sort
                 });
             } catch (err: unknown) {
                 parentPort.postMessage({
