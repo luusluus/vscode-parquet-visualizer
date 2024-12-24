@@ -1,4 +1,4 @@
-import { Paginator } from './paginator';
+import { Paginator, QueryObject } from './paginator';
 import { DuckDBBackend } from './duckdb-backend';
 
 export class DuckDBPaginator extends Paginator {
@@ -22,8 +22,8 @@ export class DuckDBPaginator extends Paginator {
         return Math.ceil(this.totalItems / pageSize);
     }
 
-    getPage(pageNumber: number, pageSize: number): Promise<any[]> {        
-        const offset = this.calculateOffset(pageNumber, pageSize);
+    getPage(query: QueryObject): Promise<any[]> {        
+        const offset = this.calculateOffset(query.pageNumber, query.pageSize);
 
         let source;
         if (this.readFromFile) {
@@ -31,13 +31,23 @@ export class DuckDBPaginator extends Paginator {
         } else {
             source = this.table;
         }
-        const queryStatement = `
+
+        let queryStatement = `
             SELECT *
             FROM ${source}
-            LIMIT ${pageSize}
-            OFFSET ${offset}
-            ;
         `;
+
+        if (query.sort) {
+            queryStatement += `
+                ORDER BY "${query.sort.field}" ${query.sort.direction.toUpperCase()}
+            `;
+        }
+
+        queryStatement += `
+            LIMIT ${query.pageSize}
+            OFFSET ${offset}
+        `;
+        
         return this.backend.query(queryStatement);
     }
 }

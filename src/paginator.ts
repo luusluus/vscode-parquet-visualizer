@@ -1,3 +1,16 @@
+export interface SortObject {
+  direction: string;
+  field: string;
+};
+
+export interface QueryObject{
+  pageNumber: number;
+  pageSize: number;
+  isPageSizeAll?: boolean;
+  sort?: SortObject;
+  queryString?: string
+};
+
 export abstract class Paginator {
   protected currentPage: number = 1;
   protected pageSize: number = 10;
@@ -8,7 +21,7 @@ export abstract class Paginator {
     this.totalItems = totalItems;
   }
 
-  abstract getPage(pageNumber: number, pageSize: number): Promise<any[]>;
+  abstract getPage(query: QueryObject): Promise<any[]>;
 
   abstract getTotalPages(pageSize: number): number;
 
@@ -16,67 +29,67 @@ export abstract class Paginator {
     return (pageNumber - 1) * pageSize;
   }
 
-  async nextPage(pageSize: number): Promise<any[]> {
-    this.totalPages = this.getTotalPages(pageSize);
-    this.pageSize = pageSize;
+  async nextPage(query: QueryObject): Promise<any[]> {
+    this.totalPages = this.getTotalPages(query.pageSize);
+    this.pageSize = query.pageSize;
 
     if (this.totalPages !== undefined && this.currentPage >= this.totalPages) {
       throw new Error("No more pages available.");
     }
     this.currentPage += 1;
-    return this.getItems(pageSize);
+    return this.getItems(query);
   }
 
-  async previousPage(pageSize: number): Promise<any[]> {
-    this.totalPages = this.getTotalPages(pageSize);
-    this.pageSize = pageSize;
+  async previousPage(query: QueryObject): Promise<any[]> {
+    this.totalPages = this.getTotalPages(query.pageSize);
+    this.pageSize = query.pageSize;
 
     if (this.currentPage <= 1) {
       throw new Error("Already on the first page.");
     }
     this.currentPage -= 1;
-    return this.getItems(pageSize);
+    return this.getItems(query);
   }
 
-  async firstPage(pageSize: number): Promise<any[]> {
-    this.totalPages = this.getTotalPages(pageSize);
-    this.pageSize = pageSize;
+  async firstPage(query: QueryObject): Promise<any[]> {
+    this.totalPages = this.getTotalPages(query.pageSize);
+    this.pageSize = query.pageSize;
 
     this.currentPage = 1;
-    return this.getItems(pageSize);
+    return this.getItems(query);
   }
 
-  async lastPage(pageSize: number): Promise<any[]> {
-    this.totalPages = this.getTotalPages(pageSize);
-    this.pageSize = pageSize;
+  async lastPage(query: QueryObject): Promise<any[]> {
+    this.totalPages = this.getTotalPages(query.pageSize);
+    this.pageSize = query.pageSize;
 
     this.currentPage = this.totalPages;
 
-    return this.getItems(pageSize);
+    return this.getItems(query);
   }
 
-  async gotoPage(pageNumber: number, pageSize: number): Promise<any[]> {
-    this.totalPages = this.getTotalPages(pageSize);
+  async gotoPage(query: QueryObject): Promise<any[]> {
+    this.totalPages = this.getTotalPages(query.pageSize);
 
-    if (pageNumber === undefined) {
-      pageNumber = this.getPageNumber();
+    if (query.pageNumber === undefined) {
+      query.pageNumber = this.getPageNumber();
     }
-    if (pageNumber > this.totalPages) {
-      this.calculateNewPageNumber(pageSize);
-      pageNumber = this.getPageNumber();
+    if (query.pageNumber > this.totalPages) {
+      this.calculateNewPageNumber(query.pageSize);
+      query.pageNumber = this.getPageNumber();
     }
-    this.pageSize = pageSize;
+    this.pageSize = query.pageSize;
 
-    if (pageNumber < 1 || (this.totalPages !== undefined && pageNumber > this.totalPages)) {
+    if (query.pageNumber < 1 || (this.totalPages !== undefined && query.pageNumber > this.totalPages)) {
       throw new Error("Invalid page number.");
     }
-    this.pageSize = pageSize;
-    this.currentPage = pageNumber;
-    return this.getItems(pageSize);
+    this.pageSize = query.pageSize;
+    this.currentPage = query.pageNumber;
+    return this.getItems(query);
   }
 
-  async getItems(pageSize: number): Promise<any[]> {
-    return this.getPage(this.currentPage, pageSize);
+  async getItems(query: QueryObject): Promise<any[]> {
+    return this.getPage(query);
   }
 
   hasNextPage(): boolean {
@@ -87,10 +100,10 @@ export abstract class Paginator {
     return this.currentPage > 1;
   }
 
-  getCurrentPage(pageSize: number) {
-    this.calculateNewPageNumber(pageSize);
+  getCurrentPage(query: QueryObject) {
+    this.calculateNewPageNumber(query.pageSize);
 
-    return this.getPage(this.currentPage, pageSize);
+    return this.getPage(query);
   }
 
   getPageNumber(){
