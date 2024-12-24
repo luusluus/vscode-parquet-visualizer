@@ -48,7 +48,6 @@ export class DuckDBPaginator extends Paginator {
             OFFSET ${offset}
         `;
         
-        console.log(queryStatement);
         return this.backend.query(queryStatement);
     }
 }
