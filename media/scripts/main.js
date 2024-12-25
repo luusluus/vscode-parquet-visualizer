@@ -264,18 +264,16 @@
         const resultsCountElement = document.getElementById("query-count");
         resultsCountElement.innerHTML = `<strong>Results</strong> (${rowCount})&nbsp;`;
 
-        if (rowCount > 0) {
-            const pageCountElement = document.getElementById("page-count");
-            pageCountElement.innerHTML = `<span>&nbsp;|&nbsp;</span>
-                <span>
-                    <span>Showing</span>
-                    <span id="page-current-${requestSourceQueryTab}"> ${currentPageQueryTab} </span>
-                    <span>of</span>
-                    <span id="page-count-${requestSourceQueryTab}"> ${amountOfPagesQueryTab} </span>
-                    <span>pages</span>
-                </span>
-            `;
-        }
+        const pageCountElement = document.getElementById("page-count");
+        pageCountElement.innerHTML = `<span>&nbsp;|&nbsp;</span>
+            <span>
+                <span>Showing</span>
+                <span id="page-current-${requestSourceQueryTab}"> ${currentPageQueryTab} </span>
+                <span>of</span>
+                <span id="page-count-${requestSourceQueryTab}"> ${amountOfPagesQueryTab} </span>
+                <span>pages</span>
+            </span>
+        `;
         
         const exportResultsButton = document.getElementById(`export-query-results`);
         exportResultsButton?.removeAttribute('disabled');
@@ -397,6 +395,7 @@
             footerElement: `<span class="tabulator-page-counter" id="query-count"></span>
                     <span class="tabulator-page-counter" id="page-count"></span>
                     <span class="tabulator-paginator">
+                        <button class="tabulator-page" disabled id="reset-sort-${requestSourceQueryTab}" type="button" role="button" aria-label="Reset Sort" title="Reset Sort" style="margin-right: 10px;">Reset Sort</button>
                         <label>Page Size</label>
                         <select class="tabulator-page-size" id="dropdown-page-size-${requestSourceQueryTab}" aria-label="Page Size" title="Page Size">
                             ${options}

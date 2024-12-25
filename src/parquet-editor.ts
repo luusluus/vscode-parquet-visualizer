@@ -989,13 +989,6 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
                         </svg>
                     </div>
                 </div>
-                <button class="tabulator-page flex-button" disabled id="reset-sort-queryTab" type="button" role="button" aria-label="Reset Sort" title="Reset Sort">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <line x1="6" y1="6" x2="18" y2="18" stroke="white" stroke-width="1"/>
-                    <line x1="18" y1="6" x2="6" y2="18" stroke="white" stroke-width="1"/>
-                  </svg>
-                  Reset Sort
-                </button>
                 <button class="tabulator-page flex-button" disabled id="copy-query-results" type="button" role="button" aria-label="Copy page to clipboard" title="Copy page to clipboard">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" width="16" height="16" class="copy-icon">
                       <path d="M2 5h9v9H2z" class="stroke-linejoin-round"></path>
