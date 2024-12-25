@@ -795,7 +795,6 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
 
           if (savedPath === undefined) {
             document.fireExportCompleteEvent();
-            vscode.window.showInformationMessage("Cancelled export");
             return;
           }
 
