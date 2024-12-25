@@ -40,7 +40,6 @@
     document.getElementById("metadata-tab").addEventListener("click", handleTabChange);
 
 
-
     function handleTabChange(/** @type {any} */ e) {
         var i, tabcontent, tablinks;
 
@@ -73,21 +72,26 @@
     }
 
     function onSort(query, /** @type {String} */ requestSource) {
+        const resetSortButton = document.querySelector(`#reset-sort-${requestSource}`);
+        resetSortButton?.removeAttribute('disabled');
+
         const selectedOption = getSelectedPageSize(requestSource);
         const queryString = getTextFromEditor(aceEditor);
-
-        const sortObject = {
+        
+        const sortObject = (query) ? {
             field: query.field,
             direction: query.dir
-        };
+        } : undefined;
 
         let pageNumber;
         if (requestSource === requestSourceDataTab) {
             sortObjectDataTab = sortObject;
             pageNumber = currentPageDataTab;
+            dataTable.alert("Loading...");
         } else {
             sortObjectQueryTab = sortObject;
             pageNumber = currentPageQueryTab;
+            resultsTable.alert("Loading...");
         }
 
         vscode.postMessage({
@@ -639,13 +643,14 @@
                         </span>
                     </span>
                     <span class="tabulator-paginator">
+                        <button class="tabulator-page" disabled id="reset-sort-${requestSourceDataTab}" type="button" role="button" aria-label="Reset Sort" title="Reset Sort" style="margin-right: 10px;">Reset Sort</button>
+
                         <label>Page Size</label>
                         <select class="tabulator-page-size" id="dropdown-page-size-${requestSourceDataTab}" aria-label="Page Size" title="Page Size">
                             ${options}
                         </select>
                         <button class="tabulator-page" disabled id="btn-first-${requestSourceDataTab}" type="button" role="button" aria-label="First Page" title="First Page" data-page="first">First</button>
                         <button class="tabulator-page" disabled id="btn-prev-${requestSourceDataTab}" type="button" role="button" aria-label="Prev Page" title="Prev Page" data-page="prev">Prev</button>
-                        </span>
                         <button class="tabulator-page" id="btn-next-${requestSourceDataTab}" type="button" role="button" aria-label="Next Page" title="Next Page" data-page="next">Next</button>
                         <button class="tabulator-page" id="btn-last-${requestSourceDataTab}" type="button" role="button" aria-label="Last Page" title="Last Page" data-page="last">Last</button>
                     </span>
@@ -706,6 +711,7 @@
 
                 if (sort) {
                     resultsTable.replaceData(data);
+                    resultsTable.clearAlert();
                 } else {
                     initResultTable(data, headers);
                 }
@@ -893,6 +899,21 @@
 
     function initializeFooter(/** @type {Number} */ rowCount, /** @type {String} */ requestSource) {
         // console.log(`initializeFooter(rowCount:${rowCount}, requestSource:${requestSource})`);
+
+        const resetSortButton = /** @type {HTMLElement} */ (document.querySelector(`#reset-sort-${requestSource}`));
+        resetSortButton.addEventListener('click', () => {
+            if (requestSource === requestSourceDataTab) {
+                dataTable.clearSort();
+            }
+            else {
+                resultsTable.clearSort();
+            }
+
+            const sortQuery = undefined;
+
+            onSort(sortQuery, requestSource);
+        });
+
         const nextButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-next-${requestSource}`));
         const prevButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-prev-${requestSource}`));
         const firstButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-first-${requestSource}`));

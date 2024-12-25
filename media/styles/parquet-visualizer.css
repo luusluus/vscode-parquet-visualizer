@@ -75,7 +75,7 @@ html, body {
         flex: 1; /* Dynamically fill remaining space */
     }
 
-    #copy-query-results {
+    #reset-sort-queryTab, #export-query-results, #copy-query-results {
         display: flex;
         align-items: center; /* Ensures proper alignment */
         justify-content: center; /* Centers the SVG */
@@ -89,18 +89,8 @@ html, body {
         margin-right: 0; /* Removes any spacing if present */
     }
 
-    #copy-query-results {
+    #reset-sort-queryTab, #copy-query-results, #export-query-results  {
         font-size: 0; /* Hides text by collapsing its space */
-    }
-
-    #export-query-results {
-        display: flex;
-        align-items: center; /* Aligns icons properly */
-        justify-content: center; /* Centers content in the button */
-    }
-
-    #export-query-results {
-        font-size: 0; /* Hides the button text */
     }
 
     #export-query-results svg {
@@ -140,7 +130,7 @@ html, body {
 
 .search-container {
     display: flex;
-    width: 50%;
+    width: 40%;
     align-items: center;
     border: 1px solid #ccc;
     padding: 3px;
