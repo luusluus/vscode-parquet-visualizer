@@ -839,6 +839,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         }
         case 'onSort': {
           await document.sort(message);
+          TelemetryManager.sendEvent("onSort", {tabSource: message.data.source});
           break;
         }
         case 'exportQueryResults': {
