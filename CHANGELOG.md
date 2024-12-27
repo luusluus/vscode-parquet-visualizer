@@ -1,3 +1,18 @@
+# [0.20.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.19.2...v0.20.0) (2024-12-27)
+
+
+### Bug Fixes
+
+* add a check whether queyr is already running ([0042c48](https://github.com/luusluus/vscode-parquet-visualizer/commit/0042c483a1e4f4890056b212d64a4a616cdadd55))
+* only show page count span if there are rows ([d7bbf52](https://github.com/luusluus/vscode-parquet-visualizer/commit/d7bbf52362a1abe8d9a77eaaebbe4722762896c1))
+
+
+### Features
+
+* add sort on data view ([144a562](https://github.com/luusluus/vscode-parquet-visualizer/commit/144a5624509b11d6ef5689db64bf9e6f60fe18c8))
+* add sort on whole dataset query view ([b8cb61b](https://github.com/luusluus/vscode-parquet-visualizer/commit/b8cb61b89ef393835e3365d9c0698e6a2ce645d5))
+* remove cancelled export toast ([0f5db4f](https://github.com/luusluus/vscode-parquet-visualizer/commit/0f5db4f497225f292b189f53d3aa1dfcb124d46e))
+
 ## [0.19.2](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.19.1...v0.19.2) (2024-12-23)
 
 
