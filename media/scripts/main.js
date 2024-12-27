@@ -278,14 +278,18 @@
             </span>
         `;
         
-        const exportResultsButton = document.getElementById(`export-query-results`);
+        const exportResultsButton = document.getElementById('export-query-results');
         exportResultsButton?.removeAttribute('disabled');
 
-        const copyButton = document.getElementById(`copy-query-results`);
+        const copyButton = document.getElementById('copy-query-results');
         copyButton?.removeAttribute('disabled');
 
-        const searchContainer = document.getElementById(`input-filter-values`);
-        searchContainer?.removeAttribute('disabled');
+        let searchInput = document.getElementById('input-filter-values');
+        searchInput?.removeAttribute('disabled');
+        searchInput.value = '';
+
+        let clearIcon = document.getElementById('clear-icon');
+        clearIcon.style.display = 'none';
     }
 
     function initResultTable(/** @type {any} */ data, /** @type {any} */ headers) {
@@ -865,10 +869,9 @@
 
         const clearIconButton = /** @type {HTMLElement} */ (document.querySelector(`#clear-icon`));
         clearIconButton.addEventListener("click", function () {
-            var searchInput = document.getElementById('input-filter-values');
+            let searchInput = document.getElementById('input-filter-values');
             searchInput.value = ''; // Clear the input field
             this.style.display = 'none'; // Hide the clear icon
-
             resultsTable.clearFilter(true);
         });
 
