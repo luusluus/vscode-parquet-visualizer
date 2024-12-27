@@ -14,6 +14,8 @@
 
     let dataTableBuilt = false;
     let queryHasRun = false;
+    let isQueryRunning = false;
+
 
     let currentPageDataTab = 1;
     let currentPageQueryTab = 1;
@@ -441,6 +443,10 @@
     }
 
     function runQuery(editor) {
+        if (isQueryRunning) {
+            return;
+        }
+
         resultsTable.alert("Loading...");
 
         const runQueryButton = document.getElementById("run-query-btn");
@@ -457,6 +463,7 @@
                 pageSize: selectedOption.innerText,
             }
         });
+        isQueryRunning = true;
     }
 
     function initCodeEditor(
@@ -716,6 +723,8 @@
                 } else {
                     initResultTable(data, headers);
                 }
+
+                isQueryRunning = false;
 
             } else if (requestType === 'paginator') {
                 resultsTable.replaceData(data);
