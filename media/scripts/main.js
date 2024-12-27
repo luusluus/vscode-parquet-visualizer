@@ -479,7 +479,6 @@
         }
 
         function createLabel(columnTitle, icon){
-            //build label
             let label = document.createElement("span");
             let title = document.createElement("span");
     
