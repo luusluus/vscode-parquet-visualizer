@@ -254,6 +254,7 @@
         runQueryButton?.removeAttribute('disabled');
         runQueryButton.innerText = 'Run';
         resultsTable.clearAlert();
+        isQueryRunning = false;
     }
 
     function resetQueryResultControls(rowCount){
@@ -723,8 +724,6 @@
                 } else {
                     initResultTable(data, headers);
                 }
-
-                isQueryRunning = false;
 
             } else if (requestType === 'paginator') {
                 resultsTable.replaceData(data);

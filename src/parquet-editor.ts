@@ -161,7 +161,9 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
             this.fireExportCompleteEvent();
 
             if (message.error){
-              vscode.window.showErrorMessage(`Export failed: ${message.error}`);
+              const errorMessage = `Export failed: ${message.error}`;
+              vscode.window.showErrorMessage(errorMessage);
+              this.fireErrorEvent(errorMessage);
             } else {
               vscode.window.showInformationMessage(
                 `Exported query result to ${message.path}`, "Open folder"
