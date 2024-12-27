@@ -1,3 +1,10 @@
+## [0.20.1](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.20.0...v0.20.1) (2024-12-27)
+
+
+### Bug Fixes
+
+* always re-enable querying after failure or success ([3924749](https://github.com/luusluus/vscode-parquet-visualizer/commit/3924749b4d88a7c6e68274d48eef61e8f1f2f31f))
+
 # [0.20.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.19.2...v0.20.0) (2024-12-27)
 
 
