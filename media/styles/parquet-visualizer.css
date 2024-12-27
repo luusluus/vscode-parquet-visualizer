@@ -141,7 +141,7 @@ html, body {
 
 .search-container {
     display: flex;
-    width: 50%;
+    width: 40%;
     align-items: center;
     border: 1px solid #ccc;
     padding: 3px;
