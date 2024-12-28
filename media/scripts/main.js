@@ -257,6 +257,16 @@
         isQueryRunning = false;
     }
 
+    function resetSearchBox() {
+        let searchInput = document.getElementById('input-filter-values');
+        searchInput?.removeAttribute('disabled');
+        searchInput.value = '';
+        resultsTable.clearFilter(true);
+
+        let clearIcon = document.getElementById('clear-icon');
+        clearIcon.style.display = 'none';
+    }
+
     function resetQueryResultControls(rowCount){
         // console.log("resetQueryResultControls()");
 
@@ -278,14 +288,13 @@
             </span>
         `;
         
-        const exportResultsButton = document.getElementById(`export-query-results`);
+        const exportResultsButton = document.getElementById('export-query-results');
         exportResultsButton?.removeAttribute('disabled');
 
-        const copyButton = document.getElementById(`copy-query-results`);
+        const copyButton = document.getElementById('copy-query-results');
         copyButton?.removeAttribute('disabled');
 
-        const searchContainer = document.getElementById(`input-filter-values`);
-        searchContainer?.removeAttribute('disabled');
+        resetSearchBox();
     }
 
     function initResultTable(/** @type {any} */ data, /** @type {any} */ headers) {
@@ -702,7 +711,6 @@
         /** @type {any} */ schema,
         /** @type {any} */ sort,
     ) {
-        // console.log("updateTable");
         if (requestSource === requestSourceDataTab){
             if (dataTableBuilt){
                 dataTable.replaceData(data);
@@ -718,16 +726,14 @@
                 amountOfPagesQueryTab = pageCount;
                 sortObjectQueryTab = undefined;
 
-                if (sort) {
-                    resultsTable.replaceData(data);
-                    resultsTable.clearAlert();
-                } else {
-                    initResultTable(data, headers);
-                }
+                initResultTable(data, headers);
 
             } else if (requestType === 'paginator') {
                 resultsTable.replaceData(data);
                 resultsTable.clearAlert();
+
+                const searchInput = document.getElementById('input-filter-values');
+                applySearchBoxFilter(searchInput);
             }
         }
     }
@@ -813,6 +819,29 @@
         }
     }
 
+    function applySearchBoxFilter(filterValueInput) {
+        // Check whether we should show the clear button.
+        var clearIcon = document.getElementById('clear-icon');
+        if (filterValueInput.value.length > 0) {
+            clearIcon.style.display = 'flex';
+        } else {
+            clearIcon.style.display = 'none';
+        }
+        
+        const searchValue = filterValueInput.value.trim();
+
+        const columnLayout = resultsTable.getColumnLayout();
+        const filterArray = columnLayout.map((c) => {
+            return {
+                field: c.field,
+                type: 'like',
+                value: searchValue
+            };
+        });
+        
+        resultsTable.setFilter([filterArray]);
+    }
+
     function initializeQueryResultControls() {
         // console.log("initializeQueryResultControls()");
         const exportResultsButton = /** @type {HTMLElement} */ (document.querySelector(`#export-query-results`));
@@ -865,36 +894,12 @@
 
         const clearIconButton = /** @type {HTMLElement} */ (document.querySelector(`#clear-icon`));
         clearIconButton.addEventListener("click", function () {
-            var searchInput = document.getElementById('input-filter-values');
-            searchInput.value = ''; // Clear the input field
-            this.style.display = 'none'; // Hide the clear icon
-
-            resultsTable.clearFilter(true);
+            resetSearchBox();
         });
 
         const filterValueInput = /** @type {HTMLElement} */ (document.querySelector(`#input-filter-values`));
         filterValueInput.addEventListener("input", function () {
-
-            // Check whether we should show the clear button.
-            var clearIcon = document.getElementById('clear-icon');
-            if (filterValueInput.value.length > 0) {
-                clearIcon.style.display = 'flex';
-            } else {
-                clearIcon.style.display = 'none';
-            }
-            
-            const searchValue = filterValueInput.value.trim();
-
-            const columnLayout = resultsTable.getColumnLayout();
-            const filterArray = columnLayout.map((c) => {
-                return {
-                    field: c.field,
-                    type: 'like',
-                    value: searchValue
-                };
-            });
-            
-            resultsTable.setFilter([filterArray]);
+            applySearchBoxFilter(filterValueInput);
         });
 
         const copyResultsButton = /** @type {HTMLElement} */ (document.querySelector(`#copy-query-results`));
