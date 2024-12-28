@@ -194,7 +194,6 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       readonly requestSource?: string;
       readonly requestType?: string;
       readonly schema?: any[];
-      readonly sort?: any;
 
     }>());
 
@@ -213,7 +212,6 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       pageNumber: number,
       pageCount: number,
       schema: any[] = [],
-      sort: any = undefined
     ) {
       // console.log(`fireChangedDocumentEvent(${this.uri}). Page {${this.currentPage}}`);
       const tableData = {
@@ -226,7 +224,6 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         requestSource: requestSource,
         requestType: requestType,
         schema: schema,
-        sort: sort
       };
       this._onDidChangeDocument.fire(tableData);
     }
@@ -387,7 +384,6 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
             message.pageNumber,
             message.pageCount,
             message.schema,
-            message.sort
         );
         // vscode.window.showInformationMessage("Query succeeded");
     }
@@ -576,7 +572,6 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             requestSource: e.requestSource,
             requestType: e.requestType,
             schema: e.schema,
-            sort: e.sort
           };
 
           // Update all webviews when the document changes
@@ -841,7 +836,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         }
         case 'onSort': {
           await document.sort(message);
-          TelemetryManager.sendEvent("onSort", {tabSource: message.data.source});
+          TelemetryManager.sendEvent("onSort", {tabSource: message.source});
           break;
         }
         case 'exportQueryResults': {
