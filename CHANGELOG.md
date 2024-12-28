@@ -1,3 +1,12 @@
+## [0.20.2](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.20.1...v0.20.2) (2024-12-28)
+
+
+### Bug Fixes
+
+* fix reference ([63e8c09](https://github.com/luusluus/vscode-parquet-visualizer/commit/63e8c09281ebe910b56f2e0f96fa2db2f1a9f9f4))
+* reapply search text after sort ([96ce292](https://github.com/luusluus/vscode-parquet-visualizer/commit/96ce29259856394a7fbb28d84979afdb11d82601))
+* reset search box after new query ([a738a88](https://github.com/luusluus/vscode-parquet-visualizer/commit/a738a882204360812525f84574143e6f9d2d32d7))
+
 ## [0.20.1](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.20.0...v0.20.1) (2024-12-27)
 
 
