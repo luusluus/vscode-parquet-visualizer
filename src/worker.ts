@@ -108,6 +108,7 @@ class QueryHelper {
     let query = `
       SELECT * FROM query_result
     `;
+
     if (searchString && searchString !== "") {
       const schema = this.backend.arrowSchema;
       const whereClause = schema.fields.map((col) => 
@@ -280,7 +281,7 @@ class BackendWorker {
     );
     const pageNumber = 1;
     
-    const type = (message.query.searchString) ? 'search': 'query';
+    const type = 'search';
     parentPort.postMessage({
       result: result,
       headers: headers,

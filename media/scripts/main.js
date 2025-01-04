@@ -673,6 +673,7 @@
 
                 resultsTable.replaceData(data);
                 resultsTable.clearAlert();
+
             } else if (requestType === 'search') {
                 rowCountQueryTab = rowCount;
                 currentPageQueryTab = currentPage;
@@ -1103,7 +1104,7 @@
 
     // Handle messages from the extension
     window.addEventListener('message', async e => {
-        // console.log(e.data);
+        console.log(e.data);
         const { type, body } = e.data;
         switch (type) {
             case 'init':{
@@ -1114,16 +1115,18 @@
                     initDataTable(tableData);
                     initSchema(tableData.schema);
                     initMetaData(tableData.metaData);
-                    initCodeEditor(
-                        tableData.settings.defaultQuery,
-                        tableData.settings.shortCutMapping,
-                        tableData.aceTheme,
-                        tableData.aceEditorCompletions
-                    );
-                    initializeQueryResultControls();
-                    initResultTable([], []);
+                    if (tableData.isQueryAble) {
+                        initCodeEditor(
+                            tableData.settings.defaultQuery,
+                            tableData.settings.shortCutMapping,
+                            tableData.aceTheme,
+                            tableData.aceEditorCompletions
+                        );
+                        initializeQueryResultControls();
+                        initResultTable([], []);
+                    }
 
-                    // currentPageDataTab = tableData.currentPage;
+                    currentPageDataTab = tableData.currentPage;
                     amountOfPagesDataTab = tableData.pageCount;
                 }
                 break;

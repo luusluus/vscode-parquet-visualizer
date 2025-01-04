@@ -758,6 +758,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             defaultPageSizes: defaultPageSizesFromSettings,
             shortCutMapping: shortCutMapping
           },
+          isQueryAble: document.isQueryAble,
           aceTheme: aceTheme,
           aceEditorCompletions
         };

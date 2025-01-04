@@ -76,7 +76,7 @@ export abstract class Paginator {
     }
 
     if (query.pageNumber < 1 || (this.totalPages !== undefined && query.pageNumber > this.totalPages)) {
-      throw new Error("Invalid page number.");
+      // throw new Error("Invalid page number.");
     }
     this.currentPage = query.pageNumber;
     return this.getItems(query);
