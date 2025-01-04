@@ -28,6 +28,11 @@
     let sortObjectDataTab;
     let sortObjectQueryTab;
 
+    const MIN_SEARCH_INPUT_WAIT = 200; // 0.1 seconds
+    const MAX_SEARCH_INPUT_WAIT = 800; // 0.8 seconds
+    let minSearchInputTimeout = null;
+    let maxSearchInputTimeout = null;
+
     let defaultPageSizes = [];
 
     let numRecordsDropDownResultTableHasChanged = false;
@@ -96,14 +101,19 @@
             resultsTable.alert("Loading...");
         }
 
+        const searchElement = document.getElementById('input-filter-values');
+        const searchString = (requestSource === requestSourceQueryTab) ? searchElement.value.trim() : undefined;
+        const pageSize = (selectedOption.innerText === 'all') ? undefined : selectedOption.innerText;
+        
         vscode.postMessage({
             type: 'onSort',
             source: requestSource,
             query: {
                 queryString: queryString,
                 pageNumber: pageNumber,
-                pageSize: selectedOption.innerText,
-                sort: sortObject
+                pageSize: pageSize,
+                sort: sortObject,
+                searchString: searchString,
             }
         });
     }
@@ -261,32 +271,17 @@
         let searchInput = document.getElementById('input-filter-values');
         searchInput?.removeAttribute('disabled');
         searchInput.value = '';
-        resultsTable.clearFilter(true);
 
         let clearIcon = document.getElementById('clear-icon');
         clearIcon.style.display = 'none';
     }
 
     function resetQueryResultControls(rowCount){
-        // console.log("resetQueryResultControls()");
-
         if (!queryHasRun) {
             return;
         }
-
-        const resultsCountElement = document.getElementById("query-count");
-        resultsCountElement.innerHTML = `<strong>Results</strong> (${rowCount})&nbsp;`;
-
-        const pageCountElement = document.getElementById("page-count");
-        pageCountElement.innerHTML = `<span>&nbsp;|&nbsp;</span>
-            <span>
-                <span>Showing</span>
-                <span id="page-current-${requestSourceQueryTab}"> ${currentPageQueryTab} </span>
-                <span>of</span>
-                <span id="page-count-${requestSourceQueryTab}"> ${amountOfPagesQueryTab} </span>
-                <span>pages</span>
-            </span>
-        `;
+        updateResultCount(requestSourceQueryTab, rowCount);
+        updatePageCount(requestSourceQueryTab, rowCount);
         
         const exportResultsButton = document.getElementById('export-query-results');
         exportResultsButton?.removeAttribute('disabled');
@@ -464,13 +459,14 @@
         runQueryButton.innerText = 'Running';
 
         const selectedOption = getSelectedPageSize(requestSourceQueryTab);
-        const query = getTextFromEditor(editor);
+        const queryString = getTextFromEditor(editor);
+        const pageSize = (selectedOption.innerText === 'all') ? undefined : selectedOption.innerText;
 
         vscode.postMessage({
             type: 'startQuery',
             query: {
-                queryString: query,
-                pageSize: selectedOption.innerText,
+                queryString: queryString,
+                pageSize: pageSize,
             }
         });
         isQueryRunning = true;
@@ -561,62 +557,6 @@
         schemaTable.on("popupOpened", onPopupOpenedSchemaTab);
     }
 
-    var headerMenu = function(){
-        var menu = [];
-        var columns = this.getColumns();
-        
-        function createIcon(isVisible){
-            let icon = document.createElement("i");
-            icon.classList.add("fas");
-            icon.classList.add(isVisible ? "fa-check-square" : "fa-square");
-            return icon;
-        }
-
-        function createLabel(columnTitle, icon){
-            //build label
-            let label = document.createElement("span");
-            let title = document.createElement("span");
-    
-            title.textContent = " " + columnTitle;
-    
-            label.appendChild(icon);
-            label.appendChild(title);
-            return label;
-        }
-
-        for(let column of columns){
-            //create checkbox element using font awesome icons
-            const columnTitle = column.getDefinition().title;
-            let icon = createIcon(column.isVisible());
-            let label = createLabel(
-                columnTitle,
-                icon
-            );
-
-            //create menu item
-            menu.push({
-                label:label,
-                action:function(e){
-                    //prevent menu closing
-                    e.stopPropagation();
-    
-                    //toggle current column visibility
-                    column.toggle();
-    
-                    //change menu item icon
-                    if(column.isVisible()){
-                        icon.classList.remove("fa-square");
-                        icon.classList.add("fa-check-square");
-                    }else{
-                        icon.classList.remove("fa-check-square");
-                        icon.classList.add("fa-square");
-                    }
-                }
-            });
-        }
-        return menu;
-    };
-
     function createOptionHTMLElementsString(/** @type {number[]} */ defaultPageSizes) {
         let html = '';
         defaultPageSizes.forEach((pageSize, idx) => {
@@ -637,7 +577,6 @@
                     return 0;
                 },
                 cellClick: onCellClick,
-                // headerMenu: headerMenu
             }
         ));
 
@@ -709,7 +648,6 @@
         /** @type {number} */ currentPage,
         /** @type {number} */ pageCount,
         /** @type {any} */ schema,
-        /** @type {any} */ sort,
     ) {
         if (requestSource === requestSourceDataTab){
             if (dataTableBuilt){
@@ -729,11 +667,19 @@
                 initResultTable(data, headers);
 
             } else if (requestType === 'paginator') {
+                rowCountQueryTab = rowCount;
+                currentPageQueryTab = currentPage;
+                amountOfPagesQueryTab = pageCount;
+
                 resultsTable.replaceData(data);
                 resultsTable.clearAlert();
+            } else if (requestType === 'search') {
+                rowCountQueryTab = rowCount;
+                currentPageQueryTab = currentPage;
+                amountOfPagesQueryTab = pageCount;
 
-                const searchInput = document.getElementById('input-filter-values');
-                applySearchBoxFilter(searchInput);
+                resultsTable.replaceData(data);
+                resultsTable.clearAlert();
             }
         }
     }
@@ -747,8 +693,40 @@
         return true;
     }
 
+    function updatePageCount(
+        /** @type {String} */ requestSource,
+        /** @type {Number} */ rowCount,
+    ) {
+        if (requestSource === requestSourceQueryTab) {
+            const pageCountElement = document.getElementById("page-count");
+            if (rowCount > 0) {
+                pageCountElement.innerHTML = `<span>&nbsp;|&nbsp;</span>
+                    <span>
+                        <span>Showing</span>
+                        <span id="page-current-${requestSourceQueryTab}"> ${currentPageQueryTab} </span>
+                        <span>of</span>
+                        <span id="page-count-${requestSourceQueryTab}"> ${amountOfPagesQueryTab} </span>
+                        <span>pages</span>
+                    </span>
+                `;
+            } else if (rowCount === 0) {
+                pageCountElement.innerHTML = "";
+            }
+        }
+    }
+
+    function updateResultCount (
+        /** @type {String} */ requestSource,
+        /** @type {Number} */ rowCount,
+    ) {
+        if (requestSource === requestSourceQueryTab) {
+            const resultsCountElement = document.getElementById("query-count");
+            resultsCountElement.innerHTML = `<strong>Results</strong> (${rowCount})&nbsp;`;
+        }
+    }
+
     function updatePageCounterState(
-        /** @type {Number} */ currentPage ,  
+        /** @type {Number} */ currentPage,  
         /** @type {Number} */ amountOfPages,
         /** @type {String} */ requestSource,
 
@@ -791,7 +769,7 @@
         const firstButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-first-${requestSource}`));
         const lastButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-last-${requestSource}`));
 
-        if (amountOfPages === 1) {
+        if (amountOfPages <= 1) {
             nextButton.setAttribute('disabled', '');
             prevButton.setAttribute('disabled', '');
             firstButton.setAttribute('disabled', '');
@@ -819,6 +797,21 @@
         }
     }
 
+    function sendSearchMessage(value){
+        const selectedOption = getSelectedPageSize(requestSourceQueryTab);
+        const pageSize = (selectedOption.innerText === 'all') ? undefined : selectedOption.innerText;
+        const queryString = getTextFromEditor(aceEditor);
+        vscode.postMessage({
+            type: 'onSearch',
+            query: {
+                queryString: queryString,
+                searchString: value,
+                pageSize: pageSize,
+                sort: sortObjectQueryTab
+            }
+        });
+    }
+
     function applySearchBoxFilter(filterValueInput) {
         // Check whether we should show the clear button.
         var clearIcon = document.getElementById('clear-icon');
@@ -830,16 +823,24 @@
         
         const searchValue = filterValueInput.value.trim();
 
-        const columnLayout = resultsTable.getColumnLayout();
-        const filterArray = columnLayout.map((c) => {
-            return {
-                field: c.field,
-                type: 'like',
-                value: searchValue
-            };
-        });
-        
-        resultsTable.setFilter([filterArray]);
+        // Clear the minimum timeout whenever input changes
+        clearTimeout(minSearchInputTimeout);
+
+        // Set the minimum timeout
+        minSearchInputTimeout = setTimeout(() => {
+            resultsTable.alert("Loading...");
+            sendSearchMessage(searchValue);
+            clearTimeout(maxSearchInputTimeout); // Clear the max timeout on action trigger
+            maxSearchInputTimeout = null;
+        }, MIN_SEARCH_INPUT_WAIT);
+
+        // Start or reset the maximum timeout
+        if (!maxSearchInputTimeout) {
+            resultsTable.alert("Loading...");
+            maxSearchInputTimeout = setTimeout(() => {
+                sendSearchMessage(searchValue);
+            }, MAX_SEARCH_INPUT_WAIT);
+        }
     }
 
     function initializeQueryResultControls() {
@@ -868,9 +869,12 @@
 
                 const exportQueryResultsButtonText = document.getElementById("export-query-results-text");
                 exportQueryResultsButtonText.innerText = 'Exporting...';
+
+                const filterValueInput = /** @type {HTMLElement} */ (document.querySelector(`#input-filter-values`));
                 vscode.postMessage({
                     type: 'exportQueryResults',
-                    exportType: selectedOption
+                    exportType: selectedOption,
+                    searchString: filterValueInput.value
                 });
 
                 // Perform any additional actions here, e.g., close dropdown
@@ -895,6 +899,7 @@
         const clearIconButton = /** @type {HTMLElement} */ (document.querySelector(`#clear-icon`));
         clearIconButton.addEventListener("click", function () {
             resetSearchBox();
+            sendSearchMessage(undefined);
         });
 
         const filterValueInput = /** @type {HTMLElement} */ (document.querySelector(`#input-filter-values`));
@@ -933,9 +938,14 @@
         const firstButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-first-${requestSource}`));
         const lastButton = /** @type {HTMLElement} */ (document.querySelector(`#btn-last-${requestSource}`));
 
+        const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSource}`));
+
         nextButton.addEventListener('click', () => {
             const selectedIndex = numRecordsDropdown.selectedIndex;
             const selectedOption = numRecordsDropdown.options[selectedIndex];
+            const getSelectedPageSize = selectedOption.innerText.toLowerCase();
+            const pageSize = (selectedOption.innerText === 'all') ? undefined : selectedOption.innerText;
+            const filterValueInput = /** @type {HTMLElement} */ (document.querySelector(`#input-filter-values`));
 
             let sort;
             let pageNumber;
@@ -952,9 +962,10 @@
             }
             vscode.postMessage({
                 type: 'nextPage',
-                pageSize: selectedOption.innerText,
+                pageSize: pageSize,
                 pageNumber: pageNumber,
                 sort: sort,
+                searchString: filterValueInput.value,
                 source: requestSource
             });
         });
@@ -962,6 +973,8 @@
         prevButton.addEventListener('click', () => {
             const selectedIndex = numRecordsDropdown.selectedIndex;
             const selectedOption = numRecordsDropdown.options[selectedIndex];
+            const pageSize = (selectedOption.innerText === 'all') ? undefined : selectedOption.innerText;
+            const filterValueInput = /** @type {HTMLElement} */ (document.querySelector(`#input-filter-values`));
 
             let sort;
             let pageNumber;
@@ -978,9 +991,10 @@
             }
             vscode.postMessage({
                 type: 'prevPage',
-                pageSize: selectedOption.innerText,
+                pageSize: pageSize,
                 pageNumber: pageNumber,
                 sort: sort,
+                searchString: filterValueInput.value,
                 source: requestSource
             });
         });
@@ -988,6 +1002,8 @@
         firstButton.addEventListener('click', () => {
             const selectedIndex = numRecordsDropdown.selectedIndex;
             const selectedOption = numRecordsDropdown.options[selectedIndex];
+            const pageSize = (selectedOption.innerText === 'all') ? undefined : selectedOption.innerText;
+            const filterValueInput = /** @type {HTMLElement} */ (document.querySelector(`#input-filter-values`));
 
             let sort;
             const pageNumber = 1;
@@ -1003,9 +1019,10 @@
             }
             vscode.postMessage({
                 type: 'firstPage',
-                pageSize: selectedOption.innerText,
+                pageSize: pageSize,
                 pageNumber: pageNumber,
                 sort: sort,
+                searchString: filterValueInput.value,
                 source: requestSource
             });
         });
@@ -1013,6 +1030,8 @@
         lastButton.addEventListener('click', () => {
             const selectedIndex = numRecordsDropdown.selectedIndex;
             const selectedOption = numRecordsDropdown.options[selectedIndex];
+            const pageSize = (selectedOption.innerText === 'all') ? undefined : selectedOption.innerText;
+            const filterValueInput = /** @type {HTMLElement} */ (document.querySelector(`#input-filter-values`));
 
             let sort;
             let pageNumber;
@@ -1029,14 +1048,14 @@
             }
             vscode.postMessage({
                 type: 'lastPage',
-                pageSize: selectedOption.innerText,
+                pageSize: pageSize,
                 pageNumber: pageNumber,
                 sort: sort,
+                searchString: filterValueInput.value,
                 source: requestSource
             });
         });
     
-        const numRecordsDropdown = /** @type {HTMLSelectElement} */ (document.querySelector(`#dropdown-page-size-${requestSource}`));
         numRecordsDropdown.value = `${defaultPageSizes[0]}`;
 
         if (rowCount <= 10 ) {
@@ -1046,13 +1065,16 @@
             numRecordsDropdown.addEventListener('change', (e) => {
                 const selectedIndex = numRecordsDropdown.selectedIndex;
                 const selectedOption = numRecordsDropdown.options[selectedIndex];
-
-                let sort;
+                const getSelectedPageSize = selectedOption.innerText.toLowerCase();
+                const pageSize = (getSelectedPageSize === 'all') ? undefined : getSelectedPageSize;
+                const filterValueInput = /** @type {HTMLElement} */ (document.querySelector(`#input-filter-values`));
+                
                 const pageNumber = 1;
+                let sort;
                 if (requestSource === requestSourceDataTab) {
                     dataTable.alert("Loading...");
                     sort = sortObjectDataTab;
-                    if (selectedOption.innerText.toLowerCase() === 'all') {
+                    if (getSelectedPageSize === 'all') {
                         currentPageDataTab = 1;
                     }
 
@@ -1060,16 +1082,17 @@
                     numRecordsDropDownResultTableHasChanged = true;
                     resultsTable.alert("Loading...");
                     sort = sortObjectQueryTab;
-                    if (selectedOption.innerText.toLowerCase() === 'all') {
+                    if (getSelectedPageSize === 'all') {
                         currentPageQueryTab = 1;
                     }
-                }
+                }                
                 vscode.postMessage({
                     type: 'changePageSize',
                     data: {
-                        newPageSize: selectedOption.innerText,
+                        newPageSize: pageSize,
                         pageNumber: pageNumber,
                         sort: sort,
+                        searchString: filterValueInput.value,
                         source: requestSource
                     }
                 });
@@ -1117,18 +1140,25 @@
                         tableData.currentPage,
                         tableData.pageCount,
                         tableData.schema,
-                        tableData.sort
                     );
                     
                     updatePageCounterState(
                         tableData.currentPage, 
                         tableData.pageCount,
-                        tableData.requestSource
+                        tableData.requestSource,
                     );
                     updateNavigationButtonsState(
                         tableData.currentPage, 
                         tableData.pageCount,
                         tableData.requestSource
+                    );
+                    updateResultCount(
+                        tableData.requestSource,
+                        tableData.rowCount
+                    );
+                    updatePageCount(
+                        tableData.requestSource,
+                        tableData.rowCount
                     );
                 }
                 break;

@@ -1,5 +1,6 @@
 import { Paginator, QueryObject } from './paginator';
 import { DuckDBBackend } from './duckdb-backend';
+import { Type } from "apache-arrow";
 
 export class DuckDBPaginator extends Paginator {
     private backend: DuckDBBackend; // Assume this is your DuckDB connection instance
@@ -19,6 +20,9 @@ export class DuckDBPaginator extends Paginator {
     }
 
     getTotalPages(pageSize: number): number {
+        if (pageSize === undefined) {
+            return 1;
+        }
         return Math.ceil(this.totalItems / pageSize);
     }
 
@@ -37,16 +41,29 @@ export class DuckDBPaginator extends Paginator {
             FROM ${source}
         `;
 
+        if (query.searchString && query.searchString !== "") {
+            const schema = this.backend.arrowSchema;
+            const whereClause = schema.fields.map((col) => 
+                col.typeId === Type.Utf8 || col.typeId === Type.LargeUtf8
+                ? `"${col.name}" LIKE '%${query.searchString}%'`
+                : `CAST("${col.name}" AS TEXT) LIKE '%${query.searchString}%'`
+            ).join(' OR ');
+
+            queryStatement += `WHERE ${whereClause}`;
+        }
+
         if (query.sort) {
             queryStatement += `
                 ORDER BY "${query.sort.field}" ${query.sort.direction.toUpperCase()}
             `;
         }
 
-        queryStatement += `
-            LIMIT ${query.pageSize}
-            OFFSET ${offset}
-        `;
+        if(query.pageSize) {
+            queryStatement += `
+                LIMIT ${query.pageSize}
+                OFFSET ${offset}
+            `;
+        }
         
         return this.backend.query(queryStatement);
     }

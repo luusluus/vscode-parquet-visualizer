@@ -73,3 +73,14 @@ export function replacePeriodWithUnderscoreInKey(data: any) {
 export function isRunningInWSL() {
   return !!process.env.WSL_INTEROP || !!process.env.WSL_DISTRO_NAME;
 }
+
+export function getPageCountFromInput(pageSize: string, totalItems: number) {
+  let pageCount: number;
+  if (pageSize === undefined){
+    pageCount = 1;
+  }
+  else {
+    pageCount = Math.ceil(totalItems / Number(pageSize));
+  }
+  return pageCount;
+}

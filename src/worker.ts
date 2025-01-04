@@ -7,42 +7,33 @@ import * as os from 'os';
 import * as exceljs from 'exceljs';
 
 import { DuckDbError } from 'duckdb-async';
+import { Int, Type } from "apache-arrow";
 
 import { Paginator, QueryObject } from './paginator';
 import { DuckDBBackend } from './duckdb-backend';
 import { DuckDBPaginator } from './duckdb-paginator';
-import { createHeadersFromData, replacePeriodWithUnderscoreInKey } from './util';
+import { createHeadersFromData, replacePeriodWithUnderscoreInKey, getPageCountFromInput } from './util';
 import { DateTimeFormatSettings } from './types';
 
-class BackendWorker {
+const QUERY_RESULT_TABLE_NAME = 'query_result';
+
+class QueryHelper {
   paginator: Paginator;
   backend: DuckDBBackend;
-  queryResultCount: number;
+  rowCount: number;
+  tableName: string;
 
-  private constructor(backend: DuckDBBackend) {
+  constructor(backend: DuckDBBackend, tableName: string) {
     this.backend = backend;
+    this.tableName = tableName;
   }
 
-  static async create(path: string, dateTimeFormatSettings: DateTimeFormatSettings) {
-    const backend = await DuckDBBackend.createAsync(path, dateTimeFormatSettings);
-    await backend.initialize();
-    return new BackendWorker(backend);
-  }
-
-  async getQueryResultPage(message: any) {
-    let pageSize: number;
-    const isPageSizeAll = message.pageSize.toLowerCase() === 'all';
-    if (isPageSizeAll) {
-        pageSize = this.paginator.totalItems;
-    } else {
-      pageSize = Number(message.pageSize);
-    }
-
+  async getPage(message: any) {
     let query: QueryObject = {
-      isPageSizeAll: isPageSizeAll,
-      pageSize: pageSize,
+      pageSize: message.pageSize,
       pageNumber: message.pageNumber,
-      sort: message.sort
+      sort: message.sort,
+      searchString: message.searchString
     };
 
     let result;
@@ -66,44 +57,34 @@ class BackendWorker {
     return {
       headers: headers,
       result: values,
-      rowCount: this.queryResultCount
+      rowCount: this.rowCount
     };
-  }
-
-  formatQueryString(query: string = ""): string {
-    const pattern = /FROM data/i;
-    
-    if (!pattern.test(query)) {
-        throw new Error("Query string must contain 'FROM data'");
-    }
-    
-    return query.replace(pattern, `FROM read_parquet('${this.backend.filePath}')`);
   }
 
   async query(queryObject: QueryObject){
     let query = this.formatQueryString(queryObject.queryString);
 
-    await this.backend.query(`DROP TABLE IF EXISTS query_result`);
+    await this.backend.query(`DROP TABLE IF EXISTS ${this.tableName}`);
 
     await this.backend.query(
-        `CREATE TABLE query_result AS 
+        `CREATE TABLE ${this.tableName} AS 
             ${query}
         `
     );
 
     const queryResult = await this.backend.query(
-        `SELECT COUNT(*) AS count FROM query_result`
+        `SELECT COUNT(*) AS count FROM ${this.tableName}`
     );
-    this.queryResultCount = Number(queryResult[0]['count']);
+    this.rowCount = Number(queryResult[0]['count']);
 
-    const table = 'query_result';
     const readFromFile = false;
     this.paginator = new DuckDBPaginator(
         this.backend, 
-        table, 
-        this.queryResultCount,
+        this.tableName, 
+        this.rowCount,
         readFromFile
     );
+    this.paginator.totalItems = Number(queryResult[0]['count']);
 
     const result = await this.paginator.firstPage(queryObject);
     const values = replacePeriodWithUnderscoreInKey(result);
@@ -117,38 +98,89 @@ class BackendWorker {
       headers: headers,
       result: values,
       schema: querySchemaResult,
-      rowCount: this.queryResultCount
+      rowCount: this.rowCount
+    };
+  }
+  
+  async search(message: any) {
+    const searchString = message.query.searchString;
+    
+    let query = `
+      SELECT * FROM query_result
+    `;
+    if (searchString && searchString !== "") {
+      const schema = this.backend.arrowSchema;
+      const whereClause = schema.fields.map((col) => 
+        col.typeId === Type.Utf8 || col.typeId === Type.LargeUtf8
+        ? `"${col.name}" LIKE '%${searchString}%'`
+        : `CAST("${col.name}" AS TEXT) LIKE '%${searchString}%'`
+      ).join(' OR ');
+
+      query += ` WHERE ${whereClause}`;
+    }
+
+    const result = await this.backend.query(query);
+    const values = replacePeriodWithUnderscoreInKey(result);
+    this.rowCount = values.length;
+    this.paginator.totalItems = this.rowCount;
+    
+    const headers = createHeadersFromData(values);
+
+    return {
+      headers: headers,
+      result: values,
+      rowCount: this.rowCount
     };
   }
 
-  async sortQueryResult (field: string, direction: string) {
-    const query = `SELECT * FROM query_result ORDER BY "${field}" ${direction.toUpperCase()}`;
-    const result = await this.backend.query(query);
-
-    const values = replacePeriodWithUnderscoreInKey(result);
-    return values;
-  }
-
-  async createEmptyExcelFile(filePath: string) {
+  private async createEmptyExcelFile(filePath: string) {
     const workbook = new exceljs.Workbook();
     workbook.addWorksheet('Sheet1');
 
     await workbook.xlsx.writeFile(filePath);
   }
 
-  async exportQueryResult(exportType: string, savedPath: string) {
+  private formatQueryString(query: string = ""): string {
+    const pattern = /FROM data/i;
+    
+    if (!pattern.test(query)) {
+        throw new Error("Query string must contain 'FROM data'");
+    }
+    
+    return query.replace(pattern, `FROM read_parquet('${this.backend.filePath}')`);
+  }
+
+  async export(message: any) {
+    const exportType = message.exportType;
+    const savedPath = message.savedPath;
+
     let query = '';
+    let selectStatement = `
+      SELECT * FROM ${this.tableName}
+    `;
+
+    if (message.searchString && message.searchString !== "") {
+      const schema = this.backend.arrowSchema;
+      const whereClause = schema.fields.map((col) => 
+        col.typeId === Type.Utf8 || col.typeId === Type.LargeUtf8
+        ? `"${col.name}" LIKE '%${message.searchString}%'`
+        : `CAST("${col.name}" AS TEXT) LIKE '%${message.searchString}%'`
+      ).join(' OR ');
+
+      selectStatement += ` WHERE ${whereClause}`;
+    }
+
     if (exportType === 'csv') {
-      query = `COPY query_result TO '${savedPath}' WITH (HEADER, DELIMITER ',');`;
+      query = `COPY (${selectStatement}) TO '${savedPath}' WITH (HEADER, DELIMITER ',');`;
     }
     else if (exportType === 'json') {
-      query = `COPY query_result TO '${savedPath}' (FORMAT JSON, ARRAY true);`;
+      query = `COPY (${selectStatement}) TO '${savedPath}' (FORMAT JSON, ARRAY true);`;
     }
     else if (exportType === 'ndjson') {
-      query = `COPY query_result TO '${savedPath}' (FORMAT JSON, ARRAY false);`;
+      query = `COPY (${selectStatement}) TO '${savedPath}' (FORMAT JSON, ARRAY false);`;
     }
     else if (exportType === 'parquet') {
-      query = `COPY query_result TO '${savedPath}' (FORMAT PARQUET);`;
+      query = `COPY (${selectStatement}) TO '${savedPath}' (FORMAT PARQUET);`;
     }
     else if (exportType === 'excel') {
       // NOTE: The spatial extension can't export STRUCT types.
@@ -157,7 +189,7 @@ class BackendWorker {
       const schemaQuery = `
           SELECT column_name, data_type
           FROM information_schema.columns
-          WHERE table_name = 'query_result'
+          WHERE table_name = '${this.tableName}'
       `;
       const schema = await this.backend.query(schemaQuery);
 
@@ -170,10 +202,21 @@ class BackendWorker {
           return `"${column_name}"`;
       });
 
-      const selectQuery = `SELECT ${columns.join(', ')} FROM query_result`;
+      let query = `SELECT ${columns.join(', ')} FROM ${this.tableName}`;
+
+      if (message.searchString && message.searchString !== "") {
+        const schema = this.backend.arrowSchema;
+        const whereClause = schema.fields.map((col) => 
+          col.typeId === Type.Utf8 || col.typeId === Type.LargeUtf8
+          ? `"${col.name}" LIKE '%${message.searchString}%'`
+          : `CAST("${col.name}" AS TEXT) LIKE '%${message.searchString}%'`
+        ).join(' OR ');
+
+        query += ` WHERE ${whereClause}`;
+      }
 
       query = `
-        COPY (${selectQuery}) TO '${savedPath}' (FORMAT GDAL, DRIVER 'xlsx');
+        COPY (${query}) TO '${savedPath}' (FORMAT GDAL, DRIVER 'xlsx');
       `;
     }
 
@@ -189,6 +232,95 @@ class BackendWorker {
   }
 }
 
+
+class BackendWorker {
+  queryHelper: QueryHelper;
+
+  private constructor(backend: DuckDBBackend) {
+    this.queryHelper = new QueryHelper(backend, QUERY_RESULT_TABLE_NAME);
+  }
+
+  static async create(path: string, dateTimeFormatSettings: DateTimeFormatSettings) {
+    const backend = await DuckDBBackend.createAsync(path, dateTimeFormatSettings);
+    await backend.initialize();
+    return new BackendWorker(backend);
+  }
+
+  async query(message: any) {
+    const queryObject: QueryObject = {
+      pageNumber: 1,
+      pageSize: message.query.pageSize,
+      queryString: message.query.queryString,
+    };
+    const {headers, result, schema, rowCount} = await this.queryHelper.query(queryObject);
+    
+    const pageNumber = 1; 
+    const pageCount = getPageCountFromInput(
+      message.query.pageSize, 
+      rowCount
+    );
+
+    parentPort.postMessage({
+        schema: schema,
+        result: result,
+        headers: headers,
+        type: message.source,
+        pageNumber: pageNumber,
+        pageCount: pageCount,
+        rowCount: rowCount,
+        pageSize: message.query.pageSize,
+    });
+  }
+
+  async search(message: any) {
+    const {headers, result, rowCount} = await this.queryHelper.search(message);
+
+    const pageCount = getPageCountFromInput(
+      message.query.pageSize, rowCount
+    );
+    const pageNumber = 1;
+    
+    const type = (message.query.searchString) ? 'search': 'query';
+    parentPort.postMessage({
+      result: result,
+      headers: headers,
+      type: type,
+      pageNumber: pageNumber,
+      pageCount: pageCount,
+      rowCount: rowCount,
+      pageSize: message.query.pageSize,
+    });
+  }
+
+  async getPage(message: any) {
+    const {headers, result, rowCount} = await this.queryHelper.getPage(message);
+
+    const pageCount = getPageCountFromInput(
+      message.pageSize, rowCount
+    );
+
+    const pageNumber = this.queryHelper.paginator.getPageNumber();
+    
+    parentPort.postMessage({
+      result: result,
+      headers: headers,
+      type: 'paginator',
+      pageNumber: pageNumber,
+      pageCount: pageCount,
+      rowCount: rowCount,
+      pageSize: message.pageSize,
+    });
+  }
+
+  async export(message: any) {
+    const exportPath = await this.queryHelper.export(message);
+    parentPort.postMessage({
+      type: 'exportQueryResults',
+      path: exportPath
+    });
+  }
+}
+
 (async () => {
     const worker = await BackendWorker.create(
       workerData.pathParquetFile,
@@ -199,41 +331,7 @@ class BackendWorker {
         switch (message.source) {
           case 'query': {
             try{ 
-                let pageSize: number;
-                const isPageSizeAll = message.query.pageSize.toLowerCase() === 'all';
-                if (isPageSizeAll) {
-                  pageSize = worker.paginator.totalItems;
-                } else {
-                  pageSize = Number(message.query.pageSize);
-                }
-                
-                const queryObject: QueryObject = {
-                  pageNumber: 1,
-                  pageSize: pageSize,
-                  queryString: message.query.queryString
-                };
-                const {headers, result, schema, rowCount} = await worker.query(queryObject);
-                const pageNumber = 1; 
-
-                let pageCount: number;
-                if (isPageSizeAll){
-                  pageCount = 1;
-                }
-                else {
-                  pageCount = Math.ceil(rowCount / Number(pageSize));
-                }
-
-                parentPort.postMessage({
-                    schema: schema,
-                    result: result,
-                    headers: headers,
-                    type: 'query',
-                    pageNumber: pageNumber,
-                    pageCount: pageCount,
-                    rowCount: rowCount,
-                    pageSize: pageSize,
-                    sort: queryObject.sort
-                });
+                worker.query(message);
             } catch (err: unknown) {
                 parentPort.postMessage({
                     type: 'query',
@@ -243,38 +341,18 @@ class BackendWorker {
             
             break;
           }
-          case 'paginator': {
-            const {headers, result, rowCount} = await worker.getQueryResultPage(message);
-
-            let pageCount: number;
-            if (message.pageSize.toLowerCase() === 'all'){
-              pageCount = 1;
-            }
-            else {
-              pageCount = Math.ceil(rowCount / Number(message.pageSize));
-            }
-            const pageNumber = worker.paginator.getPageNumber();
-            
-            parentPort.postMessage({
-              result: result,
-              headers: headers,
-              type: 'paginator',
-              pageNumber: pageNumber,
-              pageCount: pageCount,
-              pageSize: message.pageSize,
-            });
+          case 'search': {
+            worker.search(message);
             break;
           }
+          case 'paginator': {
+            worker.getPage(message);
+            break;
+            
+          }
           case 'exportQueryResults': {
-            const exportType = message.exportType;
-            const savedPath = message.savedPath;
-
             try{
-              const exportPath = await worker.exportQueryResult(exportType, savedPath);
-              parentPort.postMessage({
-                type: 'exportQueryResults',
-                path: exportPath
-              });
+              worker.export(message);
 
             }
             catch (e: unknown) {

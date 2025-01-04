@@ -8,12 +8,12 @@ export interface QueryObject{
   pageSize: number;
   isPageSizeAll?: boolean;
   sort?: SortObject;
-  queryString?: string
+  queryString?: string;
+  searchString?: string;
 };
 
 export abstract class Paginator {
   protected currentPage: number = 1;
-  protected pageSize: number = 10;
   public totalItems: number;
   protected totalPages: number;
 
@@ -31,7 +31,6 @@ export abstract class Paginator {
 
   async nextPage(query: QueryObject): Promise<any[]> {
     this.totalPages = this.getTotalPages(query.pageSize);
-    this.pageSize = query.pageSize;
 
     if (this.totalPages !== undefined && this.currentPage >= this.totalPages) {
       throw new Error("No more pages available.");
@@ -42,7 +41,6 @@ export abstract class Paginator {
 
   async previousPage(query: QueryObject): Promise<any[]> {
     this.totalPages = this.getTotalPages(query.pageSize);
-    this.pageSize = query.pageSize;
 
     if (this.currentPage <= 1) {
       throw new Error("Already on the first page.");
@@ -53,7 +51,6 @@ export abstract class Paginator {
 
   async firstPage(query: QueryObject): Promise<any[]> {
     this.totalPages = this.getTotalPages(query.pageSize);
-    this.pageSize = query.pageSize;
 
     this.currentPage = 1;
     return this.getItems(query);
@@ -61,7 +58,6 @@ export abstract class Paginator {
 
   async lastPage(query: QueryObject): Promise<any[]> {
     this.totalPages = this.getTotalPages(query.pageSize);
-    this.pageSize = query.pageSize;
 
     this.currentPage = this.totalPages;
 
@@ -78,12 +74,10 @@ export abstract class Paginator {
       this.calculateNewPageNumber(query.pageSize);
       query.pageNumber = this.getPageNumber();
     }
-    this.pageSize = query.pageSize;
 
     if (query.pageNumber < 1 || (this.totalPages !== undefined && query.pageNumber > this.totalPages)) {
       throw new Error("Invalid page number.");
     }
-    this.pageSize = query.pageSize;
     this.currentPage = query.pageNumber;
     return this.getItems(query);
   }
@@ -111,13 +105,16 @@ export abstract class Paginator {
   }
 
   calculateNewPageNumber(newPageSize: number): void {
-      // Calculate the zero-based index of the first item on the current page
-      const firstItemIndex = (this.currentPage - 1) * this.pageSize;
-
-      // Calculate the new page number
-      const newPageNumber = Math.floor(firstItemIndex / newPageSize) + 1;
-
-      this.currentPage = newPageNumber;
-      this.pageSize = newPageSize;
+      if (newPageSize === undefined) {
+        this.currentPage = 1;
+      } else {
+        // Calculate the zero-based index of the first item on the current page
+        const firstItemIndex = (this.currentPage - 1) * newPageSize;
+  
+        // Calculate the new page number
+        const newPageNumber = Math.floor(firstItemIndex / newPageSize) + 1;
+  
+        this.currentPage = newPageNumber;
+      }
   }
 }
