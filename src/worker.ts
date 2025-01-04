@@ -103,12 +103,11 @@ class QueryHelper {
   }
   
   async search(message: any) {
-    const searchString = message.query.searchString;
-    
     let query = `
       SELECT * FROM query_result
     `;
 
+    const searchString = message.query.searchString;
     if (searchString && searchString !== "") {
       const schema = this.backend.arrowSchema;
       const whereClause = schema.fields.map((col) => 
@@ -118,6 +117,12 @@ class QueryHelper {
       ).join(' OR ');
 
       query += ` WHERE ${whereClause}`;
+    }
+
+    if (message.query.sort) {
+      query += `
+          ORDER BY "${message.query.sort.field}" ${message.query.sort.direction.toUpperCase()}
+      `;
     }
 
     const result = await this.backend.query(query);
@@ -156,7 +161,7 @@ class QueryHelper {
     const savedPath = message.savedPath;
 
     let query = '';
-    let selectStatement = `
+    let subQuery = `
       SELECT * FROM ${this.tableName}
     `;
 
@@ -168,20 +173,26 @@ class QueryHelper {
         : `CAST("${col.name}" AS TEXT) LIKE '%${message.searchString}%'`
       ).join(' OR ');
 
-      selectStatement += ` WHERE ${whereClause}`;
+      subQuery += ` WHERE ${whereClause}`;
+    }
+
+    if (message.sort) {
+      subQuery += `
+          ORDER BY "${message.sort.field}" ${message.sort.direction.toUpperCase()}
+      `;
     }
 
     if (exportType === 'csv') {
-      query = `COPY (${selectStatement}) TO '${savedPath}' WITH (HEADER, DELIMITER ',');`;
+      query = `COPY (${subQuery}) TO '${savedPath}' WITH (HEADER, DELIMITER ',');`;
     }
     else if (exportType === 'json') {
-      query = `COPY (${selectStatement}) TO '${savedPath}' (FORMAT JSON, ARRAY true);`;
+      query = `COPY (${subQuery}) TO '${savedPath}' (FORMAT JSON, ARRAY true);`;
     }
     else if (exportType === 'ndjson') {
-      query = `COPY (${selectStatement}) TO '${savedPath}' (FORMAT JSON, ARRAY false);`;
+      query = `COPY (${subQuery}) TO '${savedPath}' (FORMAT JSON, ARRAY false);`;
     }
     else if (exportType === 'parquet') {
-      query = `COPY (${selectStatement}) TO '${savedPath}' (FORMAT PARQUET);`;
+      query = `COPY (${subQuery}) TO '${savedPath}' (FORMAT PARQUET);`;
     }
     else if (exportType === 'excel') {
       // NOTE: The spatial extension can't export STRUCT types.
@@ -203,7 +214,7 @@ class QueryHelper {
           return `"${column_name}"`;
       });
 
-      let query = `SELECT ${columns.join(', ')} FROM ${this.tableName}`;
+      let subQuery = `SELECT ${columns.join(', ')} FROM ${this.tableName}`;
 
       if (message.searchString && message.searchString !== "") {
         const schema = this.backend.arrowSchema;
@@ -213,11 +224,17 @@ class QueryHelper {
           : `CAST("${col.name}" AS TEXT) LIKE '%${message.searchString}%'`
         ).join(' OR ');
 
-        query += ` WHERE ${whereClause}`;
+        subQuery += ` WHERE ${whereClause}`;
+      }
+
+      if (message.sort) {
+        subQuery += `
+            ORDER BY "${message.sort.field}" ${message.sort.direction.toUpperCase()}
+        `;
       }
 
       query = `
-        COPY (${query}) TO '${savedPath}' (FORMAT GDAL, DRIVER 'xlsx');
+        COPY (${subQuery}) TO '${savedPath}' (FORMAT GDAL, DRIVER 'xlsx');
       `;
     }
 

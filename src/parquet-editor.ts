@@ -883,7 +883,8 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             source: message.type,
             exportType: exportType,
             savedPath: savedPath.fsPath,
-            searchString: message.searchString
+            searchString: message.searchString,
+            sort: message.sort
           });
 
           TelemetryManager.sendEvent("queryResultsExported", {

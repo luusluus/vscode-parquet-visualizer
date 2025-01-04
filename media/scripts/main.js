@@ -103,7 +103,8 @@
 
         const searchElement = document.getElementById('input-filter-values');
         const searchString = (requestSource === requestSourceQueryTab) ? searchElement.value.trim() : undefined;
-        const pageSize = (selectedOption.innerText === 'all') ? undefined : selectedOption.innerText;
+        const selectedOptionValue = selectedOption.innerText.toLowerCase();
+        const pageSize = (selectedOptionValue === 'all') ? undefined : selectedOptionValue;
         
         vscode.postMessage({
             type: 'onSort',
@@ -864,7 +865,6 @@
             if (event.target.tagName === 'SPAN') {
                 const selectedOption = event.target.getAttribute('data-value');
 
-                // 
                 const exportQueryResultsButton = document.getElementById("export-query-results");
                 exportQueryResultsButton.setAttribute('disabled', '');
 
@@ -875,7 +875,8 @@
                 vscode.postMessage({
                     type: 'exportQueryResults',
                     exportType: selectedOption,
-                    searchString: filterValueInput.value
+                    searchString: filterValueInput.value,
+                    sort: sortObjectQueryTab
                 });
 
                 // Perform any additional actions here, e.g., close dropdown
@@ -945,7 +946,7 @@
             const selectedIndex = numRecordsDropdown.selectedIndex;
             const selectedOption = numRecordsDropdown.options[selectedIndex];
             const getSelectedPageSize = selectedOption.innerText.toLowerCase();
-            const pageSize = (selectedOption.innerText === 'all') ? undefined : selectedOption.innerText;
+            const pageSize = (getSelectedPageSize === 'all') ? undefined : getSelectedPageSize;
             const filterValueInput = /** @type {HTMLElement} */ (document.querySelector(`#input-filter-values`));
 
             let sort;
@@ -974,7 +975,8 @@
         prevButton.addEventListener('click', () => {
             const selectedIndex = numRecordsDropdown.selectedIndex;
             const selectedOption = numRecordsDropdown.options[selectedIndex];
-            const pageSize = (selectedOption.innerText === 'all') ? undefined : selectedOption.innerText;
+            const getSelectedPageSize = selectedOption.innerText.toLowerCase();
+            const pageSize = (getSelectedPageSize === 'all') ? undefined : getSelectedPageSize;
             const filterValueInput = /** @type {HTMLElement} */ (document.querySelector(`#input-filter-values`));
 
             let sort;
@@ -1003,7 +1005,8 @@
         firstButton.addEventListener('click', () => {
             const selectedIndex = numRecordsDropdown.selectedIndex;
             const selectedOption = numRecordsDropdown.options[selectedIndex];
-            const pageSize = (selectedOption.innerText === 'all') ? undefined : selectedOption.innerText;
+            const getSelectedPageSize = selectedOption.innerText.toLowerCase();
+            const pageSize = (getSelectedPageSize === 'all') ? undefined : getSelectedPageSize;
             const filterValueInput = /** @type {HTMLElement} */ (document.querySelector(`#input-filter-values`));
 
             let sort;
@@ -1031,7 +1034,8 @@
         lastButton.addEventListener('click', () => {
             const selectedIndex = numRecordsDropdown.selectedIndex;
             const selectedOption = numRecordsDropdown.options[selectedIndex];
-            const pageSize = (selectedOption.innerText === 'all') ? undefined : selectedOption.innerText;
+            const getSelectedPageSize = selectedOption.innerText.toLowerCase();
+            const pageSize = (getSelectedPageSize === 'all') ? undefined : getSelectedPageSize;
             const filterValueInput = /** @type {HTMLElement} */ (document.querySelector(`#input-filter-values`));
 
             let sort;
@@ -1075,7 +1079,7 @@
                 if (requestSource === requestSourceDataTab) {
                     dataTable.alert("Loading...");
                     sort = sortObjectDataTab;
-                    if (getSelectedPageSize === 'all') {
+                    if (pageSize === undefined) {
                         currentPageDataTab = 1;
                     }
 
@@ -1083,7 +1087,7 @@
                     numRecordsDropDownResultTableHasChanged = true;
                     resultsTable.alert("Loading...");
                     sort = sortObjectQueryTab;
-                    if (getSelectedPageSize === 'all') {
+                    if (pageSize === undefined) {
                         currentPageQueryTab = 1;
                     }
                 }                
