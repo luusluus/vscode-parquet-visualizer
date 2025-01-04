@@ -86,14 +86,6 @@ export abstract class Paginator {
     return this.getPage(query);
   }
 
-  hasNextPage(): boolean {
-    return this.totalPages === undefined || this.currentPage < this.totalPages;
-  }
-
-  hasPreviousPage(): boolean {
-    return this.currentPage > 1;
-  }
-
   getCurrentPage(query: QueryObject) {
     this.calculateNewPageNumber(query.pageSize);
 
