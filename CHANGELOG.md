@@ -1,3 +1,10 @@
+# [0.21.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.20.2...v0.21.0) (2025-01-04)
+
+
+### Features
+
+* add search on whole query data set ([24aeaff](https://github.com/luusluus/vscode-parquet-visualizer/commit/24aeaffb37b89fcbca310d3accd4b90d3084fce8))
+
 ## [0.20.2](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.20.1...v0.20.2) (2024-12-28)
 
 
