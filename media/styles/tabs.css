@@ -14,7 +14,8 @@ input[type="radio"] {
     display: none;
 }
 
-#data-tab-panel {
+/* Initialize this tab */
+#query-tab-panel {
     display: block;
 }
 

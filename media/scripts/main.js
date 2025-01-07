@@ -13,14 +13,13 @@
     let aceEditor;
 
     let dataTableBuilt = false;
-    let queryHasRun = false;
     let isQueryRunning = false;
 
 
     let currentPageDataTab = 1;
     let currentPageQueryTab = 1;
-    let amountOfPagesDataTab = 0;
-    let amountOfPagesQueryTab = 0;
+    let amountOfPagesDataTab = 1;
+    let amountOfPagesQueryTab = 1;
     
     let rowCountDataTab = 1;
     let rowCountQueryTab = 0;
@@ -41,9 +40,9 @@
     const requestSourceDataTab = 'dataTab';
     const requestSourceQueryTab = 'queryTab';
 
+    document.getElementById("query-tab").addEventListener("click", handleTabChange);
     document.getElementById("data-tab").addEventListener("click", handleTabChange);
     document.getElementById("schema-tab").addEventListener("click", handleTabChange);
-    document.getElementById("query-tab").addEventListener("click", handleTabChange);
     document.getElementById("metadata-tab").addEventListener("click", handleTabChange);
 
 
@@ -65,12 +64,13 @@
 
         // Show the current tab, and add an "active" class to the button that opened the tab
         const id = e.currentTarget.id;
-        if (id === 'data-tab') {
+        if (id === 'query-tab')  {
+            document.getElementById('query-tab-panel').style.display = "block";
+        }
+        else if (id === 'data-tab') {
             document.getElementById('data-tab-panel').style.display = "block";
         } else if (id === 'schema-tab'){
             document.getElementById('schema-tab-panel').style.display = "block";
-        } else if (id === 'query-tab')  {
-            document.getElementById('query-tab-panel').style.display = "block";
         }
         else {
             document.getElementById('metadata-tab-panel').style.display = "block";
@@ -143,13 +143,13 @@
         style.overflowY  = 'auto';
     }
 
-    function onPopupOpenedDataTab(component) {
-        const parentContainerId = "data-tab-panel";
+    function onPopupOpenedQueryResultTab(component) {
+        const parentContainerId = "table-queryTab";
         onPopupOpened(parentContainerId);
     }
 
-    function onPopupOpenedQueryResultTab(component) {
-        const parentContainerId = "table-queryTab";
+    function onPopupOpenedDataTab(component) {
+        const parentContainerId = "data-tab-panel";
         onPopupOpened(parentContainerId);
     }
 
@@ -231,6 +231,7 @@
     }
 
     function initializeSort(/** @type {String} */ requestSource) {
+        console.log(`initializeSort(${requestSource})`);
         let selectors; 
         if (requestSource === requestSourceQueryTab) {
             selectors = `#table-${requestSource} .tabulator-col-sorter.tabulator-col-sorter-element`;
@@ -278,9 +279,6 @@
     }
 
     function resetQueryResultControls(rowCount){
-        if (!queryHasRun) {
-            return;
-        }
         updateResultCount(requestSourceQueryTab, rowCount);
         updatePageCount(requestSourceQueryTab, rowCount);
         
@@ -570,8 +568,12 @@
         return html;
     }
 
-    function initDataTable(/** @type {any} */ data) {
-        let columns = data.headers.map(c => (
+    function initDataTable(
+        /** @type {any} */ rawData,
+        /** @type {any} */ headers,
+        /** @type {any} */ pageCount,
+    ) {
+        let columns = headers.map(c => (
             {
                 ...c, 
                 sorter: function(a, b, aRow, bRow, column, dir, sorterParams){
@@ -588,15 +590,15 @@
             },
             placeholder:"No Data Available",
             headerSortClickElement: "icon",
-            data: data.rawData,
+            data: rawData,
             columns: columns,
             pagination: false,
             footerElement:`<span class="tabulator-page-counter">
                         <span>
                             <span>Showing</span>
-                            <span id="page-current-${requestSourceDataTab}"> 1 </span>
+                            <span id="page-current-${requestSourceDataTab}"></span>
                             <span>of</span>
-                            <span id="page-count-${requestSourceDataTab}"> ${data.pageCount} </span>
+                            <span id="page-count-${requestSourceDataTab}"></span>
                             <span>pages</span>
                         </span>
                     </span>
@@ -604,19 +606,18 @@
                         <button class="tabulator-page" disabled id="reset-sort-${requestSourceDataTab}" type="button" role="button" aria-label="Reset Sort" title="Reset Sort" style="margin-right: 10px;">Reset Sort</button>
 
                         <label>Page Size</label>
-                        <select class="tabulator-page-size" id="dropdown-page-size-${requestSourceDataTab}" aria-label="Page Size" title="Page Size">
+                        <select class="tabulator-page-size" disabled id="dropdown-page-size-${requestSourceDataTab}" aria-label="Page Size" title="Page Size">
                             ${options}
                         </select>
                         <button class="tabulator-page" disabled id="btn-first-${requestSourceDataTab}" type="button" role="button" aria-label="First Page" title="First Page" data-page="first">First</button>
                         <button class="tabulator-page" disabled id="btn-prev-${requestSourceDataTab}" type="button" role="button" aria-label="Prev Page" title="Prev Page" data-page="prev">Prev</button>
-                        <button class="tabulator-page" id="btn-next-${requestSourceDataTab}" type="button" role="button" aria-label="Next Page" title="Next Page" data-page="next">Next</button>
-                        <button class="tabulator-page" id="btn-last-${requestSourceDataTab}" type="button" role="button" aria-label="Last Page" title="Last Page" data-page="last">Last</button>
+                        <button class="tabulator-page" disabled id="btn-next-${requestSourceDataTab}" type="button" role="button" aria-label="Next Page" title="Next Page" data-page="next">Next</button>
+                        <button class="tabulator-page" disabled id="btn-last-${requestSourceDataTab}" type="button" role="button" aria-label="Last Page" title="Last Page" data-page="last">Last</button>
                     </span>
             `,
         });
 
         dataTable.on("tableBuilt", () => {
-            dataTableBuilt = true;
             initializeSort(requestSourceDataTab);
             initializeFooter(rowCountDataTab, requestSourceDataTab);
             updatePageCounterState(currentPageDataTab, amountOfPagesDataTab, requestSourceDataTab);
@@ -625,6 +626,7 @@
 
         dataTable.on("popupOpened", onPopupOpenedDataTab);
         dataTable.on("menuOpened", onMenuOpened);
+        dataTable.alert("Loading...");
     }
 
     function handleError (){
@@ -651,15 +653,16 @@
         /** @type {any} */ schema,
     ) {
         if (requestSource === requestSourceDataTab){
-            if (dataTableBuilt){
-                dataTable.replaceData(data);
-                dataTable.clearAlert();
-            }
+            rowCountDataTab = rowCount;
+            currentPageDataTab = currentPage;
+            amountOfPagesDataTab = pageCount;
+
+            dataTable.replaceData(data);
+            dataTable.clearAlert();
+            
         } else if (requestSource === requestSourceQueryTab) {
             if (requestType === 'query'){
-                queryHasRun = true;
-
-                schemaQueryResult = schema; 
+                schemaQueryResult = schema;
                 rowCountQueryTab = rowCount;
                 currentPageQueryTab = currentPage;
                 amountOfPagesQueryTab = pageCount;
@@ -733,7 +736,7 @@
         /** @type {String} */ requestSource,
 
     ){
-        // console.log(`updatePageCounterState(${currentPage}, ${amountOfPages})`);
+        // console.log(`updatePageCounterState(${currentPage}, ${amountOfPages}, ${requestSource})`);
 
         if (!doesFooterExist()){
             return;
@@ -760,7 +763,7 @@
         /** @type {Number} */ amountOfPages,
         /** @type {String} */ requestSource,
     ){
-        // console.log(`updateNavigationButtonsState(currentPage: ${currentPage}, amountOfPages: ${amountOfPages})`);
+        // console.log(`updateNavigationButtonsState(${currentPage}, ${amountOfPages}, ${requestSource})`);
 
         if (!doesFooterExist()){
             return;
@@ -900,6 +903,7 @@
 
         const clearIconButton = /** @type {HTMLElement} */ (document.querySelector(`#clear-icon`));
         clearIconButton.addEventListener("click", function () {
+            resultsTable.alert("Loading...");
             resetSearchBox();
             sendSearchMessage(undefined);
         });
@@ -1067,6 +1071,7 @@
             numRecordsDropdown.setAttribute('disabled', '');
         } 
         else {
+            numRecordsDropdown.removeAttribute('disabled');
             numRecordsDropdown.addEventListener('change', (e) => {
                 const selectedIndex = numRecordsDropdown.selectedIndex;
                 const selectedOption = numRecordsDropdown.options[selectedIndex];
@@ -1108,15 +1113,15 @@
 
     // Handle messages from the extension
     window.addEventListener('message', async e => {
-        console.log(e.data);
+        // console.log(e.data);
         const { type, body } = e.data;
         switch (type) {
             case 'init':{
                 const tableData = body.tableData;
                 if (tableData) {
-                    rowCountDataTab = tableData.rowCount;
                     defaultPageSizes = tableData.settings.defaultPageSizes;
-                    initDataTable(tableData);
+                    rowCountDataTab = tableData.totalRowCount;
+                    initDataTable([], tableData.headers, tableData.totalPageCount);
                     initSchema(tableData.schema);
                     initMetaData(tableData.metaData);
                     if (tableData.isQueryAble) {
@@ -1126,12 +1131,13 @@
                             tableData.aceTheme,
                             tableData.aceEditorCompletions
                         );
+                        schemaQueryResult = tableData.schema;
+                        rowCountQueryTab = tableData.rowCount;
+                        currentPageQueryTab = tableData.currentPage;
+                        amountOfPagesQueryTab = tableData.pageCount;
                         initializeQueryResultControls();
-                        initResultTable([], []);
+                        initResultTable(tableData.rawData, tableData.headers);
                     }
-
-                    currentPageDataTab = tableData.currentPage;
-                    amountOfPagesDataTab = tableData.pageCount;
                 }
                 break;
             }

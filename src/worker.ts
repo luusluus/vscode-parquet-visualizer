@@ -1,7 +1,8 @@
 // worker.ts
-const {
-  parentPort, workerData
-} = require('node:worker_threads');
+import { parentPort, workerData } from 'worker_threads';
+import * as comlink from 'comlink';
+import nodeEndpoint from 'comlink/dist/umd/node-adapter';
+
 import * as os from 'os';
 
 import * as exceljs from 'exceljs';
@@ -14,6 +15,11 @@ import { DuckDBBackend } from './duckdb-backend';
 import { DuckDBPaginator } from './duckdb-paginator';
 import { createHeadersFromData, replacePeriodWithUnderscoreInKey, getPageCountFromInput } from './util';
 import { DateTimeFormatSettings } from './types';
+import * as constants from './constants';
+
+if (!parentPort) {
+  throw new Error('InvalidWorker');
+}
 
 const QUERY_RESULT_TABLE_NAME = 'query_result';
 
@@ -22,10 +28,14 @@ class QueryHelper {
   backend: DuckDBBackend;
   rowCount: number;
   tableName: string;
+  tabName: string;
+  readFromFile: boolean;
 
-  constructor(backend: DuckDBBackend, tableName: string) {
+  constructor(backend: DuckDBBackend, tableName: string, tabName: string) {
     this.backend = backend;
     this.tableName = tableName;
+    this.tabName = tabName;
+    this.readFromFile = tabName === constants.REQUEST_SOURCE_DATA_TAB;
   }
 
   async getPage(message: any) {
@@ -75,16 +85,19 @@ class QueryHelper {
     const queryResult = await this.backend.query(
         `SELECT COUNT(*) AS count FROM ${this.tableName}`
     );
-    this.rowCount = Number(queryResult[0]['count']);
+    
+    if (this.tabName === constants.REQUEST_SOURCE_QUERY_TAB){
+      this.rowCount = Number(queryResult[0]['count']);
+    } else {
+      this.rowCount = Number(this.backend.metadata[0]["num_rows"]);
+    }
 
-    const readFromFile = false;
     this.paginator = new DuckDBPaginator(
         this.backend, 
         this.tableName, 
         this.rowCount,
-        readFromFile
+        this.readFromFile
     );
-    this.paginator.totalItems = Number(queryResult[0]['count']);
 
     const result = await this.paginator.firstPage(queryObject);
     const values = replacePeriodWithUnderscoreInKey(result);
@@ -128,6 +141,7 @@ class QueryHelper {
     const result = await this.backend.query(query);
     const values = replacePeriodWithUnderscoreInKey(result);
     this.rowCount = values.length;
+    
     this.paginator.totalItems = this.rowCount;
     
     const headers = createHeadersFromData(values);
@@ -251,17 +265,30 @@ class QueryHelper {
 }
 
 
-class BackendWorker {
+export class BackendWorker {
   queryHelper: QueryHelper;
 
-  private constructor(backend: DuckDBBackend) {
-    this.queryHelper = new QueryHelper(backend, QUERY_RESULT_TABLE_NAME);
+  private constructor(backend: DuckDBBackend, tabName: string) {
+    this.queryHelper = new QueryHelper(
+      backend, 
+      QUERY_RESULT_TABLE_NAME,
+      tabName
+    );
   }
 
-  static async create(path: string, dateTimeFormatSettings: DateTimeFormatSettings) {
+  static async create(
+    tabName: string,
+    path: string, 
+    dateTimeFormatSettings: DateTimeFormatSettings
+  ) {
     const backend = await DuckDBBackend.createAsync(path, dateTimeFormatSettings);
     await backend.initialize();
-    return new BackendWorker(backend);
+
+    return new BackendWorker(backend, tabName);
+  }
+
+  public exit(): void {
+    return process.exit();
   }
 
   async query(message: any) {
@@ -278,16 +305,16 @@ class BackendWorker {
       rowCount
     );
 
-    parentPort.postMessage({
-        schema: schema,
-        result: result,
-        headers: headers,
-        type: message.source,
-        pageNumber: pageNumber,
-        pageCount: pageCount,
-        rowCount: rowCount,
-        pageSize: message.query.pageSize,
-    });
+    return {
+      schema: schema,
+      result: result,
+      headers: headers,
+      type: message.source,
+      pageNumber: pageNumber,
+      pageCount: pageCount,
+      rowCount: rowCount,
+      pageSize: message.query.pageSize,
+    };
   }
 
   async search(message: any) {
@@ -299,7 +326,7 @@ class BackendWorker {
     const pageNumber = 1;
     
     const type = 'search';
-    parentPort.postMessage({
+    return {
       result: result,
       headers: headers,
       type: type,
@@ -307,7 +334,7 @@ class BackendWorker {
       pageCount: pageCount,
       rowCount: rowCount,
       pageSize: message.query.pageSize,
-    });
+    };
   }
 
   async getPage(message: any) {
@@ -319,7 +346,7 @@ class BackendWorker {
 
     const pageNumber = this.queryHelper.paginator.getPageNumber();
     
-    parentPort.postMessage({
+    return {
       result: result,
       headers: headers,
       type: 'paginator',
@@ -327,66 +354,24 @@ class BackendWorker {
       pageCount: pageCount,
       rowCount: rowCount,
       pageSize: message.pageSize,
-    });
+    };
   }
 
   async export(message: any) {
     const exportPath = await this.queryHelper.export(message);
-    parentPort.postMessage({
+    return {
       type: 'exportQueryResults',
       path: exportPath
-    });
+    };
   }
 }
 
 (async () => {
     const worker = await BackendWorker.create(
+      workerData.tabName,
       workerData.pathParquetFile,
       workerData.dateTimeFormatSettings
     );
 
-    parentPort.on('message', async (message: any) => {
-        switch (message.source) {
-          case 'query': {
-            try{ 
-                worker.query(message);
-            } catch (err: unknown) {
-                parentPort.postMessage({
-                    type: 'query',
-                    err: err
-                });
-            }
-            
-            break;
-          }
-          case 'search': {
-            worker.search(message);
-            break;
-          }
-          case 'paginator': {
-            worker.getPage(message);
-            break;
-            
-          }
-          case 'exportQueryResults': {
-            try{
-              worker.export(message);
-
-            }
-            catch (e: unknown) {
-              console.error(e);
-              const error = e as DuckDbError;
-              parentPort.postMessage({
-                type: 'exportQueryResults',
-                error: error.message,
-              });
-            }
-
-            break;
-          }
-          default: {
-            throw Error(`Unknown source ${message.source}`);
-          }
-        }
-    });
+    comlink.expose(worker, nodeEndpoint(parentPort));
 })();
