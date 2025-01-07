@@ -64,6 +64,7 @@ class QueryHelper {
   async query(queryObject: QueryObject){
     let query = this.formatQueryString(queryObject.queryString);
 
+    // FIXME: If query fails, one can't do an export anymore..
     await this.backend.query(`DROP TABLE IF EXISTS ${this.tableName}`);
 
     await this.backend.query(
@@ -349,7 +350,7 @@ class BackendWorker {
         switch (message.source) {
           case 'query': {
             try{ 
-                worker.query(message);
+                await worker.query(message);
             } catch (err: unknown) {
                 parentPort.postMessage({
                     type: 'query',
@@ -360,18 +361,17 @@ class BackendWorker {
             break;
           }
           case 'search': {
-            worker.search(message);
+            await worker.search(message);
             break;
           }
           case 'paginator': {
-            worker.getPage(message);
+            await worker.getPage(message);
             break;
             
           }
           case 'exportQueryResults': {
             try{
-              worker.export(message);
-
+              await worker.export(message);
             }
             catch (e: unknown) {
               console.error(e);
