@@ -1,3 +1,10 @@
+## [0.21.1](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.21.0...v0.21.1) (2025-01-07)
+
+
+### Bug Fixes
+
+* fix bug erronous query not resoslving loading ([3175af1](https://github.com/luusluus/vscode-parquet-visualizer/commit/3175af1f21cdd6d7b230b1a25ca55d204fb43155))
+
 # [0.21.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.20.2...v0.21.0) (2025-01-04)
 
 
