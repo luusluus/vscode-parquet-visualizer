@@ -64,11 +64,8 @@ class QueryHelper {
   async query(queryObject: QueryObject){
     let query = this.formatQueryString(queryObject.queryString);
 
-    // FIXME: If query fails, one can't do an export anymore..
-    await this.backend.query(`DROP TABLE IF EXISTS ${this.tableName}`);
-
     await this.backend.query(
-        `CREATE TABLE ${this.tableName} AS 
+        `CREATE OR REPLACE TABLE ${this.tableName} AS 
             ${query}
         `
     );
