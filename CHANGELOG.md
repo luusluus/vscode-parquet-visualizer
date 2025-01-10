@@ -1,3 +1,10 @@
+## [0.21.2](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.21.1...v0.21.2) (2025-01-10)
+
+
+### Bug Fixes
+
+* atomically create or replace a table with CTAS query. Fixes export failures after executing erronous query ([9576e6d](https://github.com/luusluus/vscode-parquet-visualizer/commit/9576e6db29c083bf0637a7c4bb27611ae51174ac))
+
 ## [0.21.1](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.21.0...v0.21.1) (2025-01-07)
 
 
