@@ -1,3 +1,10 @@
+## [0.21.3](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.21.2...v0.21.3) (2025-01-10)
+
+
+### Bug Fixes
+
+* handle empty parquet files ([c410d79](https://github.com/luusluus/vscode-parquet-visualizer/commit/c410d790366142fdead9c81515baaf0677a31402))
+
 ## [0.21.2](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.21.1...v0.21.2) (2025-01-10)
 
 
