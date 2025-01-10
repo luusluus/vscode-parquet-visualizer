@@ -87,14 +87,19 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
               stacktrace: stackTrace || "No stack trace available"
             });
 
-            const backend = await ParquetWasmBackend.createAsync(uri.fsPath, dateTimeFormatSettings);
-            TelemetryManager.sendEvent("fileParsingFallback", {
-                uri: uri.toJSON(),
-                backend: 'parquet-wasm',
-              }
-            );
-            const paginator = new ParquetWasmPaginator(backend);
-            return new CustomParquetDocument(uri, backend, paginator);
+            const error = err as DuckDbError;
+            if (error.errorType === "Invalid") {
+              const backend = await ParquetWasmBackend.createAsync(uri.fsPath, dateTimeFormatSettings);
+              TelemetryManager.sendEvent("fileParsingFallback", {
+                  uri: uri.toJSON(),
+                  backend: 'parquet-wasm',
+                }
+              );
+              const paginator = new ParquetWasmPaginator(backend);
+              return new CustomParquetDocument(uri, backend, paginator);
+            }
+            
+            throw Error(error.message);
         }
     }
 
