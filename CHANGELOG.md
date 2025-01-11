@@ -1,3 +1,20 @@
+# [0.22.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.21.3...v0.22.0) (2025-01-11)
+
+
+### Bug Fixes
+
+* atomically create or replace a table with CTAS query. Fixes export failures after executing erronous query ([66400e4](https://github.com/luusluus/vscode-parquet-visualizer/commit/66400e4929381bfe030bfec766863b35caef74ee))
+* clear icon in search icon made black in light theme ([73ceb46](https://github.com/luusluus/vscode-parquet-visualizer/commit/73ceb46baed2c387c2b79aaadf4df24047ca9c6b))
+* fix bug erronous query not resoslving loading ([986129f](https://github.com/luusluus/vscode-parquet-visualizer/commit/986129f9523625e3406cca2a06484aa8d8266d4b))
+* handle empty parquet files ([f9637bc](https://github.com/luusluus/vscode-parquet-visualizer/commit/f9637bcab0092939b28cc5e3054ca0d12bbbb620))
+
+
+### Features
+
+* add new setting runQueryOnStartup ([a522281](https://github.com/luusluus/vscode-parquet-visualizer/commit/a52228155fd4697d92683bf0f8a56b0aa25a105b))
+* add support for brotli. upgrading to duckdb 1.1.3 ([098daf2](https://github.com/luusluus/vscode-parquet-visualizer/commit/098daf2ae9387f2d3d3aefb306b9928b0401d1f4))
+* move query tab to first tab. load data data tab asynchronously ([c406576](https://github.com/luusluus/vscode-parquet-visualizer/commit/c40657624aaf38f7b61b0e200dc0881b1d18157c))
+
 ## [0.21.3](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.21.2...v0.21.3) (2025-01-10)
 
 
