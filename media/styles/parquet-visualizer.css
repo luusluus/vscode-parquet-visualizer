@@ -190,6 +190,10 @@ html, body {
 .clear-icon {
     width: 13px;
     height: 13px;
+}
+
+.clear-icon path{
+    fill: none;
     stroke: #ffffff; /* Set stroke color to white */
 }
 
