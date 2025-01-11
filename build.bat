@@ -1,10 +1,12 @@
 @echo on
 
+rmdir /s /q "out"
+
 mkdir out
 mkdir out\binding
 
 @REM REM Copy required files
-copy /y node_modules\duckdb-async\node_modules\duckdb\lib\binding\duckdb.node out\binding\
+copy /y node_modules\duckdb\lib\binding\duckdb.node out\binding\
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 copy /y node_modules\parquet-wasm\node\parquet_wasm_bg.wasm out\
