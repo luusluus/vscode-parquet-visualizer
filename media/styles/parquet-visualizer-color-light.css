@@ -114,10 +114,9 @@
 }
 
 
-.clear-icon {
-    width: 13px;
-    height: 13px;
-    stroke: #000000; /* Set stroke color to black */
+.clear-icon path {
+    fill: none; 
+    stroke: #000000;
 }
 
 /* copy button */

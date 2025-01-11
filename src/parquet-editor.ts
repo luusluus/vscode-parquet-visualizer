@@ -1,11 +1,15 @@
 const path = require('path');
 import { Worker } from 'worker_threads';
+import * as comlink from 'comlink';
+import nodeEndpoint from 'comlink/dist/umd/node-adapter';
+
 const { exec } = require('child_process');
 
 import * as vscode from 'vscode';
 import { DuckDbError } from 'duckdb-async';
 
-import { Paginator, QueryObject } from './paginator';
+import type { BackendWorker } from './worker';
+import { Paginator } from './paginator';
 import { Backend } from './backend';
 import { createHeadersFromData, replacePeriodWithUnderscoreInKey, getNonce, isRunningInWSL } from './util';
 import { Disposable } from "./dispose";
@@ -13,7 +17,7 @@ import { DuckDBBackend } from './duckdb-backend';
 import { DuckDBPaginator } from './duckdb-paginator';
 import { ParquetWasmBackend } from './parquet-wasm-backend';
 import { ParquetWasmPaginator } from './parquet-wasm-paginator';
-import { affectsDocument, defaultPageSizes, defaultQuery, defaultBackend, defaultRunQueryKeyBinding, dateTimeFormat, outputDateTimeFormatInUTC } from './settings';
+import { affectsDocument, defaultPageSizes, defaultQuery, defaultBackend, defaultRunQueryKeyBinding, dateTimeFormat, outputDateTimeFormatInUTC, runQueryOnStartup } from './settings';
 import { DateTimeFormatSettings } from './types';
 
 import { TelemetryManager } from './telemetry';
@@ -23,9 +27,9 @@ import * as constants from './constants';
 
 class CustomParquetDocument extends Disposable implements vscode.CustomDocument {
     uri: vscode.Uri;
-    paginator: Paginator;
     backend: Backend;
-    worker: Worker;
+    queryTabWorker: comlink.Remote<BackendWorker>;
+    dataTabWorker: comlink.Remote<BackendWorker>;
     isQueryAble: boolean = false;
 
     savedExporturi: vscode.Uri;
@@ -132,7 +136,6 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       super();
       this.uri = uri;
       this.backend = backend;
-      this.paginator = paginator;
       
       // FIXME: Check if backend is of type ParquetWasm
       if (this.backend instanceof DuckDBBackend) {
@@ -142,44 +145,24 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
           format: dateTimeFormat(),
           useUTC: outputDateTimeFormatInUTC()
         };
-
-        this.worker = new Worker(__dirname + "/worker.js", {
+  
+        const queryWorker = new Worker(__dirname + "/worker.js", {
           workerData: {
+            tabName: constants.REQUEST_SOURCE_QUERY_TAB,
             pathParquetFile: this.uri.fsPath,
             dateTimeFormatSettings: dateTimeFormatSettings,
           }
         });
-  
-        this.worker.on('message', (message) => {
-          if (message.type === 'query' || message.type === 'search'){
-            this.emitQueryResult(message);
-          } else if (message.type === 'paginator') {
-            this.fireDataPaginatorEvent(
-              message.result, 
-              message.rowCount,
-              message.pageSize,
-              message.pageNumber,
-              message.pageCount,
-              constants.REQUEST_SOURCE_QUERY_TAB
-            );
-          } else if (message.type === 'exportQueryResults') {
-            this.fireExportCompleteEvent();
+        this.queryTabWorker = comlink.wrap<BackendWorker>(nodeEndpoint(queryWorker));
 
-            if (message.error){
-              const errorMessage = `Export failed: ${message.error}`;
-              vscode.window.showErrorMessage(errorMessage);
-              this.fireErrorEvent(errorMessage);
-            } else {
-              vscode.window.showInformationMessage(
-                `Exported query result to ${message.path}`, "Open folder"
-              ).then(selection => {
-                if (selection === "Open folder") {
-                  this.openFolder(message.path);
-                }
-              });
-            }
+        const dataWorker = new Worker(__dirname + "/worker.js", {
+          workerData: {
+            tabName: constants.REQUEST_SOURCE_DATA_TAB,
+            pathParquetFile: this.uri.fsPath,
+            dateTimeFormatSettings: dateTimeFormatSettings,
           }
         });
+        this.dataTabWorker = comlink.wrap<BackendWorker>(nodeEndpoint(dataWorker));
       }
     }
 
@@ -266,7 +249,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         this._onDidDispose.fire();
 
         if (this.backend instanceof DuckDBBackend) {
-            this.worker.terminate();
+          this.queryTabWorker.exit();
         }
         
         super.dispose();
@@ -298,181 +281,91 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
       this._onDidExport.fire({});
     }
 
-    async emitPage(message: any) {
-      let values;
+    async getPage(message: any) {
+      let queryResult;
       if (message.source === constants.REQUEST_SOURCE_QUERY_TAB) {
-        this.worker.postMessage({
-            source: 'paginator',
-            type: message.type,
-            pageSize: message.pageSize,
-            pageNumber: message.pageNumber,
-            sort: message.sort,
-            searchString: message.searchString
-        });
-      } else if (message.source === constants.REQUEST_SOURCE_DATA_TAB) {
-          const query: QueryObject = {
-            pageNumber: message.pageNumber,
-            pageSize: message.pageSize,
-            sort: message.sort
-          };
-
-          if (message.type === 'nextPage') {
-              values = await this.paginator.nextPage(query);
-          } else if (message.type === 'prevPage') {
-              values = await this.paginator.previousPage(query);
-          } else if (message.type === 'firstPage') {
-              values = await this.paginator.firstPage(query);
-          } else if (message.type === 'lastPage') {
-              values = await this.paginator.lastPage(query);
-          } else {
-              throw Error(`Unknown message type: ${message.type}`);
-          }
-          
-          values = replacePeriodWithUnderscoreInKey(values);
-          const rowCount = 0;
-          this.fireDataPaginatorEvent(
-              values,
-              rowCount, 
-              Number(message.pageSize),
-              this.paginator.getPageNumber(),
-              this.paginator.getTotalPages(message.pageSize),
-              constants.REQUEST_SOURCE_DATA_TAB
-          );
+        queryResult = await this.queryTabWorker.getPage(message);
+      } else {
+        queryResult = await this.dataTabWorker.getPage(message);
       }
-    }
-    
-    async emitCurrentPage(message: any) {
-        if (message.source === constants.REQUEST_SOURCE_QUERY_TAB) {
-            this.worker.postMessage({
-                source: 'paginator',
-                type: message.type,
-                pageSize: message.pageSize,
-                pageNumber: message.pageNumber,
-                sort: message.sort
-            });
-        } else if (message.source === constants.REQUEST_SOURCE_DATA_TAB) {
-            const query: QueryObject = {
-              pageNumber: message.pageNumber, 
-              pageSize: message.pageSize,
-              sort: message.sort
-            };
-            const values = await this.paginator.gotoPage(query);
-            const rowCount = 0;
-            this.fireDataPaginatorEvent(
-                values, 
-                rowCount,
-                Number(message.pageSize),
-                this.paginator.getPageNumber(),
-                this.paginator.getTotalPages(message.pageSize),
-                constants.REQUEST_SOURCE_DATA_TAB
-            );
-        }
-    }
-    
 
-    emitQueryResult(message: any) {
-        if (message.err) {
-            const err = message.err;
-            console.error(err);
-            const error = err as DuckDbError;
-            this.fireErrorEvent(err);
-            vscode.window.showErrorMessage(error.message);
-            return;
-        } 
+      this.fireDataPaginatorEvent(
+        queryResult.result, 
+        queryResult.rowCount,
+        queryResult.pageSize,
+        queryResult.pageNumber,
+        queryResult.pageCount,
+        message.source
+      );
+    }
+
+    async emitPage(message: any) {
+      const workerMessage = {
+        source: message.source,
+        type: message.type,
+        pageSize: message.pageSize,
+        pageNumber: message.pageNumber,
+        sort: message.sort,
+        searchString: message.searchString
+      };
+
+      await this.getPage(workerMessage);
+    }
+    
+    async query(message: any) {
+      try{
+        const queryResult = await this.queryTabWorker.query({
+          source: 'query',
+          query: message.query,
+        });
+
         this.fireChangedDocumentEvent(
-            message.result, 
-            message.headers, 
-            message.rowCount,
+            queryResult.result, 
+            queryResult.headers, 
+            queryResult.rowCount,
             constants.REQUEST_SOURCE_QUERY_TAB,
-            message.type,
-            message.pageSize,
-            message.pageNumber,
-            message.pageCount,
-            message.schema,
+            queryResult.type,
+            queryResult.pageSize,
+            queryResult.pageNumber,
+            queryResult.pageCount,
+            queryResult.schema,
         );
+
+      } catch (e: unknown) {
+          console.error(e);
+          const error = e as DuckDbError;
+          this.fireErrorEvent(error.message);
+          vscode.window.showErrorMessage(error.message);
+      }
     }
 
     async changePageSize(message: any) {
-      if (message.source === constants.REQUEST_SOURCE_QUERY_TAB) {
-        this.worker.postMessage({
-            source: 'paginator',
-            type: 'currentPage',
-            pageSize: message.newPageSize,
-            sort: message.sort,
-            searchString: message.searchString
-        });
-      }
-      else if (message.source === constants.REQUEST_SOURCE_DATA_TAB) {
-        const query: QueryObject = {
-          pageSize: message.newPageSize,
-          pageNumber: 1,
-          sort: message.sort,
-          searchString: message.searchString
-        };
+      const workerMessage = {
+        source: message.source,
+        type: 'currentPage',
+        pageSize: message.newPageSize,
+        sort: message.sort,
+        searchString: message.searchString
+      };
 
-        // TODO: Duplicate code. Put this in another method
-        const page = await this.paginator.getCurrentPage(query);
-        const values = replacePeriodWithUnderscoreInKey(page);
-        
-        const headers: any[] = [];
-        const requestType = 'paginator';
-        const pageNumber = this.paginator.getPageNumber();
-        const pageCount = this.paginator.getTotalPages(message.newPageSize);
-        this.fireChangedDocumentEvent(
-          values, 
-          headers, 
-          values.length,
-          constants.REQUEST_SOURCE_DATA_TAB,
-          requestType,
-          message.newPageSize,
-          pageNumber,
-          pageCount
-        );
-      }
+      await this.getPage(workerMessage);
     }
 
     async sort(message: any) {
-      if (message.source === constants.REQUEST_SOURCE_QUERY_TAB) {
-        this.worker.postMessage({
-          source: 'paginator',
-          type: 'firstPage',
-          pageSize: message.query.pageSize,
-          pageNumber: message.query.pageNumber,
-          sort: message.query.sort,
-          searchString: message.query.searchString,
-        });
-
-      } else {
-        const query: QueryObject = {
-          pageSize: message.query.pageSize,
-          pageNumber: message.query.pageNumber,
-          sort: message.query.sort
-        };
-
-        // TODO: Duplicate code. Put this in another method
-        const page = await this.paginator.getCurrentPage(query);
-        const values = replacePeriodWithUnderscoreInKey(page);
-        
-        const headers: any[] = [];
-        const requestType = 'paginator';
-        const pageNumber = this.paginator.getPageNumber();
-        const pageCount = this.paginator.getTotalPages(query.pageSize);
-
-        this.fireChangedDocumentEvent(
-          values, 
-          headers, 
-          values.length,
-          constants.REQUEST_SOURCE_DATA_TAB,
-          requestType,
-          query.pageSize,
-          pageNumber,
-          pageCount
-        );
-      }
+      const workerMessage = {
+        source: message.source,
+        type: 'firstPage',
+        pageSize: message.query.pageSize,
+        pageNumber: message.query.pageNumber,
+        sort: message.query.sort,
+        searchString: message.query.searchString,
+      };
+      
+      await this.getPage(workerMessage);
     }
 
     async search(message: any) {
-      this.worker.postMessage({
+      const queryResult = await this.queryTabWorker.search({
         source: 'search',
         query: {
           pageNumber: 1,
@@ -482,6 +375,80 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
           sort: message.query.sort,
         }
       });
+
+      this.fireChangedDocumentEvent(
+          queryResult.result, 
+          queryResult.headers, 
+          queryResult.rowCount,
+          constants.REQUEST_SOURCE_QUERY_TAB,
+          queryResult.type,
+          queryResult.pageSize,
+          queryResult.pageNumber,
+          queryResult.pageCount,
+      );
+    }
+
+    async export(message: any) {
+      const exportType = message.exportType as string;
+      const parsedPath = path.parse(this.uri.fsPath);
+
+      const extension = constants.FILENAME_SHORTNAME_EXTENSION_MAPPING[exportType];
+      parsedPath.base = `${parsedPath.name}.${extension}`;
+      parsedPath.ext = extension;
+      const suggestedPath = path.format(parsedPath);
+
+      let suggestedUri: vscode.Uri;
+      if (this.savedExporturi !== undefined) {
+        const parsedPath = path.parse(this.savedExporturi.fsPath);
+        parsedPath.base = `${parsedPath.name}.${extension}`;
+        parsedPath.ext = extension;
+        suggestedUri = vscode.Uri.file(path.format(parsedPath));
+      } else {
+        suggestedUri = vscode.Uri.file(suggestedPath);
+      }
+
+      const fileNameExtensionfullName = constants.FILENAME_SHORTNAME_FULLNAME_MAPPING[exportType];
+      const savedPath = await vscode.window.showSaveDialog({
+        title: `Export Query Results as ${exportType}`,
+        filters: {
+          [fileNameExtensionfullName]: [extension]
+        },
+        defaultUri: suggestedUri
+      });
+
+      if (savedPath === undefined) {
+        this.fireExportCompleteEvent();
+        return;
+      }
+
+      this.savedExporturi = savedPath;
+
+      try {
+        const exportResult = await this.queryTabWorker.export({
+          source: message.type,
+          exportType: exportType,
+          savedPath: savedPath.fsPath,
+          searchString: message.searchString,
+          sort: message.sort
+        });
+  
+        this.fireExportCompleteEvent();
+        vscode.window.showInformationMessage(
+          `Exported query result to ${exportResult.path}`, "Open folder"
+        ).then(selection => {
+          if (selection === "Open folder") {
+            this.openFolder(exportResult.path);
+          }
+        });
+
+      } catch (e: unknown) {
+          console.error(e);
+          const error = e as DuckDbError;
+          const errorMessage = `Export failed: ${error.message}`;
+          vscode.window.showErrorMessage(errorMessage);
+          this.fireErrorEvent(errorMessage);
+      }
+      return exportType;
     }
   }
 
@@ -693,8 +660,9 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         _token: vscode.CancellationToken
     ): Promise<void> {
 
-        // console.log(`resolveCustomEditor(${document.uri})`);
+        console.log(`resolveCustomEditor(${document.uri})`);
         this.webviews.add(document.uri, webviewPanel);
+
         // Setup initial content for the webview
         webviewPanel.webview.options = {
             enableScripts: true,
@@ -706,57 +674,53 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
       
         webviewPanel.webview.onDidReceiveMessage(e => this.onMessage(document, e));
 
-        // Hook up event handlers so that we can synchronize the webview with the text document.
-        //
-        // The text document acts as our model, so we have to sync change in the document to our
-        // editor and sync changes in the editor back to the document.
-        // 
-        // Remember that a single text document can also be shared between multiple custom
-        // editors (this happens for example when you split a custom editor)
-        // const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(e => {
-        //   if (e.document.uri.toString() === document.uri.toString()) {
-        //     console.log('onDidChangeTextDocument');
-        //     webviewPanel.webview.postMessage({
-        //       type: 'update',
-        //       tableData: data
-        //     });
-        //   }
-        // });
-
         const defaultPageSizesFromSettings = defaultPageSizes(); 
         const firstPageSize = defaultPageSizesFromSettings[0];
         const defaultQueryFromSettings = defaultQuery();
-
-        const defaultRunQueryKeyBindingFromSettings = defaultRunQueryKeyBinding();
-        const shortCutMapping = this.createShortcutMapping(defaultRunQueryKeyBindingFromSettings);
-
         const pageSize = Number(firstPageSize);
-        const query: QueryObject = {
-          pageSize: pageSize,
-          pageNumber: 1
+
+        let queryTabQueryData = {
+          result: [] as any[],
+          headers: [] as any[],
+          rowCount: 0,
+          pageCount: 0
         };
-        const page = await document.paginator.getCurrentPage(query);
-        const values = replacePeriodWithUnderscoreInKey(page);
-        const headers = createHeadersFromData(values);
-        const pageNumber = document.paginator.getPageNumber();
+        if (runQueryOnStartup()) {
+          const queryMessage = {
+            source: 'query',
+            query: {
+              queryString: defaultQueryFromSettings,
+              pageSize: pageSize,
+            }
+          };
+  
+          const {result, headers, rowCount, pageCount } = await document.queryTabWorker.query(queryMessage);
+          queryTabQueryData.result = result;
+          queryTabQueryData.headers = headers;
+          queryTabQueryData.rowCount = rowCount;
+          queryTabQueryData.pageCount = pageCount;
+        }
+
+        const totalRowCount = document.backend.getRowCount();
+        const totalPageCount = Math.ceil(totalRowCount / pageSize);
+
         const schema = document.backend.getSchema();
         const metadata = document.backend.getMetaData();
 
-        // get Code completions for the editor
         const aceEditorCompletions = this.getAceEditorCompletions(schema);
-
         const aceTheme = getAceTheme(vscode.window.activeColorTheme.kind);
+        const defaultRunQueryKeyBindingFromSettings = defaultRunQueryKeyBinding();
+        const shortCutMapping = this.createShortcutMapping(defaultRunQueryKeyBindingFromSettings);
 
         const data = {
-          headers: headers, 
+          headers: queryTabQueryData.headers, 
           schema: schema, 
           metaData: metadata, 
-          values: values,
-          rawData: values,
-          rowCount: document.backend.getRowCount(),
-          pageCount: document.paginator.getTotalPages(pageSize),
-          currentPage: pageNumber,
-          requestSource: constants.REQUEST_SOURCE_DATA_TAB,
+          rawData: queryTabQueryData.result,
+          rowCount: queryTabQueryData.rowCount,
+          pageCount: queryTabQueryData.pageCount,
+          currentPage: 1,
+          requestSource: constants.REQUEST_SOURCE_QUERY_TAB,
           requestType: 'paginator',
           settings: {
             defaultQuery: defaultQueryFromSettings,
@@ -765,7 +729,9 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           },
           isQueryAble: document.isQueryAble,
           aceTheme: aceTheme,
-          aceEditorCompletions
+          aceEditorCompletions,
+          totalRowCount: totalRowCount,
+          totalPageCount: totalPageCount
         };
 
         // Wait for the webview to be properly ready before we init
@@ -778,6 +744,29 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
             } else {
               this.postMessage(webviewPanel, 'init', {
                 tableData: data,
+              });
+
+              
+              // NOTE: start query on datatab.
+              const pageSize = Number(firstPageSize);
+              const queryMessage = {
+                query: {
+                  queryString: defaultQueryFromSettings,
+                  pageSize: pageSize,
+                }
+              };
+
+              document.dataTabWorker.query(queryMessage).then((result) => {
+                document.fireChangedDocumentEvent(
+                  result.result, 
+                  result.headers, 
+                  totalRowCount,
+                  constants.REQUEST_SOURCE_DATA_TAB,
+                  result.type,
+                  result.pageSize,
+                  result.pageNumber,
+                  totalPageCount,
+                );
               });
             }
           }
@@ -818,12 +807,6 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           TelemetryManager.sendEvent("lastPageButtonClicked", {tabSource: message.source});
           break;
         }
-        case 'currentPage': {
-          await document.emitCurrentPage(message);
-
-          TelemetryManager.sendEvent("currentButtonClicked", {tabSource: message.source});
-          break;
-        }
         case 'changePageSize': {
           await document.changePageSize(message.data);
 
@@ -831,10 +814,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           break;
         }
         case 'startQuery': {
-          document.worker.postMessage({
-            source: 'query',
-            query: message.query,
-          });
+          await document.query(message);
 
           TelemetryManager.sendEvent("queryStarted");
           break;
@@ -850,54 +830,12 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
           break;
         }
         case 'exportQueryResults': {
-          const exportType = message.exportType as string;
-          const parsedPath = path.parse(document.uri.fsPath);
-
-          const extension = constants.FILENAME_SHORTNAME_EXTENSION_MAPPING[exportType];
-          parsedPath.base = `${parsedPath.name}.${extension}`;
-          parsedPath.ext = extension;
-          const suggestedPath = path.format(parsedPath);
-
-          let suggestedUri: vscode.Uri;
-          if (document.savedExporturi !== undefined) {
-            const parsedPath = path.parse(document.savedExporturi.fsPath);
-            parsedPath.base = `${parsedPath.name}.${extension}`;
-            parsedPath.ext = extension;
-            suggestedUri = vscode.Uri.file(path.format(parsedPath));
-          } else {
-            suggestedUri = vscode.Uri.file(suggestedPath);
-          }
-
-          const fileNameExtensionfullName = constants.FILENAME_SHORTNAME_FULLNAME_MAPPING[exportType];
-          const savedPath = await vscode.window.showSaveDialog({
-            title: `Export Query Results as ${exportType}`,
-            filters: {
-              [fileNameExtensionfullName]: [extension]
-            },
-            defaultUri: suggestedUri
-          });
-
-          if (savedPath === undefined) {
-            document.fireExportCompleteEvent();
-            return;
-          }
-
-          document.savedExporturi = savedPath;
-
-          document.worker.postMessage({
-            source: message.type,
-            exportType: exportType,
-            savedPath: savedPath.fsPath,
-            searchString: message.searchString,
-            sort: message.sort
-          });
-
+          const exportType = await document.export(message);
           TelemetryManager.sendEvent("queryResultsExported", {
               fromFileType: 'parquet',
-              toFileType: exportType
+              toFileType: exportType as string
             }
           );
-
           break;
         }
         case 'copyQueryResults': {
@@ -994,7 +932,7 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
                     <input class="search-box" id="input-filter-values" type="text" placeholder="Search rows" disabled>
                     <div class="clear-icon-element" id="clear-icon">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true" class="clear-icon">
-                            <path d="m2 2 12 12M14 2 2 14" stroke="#ffffff"></path>
+                            <path d="m2 2 12 12M14 2 2 14" stroke="none"></path>
                         </svg>
                     </div>
                 </div>
@@ -1069,17 +1007,23 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
               <div id="container">
                   <div class="tab-frame">
                       <div class="tab-buttons">
-                          <input type="radio" checked name="data-tab" id="data-tab" class="tablinks">
-                          <label for="data-tab">Data</label>
-
-                          <input type="radio" name="query-tab" id="query-tab" class="tablinks" >
+                          <input type="radio" checked name="query-tab" id="query-tab" class="tablinks" >
                           <label for="query-tab">Query</label>
+                          
+                          <input type="radio" name="data-tab" id="data-tab" class="tablinks">
+                          <label for="data-tab">Data</label>
                           
                           <input type="radio" name="schema-tab" id="schema-tab" class="tablinks" >
                           <label for="schema-tab">Schema</label>
 
                           <input type="radio" name="metadata-tab" id="metadata-tab" class="tablinks" >
                           <label for="metadata-tab">Metadata</label>
+                      </div>
+
+                      <div class="tab" id="query-tab-panel">
+                          <div id="query-tab-container">
+                            ${queryActionsBodyHtml}
+                          </div>
                       </div>
                       
                       <div class="tab" id="data-tab-panel">
@@ -1088,12 +1032,6 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
                       
                       <div class="tab" id="schema-tab-panel">
                           <div id="schema"></div>
-                      </div>
-
-                      <div class="tab" id="query-tab-panel">
-                          <div id="query-tab-container">
-                            ${queryActionsBodyHtml}
-                          </div>
                       </div>
                       
                       <div class="tab" id="metadata-tab-panel">
