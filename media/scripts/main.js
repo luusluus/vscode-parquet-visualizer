@@ -231,7 +231,6 @@
     }
 
     function initializeSort(/** @type {String} */ requestSource) {
-        console.log(`initializeSort(${requestSource})`);
         let selectors; 
         if (requestSource === requestSourceQueryTab) {
             selectors = `#table-${requestSource} .tabulator-col-sorter.tabulator-col-sorter-element`;
