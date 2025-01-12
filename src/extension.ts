@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { ParquetEditorProvider } from './parquet-editor';
+import { TabularDocumentEditorProvider } from './tabular-document-editor';
 
 import { TelemetryManager } from './telemetry';
 
@@ -17,7 +17,7 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 	
 	// Register our custom editor providers
-	context.subscriptions.push(ParquetEditorProvider.register(context));
+	context.subscriptions.push(TabularDocumentEditorProvider.register(context));
 }
 
 export async function deactivate() {
