@@ -4,17 +4,15 @@ import * as comlink from 'comlink';
 import nodeEndpoint from 'comlink/dist/umd/node-adapter';
 
 import * as os from 'os';
-
+import { URI } from 'vscode-uri'
 import * as exceljs from 'exceljs';
-
-import { DuckDbError } from 'duckdb-async';
-import { Int, Type } from "apache-arrow";
+import { Type } from "apache-arrow";
 
 import { Paginator, QueryObject } from './paginator';
 import { DuckDBBackend } from './duckdb-backend';
 import { DuckDBPaginator } from './duckdb-paginator';
 import { createHeadersFromData, replacePeriodWithUnderscoreInKey, getPageCountFromInput } from './util';
-import { DateTimeFormatSettings } from './types';
+import { DateTimeFormatSettings, SerializeableUri } from './types';
 import * as constants from './constants';
 
 if (!parentPort) {
@@ -86,8 +84,12 @@ class QueryHelper {
     
     if (this.tabName === constants.REQUEST_SOURCE_QUERY_TAB){
       this.rowCount = Number(queryResult[0]['count']);
-    } else {
-      this.rowCount = Number(this.backend.metadata[0]["num_rows"]);
+    } else { // NOTE: Data Tab
+      if (this.backend.extensionName === constants.CSV_NAME_EXTENSION) {
+        this.rowCount = this.backend.rowCount;
+      } else {
+        this.rowCount = Number(this.backend.metadata[0]["num_rows"]);
+      }
     }
 
     this.paginator = new DuckDBPaginator(
@@ -165,7 +167,7 @@ class QueryHelper {
         throw new Error("Query string must contain 'FROM data'");
     }
     
-    return query.replace(pattern, `FROM read_parquet('${this.backend.filePath}')`);
+    return query.replace(pattern, `FROM ${this.backend.getReadFunctionByFileType()}('${this.backend.uri.fsPath}')`);
   }
 
   async export(message: any) {
@@ -276,10 +278,12 @@ export class BackendWorker {
 
   static async create(
     tabName: string,
-    path: string, 
+    serializeableUri: SerializeableUri, 
     dateTimeFormatSettings: DateTimeFormatSettings
   ) {
-    const backend = await DuckDBBackend.createAsync(path, dateTimeFormatSettings);
+    const path = `${serializeableUri.scheme}://${serializeableUri.path}`;
+    const uri = URI.parse(path, true);
+    const backend = await DuckDBBackend.createAsync(uri, dateTimeFormatSettings);
     await backend.initialize();
 
     return new BackendWorker(backend, tabName);
@@ -367,7 +371,7 @@ export class BackendWorker {
 (async () => {
     const worker = await BackendWorker.create(
       workerData.tabName,
-      workerData.pathParquetFile,
+      workerData.uri,
       workerData.dateTimeFormatSettings
     );
 

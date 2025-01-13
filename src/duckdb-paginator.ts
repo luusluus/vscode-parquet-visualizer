@@ -31,7 +31,7 @@ export class DuckDBPaginator extends Paginator {
 
         let source;
         if (this.readFromFile) {
-            source = `read_parquet('${this.backend.filePath}')`;
+            source = `${this.backend.getReadFunctionByFileType()}('${this.backend.uri.fsPath}')`;
         } else {
             source = this.table;
         }

@@ -15,7 +15,7 @@ import { Disposable } from "./dispose";
 import { DuckDBBackend } from './duckdb-backend';
 import { ParquetWasmBackend } from './parquet-wasm-backend';
 import { affectsDocument, defaultPageSizes, defaultQuery, defaultBackend, defaultRunQueryKeyBinding, dateTimeFormat, outputDateTimeFormatInUTC, runQueryOnStartup } from './settings';
-import { DateTimeFormatSettings } from './types';
+import { DateTimeFormatSettings, SerializeableUri } from './types';
 
 import { TelemetryManager } from './telemetry';
 // import { getLogger } from './logger';
@@ -42,11 +42,9 @@ class CustomDocument extends Disposable implements vscode.CustomDocument {
         try{
             switch (backendName) {
               case 'duckdb': {
-                const backend = await DuckDBBackend.createAsync(uri.fsPath, dateTimeFormatSettings);
+                const backend = await DuckDBBackend.createAsync(uri, dateTimeFormatSettings);
                 await backend.initialize();
                 const totalItems = backend.getRowCount();
-                const table = 'data';
-                const readFromFile = true;
                 
                 const columnCount = backend.arrowSchema.fields.length;
                 TelemetryManager.sendEvent("fileOpened", {
@@ -58,7 +56,7 @@ class CustomDocument extends Disposable implements vscode.CustomDocument {
                 return new CustomDocument(uri, backend);
               }
               case 'parquet-wasm': {
-                const backend = await ParquetWasmBackend.createAsync(uri.fsPath, dateTimeFormatSettings);
+                const backend = await ParquetWasmBackend.createAsync(uri, dateTimeFormatSettings);
 
                 const columnCount = backend.arrowSchema.fields.length;
                 TelemetryManager.sendEvent("fileOpened", {
@@ -87,8 +85,8 @@ class CustomDocument extends Disposable implements vscode.CustomDocument {
             });
 
             const error = err as DuckDbError;
-            if (error.errorType === "Invalid") {
-              const backend = await ParquetWasmBackend.createAsync(uri.fsPath, dateTimeFormatSettings);
+            if (error.errorType === "Invalid" && document) {
+              const backend = await ParquetWasmBackend.createAsync(uri, dateTimeFormatSettings);
               TelemetryManager.sendEvent("fileParsingFallback", {
                   uri: uri.toJSON(),
                   backend: 'parquet-wasm',
@@ -138,20 +136,27 @@ class CustomDocument extends Disposable implements vscode.CustomDocument {
           format: dateTimeFormat(),
           useUTC: outputDateTimeFormatInUTC()
         };
+
+        const workerPath = __dirname + "/worker.js";
+
+        const serializeableUri: SerializeableUri = {
+          path: uri.path,
+          scheme: uri.scheme
+        };
   
-        const queryWorker = new Worker(__dirname + "/worker.js", {
+        const queryWorker = new Worker(workerPath, {
           workerData: {
             tabName: constants.REQUEST_SOURCE_QUERY_TAB,
-            pathParquetFile: this.uri.fsPath,
+            uri: serializeableUri,
             dateTimeFormatSettings: dateTimeFormatSettings,
           }
         });
         this.queryTabWorker = comlink.wrap<BackendWorker>(nodeEndpoint(queryWorker));
 
-        const dataWorker = new Worker(__dirname + "/worker.js", {
+        const dataWorker = new Worker(workerPath, {
           workerData: {
             tabName: constants.REQUEST_SOURCE_DATA_TAB,
-            pathParquetFile: this.uri.fsPath,
+            uri: serializeableUri,
             dateTimeFormatSettings: dateTimeFormatSettings,
           }
         });
@@ -653,7 +658,7 @@ export class TabularDocumentEditorProvider implements vscode.CustomReadonlyEdito
         _token: vscode.CancellationToken
     ): Promise<void> {
 
-        console.log(`resolveCustomEditor(${document.uri})`);
+        // console.log(`resolveCustomEditor(${document.uri})`);
         this.webviews.add(document.uri, webviewPanel);
 
         // Setup initial content for the webview
