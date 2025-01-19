@@ -9,23 +9,20 @@ import * as vscode from 'vscode';
 import { DuckDbError } from 'duckdb-async';
 
 import type { BackendWorker } from './worker';
-import { Paginator } from './paginator';
 import { Backend } from './backend';
-import { createHeadersFromData, replacePeriodWithUnderscoreInKey, getNonce, isRunningInWSL } from './util';
+import { createHeadersFromData, getNonce, isRunningInWSL } from './util';
 import { Disposable } from "./dispose";
 import { DuckDBBackend } from './duckdb-backend';
-import { DuckDBPaginator } from './duckdb-paginator';
 import { ParquetWasmBackend } from './parquet-wasm-backend';
-import { ParquetWasmPaginator } from './parquet-wasm-paginator';
 import { affectsDocument, defaultPageSizes, defaultQuery, defaultBackend, defaultRunQueryKeyBinding, dateTimeFormat, outputDateTimeFormatInUTC, runQueryOnStartup } from './settings';
-import { DateTimeFormatSettings } from './types';
+import { DateTimeFormatSettings, SerializeableUri } from './types';
 
 import { TelemetryManager } from './telemetry';
 // import { getLogger } from './logger';
 
 import * as constants from './constants';
 
-class CustomParquetDocument extends Disposable implements vscode.CustomDocument {
+class CustomDocument extends Disposable implements vscode.CustomDocument {
     uri: vscode.Uri;
     backend: Backend;
     queryTabWorker: comlink.Remote<BackendWorker>;
@@ -36,7 +33,7 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
 
     static async create(
       uri: vscode.Uri
-    ): Promise<CustomParquetDocument | PromiseLike<CustomParquetDocument>> {
+    ): Promise<CustomDocument | PromiseLike<CustomDocument>> {
         const dateTimeFormatSettings: DateTimeFormatSettings = {
           format: dateTimeFormat(),
           useUTC: outputDateTimeFormatInUTC()
@@ -45,11 +42,9 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
         try{
             switch (backendName) {
               case 'duckdb': {
-                const backend = await DuckDBBackend.createAsync(uri.fsPath, dateTimeFormatSettings);
+                const backend = await DuckDBBackend.createAsync(uri, dateTimeFormatSettings);
                 await backend.initialize();
                 const totalItems = backend.getRowCount();
-                const table = 'data';
-                const readFromFile = true;
                 
                 const columnCount = backend.arrowSchema.fields.length;
                 TelemetryManager.sendEvent("fileOpened", {
@@ -58,11 +53,10 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
                   numColumns: columnCount.toString()
                 });
                 
-                const paginator = new DuckDBPaginator(backend, table, totalItems, readFromFile);
-                return new CustomParquetDocument(uri, backend, paginator);
+                return new CustomDocument(uri, backend);
               }
               case 'parquet-wasm': {
-                const backend = await ParquetWasmBackend.createAsync(uri.fsPath, dateTimeFormatSettings);
+                const backend = await ParquetWasmBackend.createAsync(uri, dateTimeFormatSettings);
 
                 const columnCount = backend.arrowSchema.fields.length;
                 TelemetryManager.sendEvent("fileOpened", {
@@ -71,11 +65,12 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
                   numColumns: columnCount.toString()
                 });
 
-                const paginator = new ParquetWasmPaginator(backend);
-                return new CustomParquetDocument(uri, backend, paginator);
+                return new CustomDocument(uri, backend);
               }
               default:
-                throw Error("Unknown backend. Terminating");
+                const errorMessage = "Unknown backend. Terminating";
+                vscode.window.showErrorMessage(errorMessage);
+                throw Error(errorMessage);
             }
 
         } catch (err: unknown){
@@ -92,17 +87,17 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
             });
 
             const error = err as DuckDbError;
-            if (error.errorType === "Invalid") {
-              const backend = await ParquetWasmBackend.createAsync(uri.fsPath, dateTimeFormatSettings);
+            if (error.errorType === "Invalid" && document) {
+              const backend = await ParquetWasmBackend.createAsync(uri, dateTimeFormatSettings);
               TelemetryManager.sendEvent("fileParsingFallback", {
                   uri: uri.toJSON(),
                   backend: 'parquet-wasm',
                 }
               );
-              const paginator = new ParquetWasmPaginator(backend);
-              return new CustomParquetDocument(uri, backend, paginator);
+              return new CustomDocument(uri, backend);
             }
-            
+
+            vscode.window.showErrorMessage(error.message);
             throw Error(error.message);
         }
     }
@@ -131,7 +126,6 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
     private constructor(
       uri: vscode.Uri,
       backend: Backend,
-      paginator: Paginator
     ) {
       super();
       this.uri = uri;
@@ -145,20 +139,27 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
           format: dateTimeFormat(),
           useUTC: outputDateTimeFormatInUTC()
         };
+
+        const workerPath = __dirname + "/worker.js";
+
+        const serializeableUri: SerializeableUri = {
+          path: uri.path,
+          scheme: uri.scheme
+        };
   
-        const queryWorker = new Worker(__dirname + "/worker.js", {
+        const queryWorker = new Worker(workerPath, {
           workerData: {
             tabName: constants.REQUEST_SOURCE_QUERY_TAB,
-            pathParquetFile: this.uri.fsPath,
+            uri: serializeableUri,
             dateTimeFormatSettings: dateTimeFormatSettings,
           }
         });
         this.queryTabWorker = comlink.wrap<BackendWorker>(nodeEndpoint(queryWorker));
 
-        const dataWorker = new Worker(__dirname + "/worker.js", {
+        const dataWorker = new Worker(workerPath, {
           workerData: {
             tabName: constants.REQUEST_SOURCE_DATA_TAB,
-            pathParquetFile: this.uri.fsPath,
+            uri: serializeableUri,
             dateTimeFormatSettings: dateTimeFormatSettings,
           }
         });
@@ -452,14 +453,14 @@ class CustomParquetDocument extends Disposable implements vscode.CustomDocument 
     }
   }
 
-export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvider<CustomParquetDocument> {
+export class TabularDocumentEditorProvider implements vscode.CustomReadonlyEditorProvider<CustomDocument> {
 
     private static readonly viewType = 'parquet-visualizer.parquetVisualizer';
 
     public static register(context: vscode.ExtensionContext): vscode.Disposable {
-        const provider = new ParquetEditorProvider(context);
+        const provider = new TabularDocumentEditorProvider(context);
         return vscode.window.registerCustomEditorProvider(
-          ParquetEditorProvider.viewType, 
+          TabularDocumentEditorProvider.viewType, 
           provider,
           {
             // For this demo extension, we enable `retainContextWhenHidden` which keeps the
@@ -490,9 +491,9 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         this._onDidChangeCustomDocument.dispose();
     }
 
-    async openCustomDocument(uri: vscode.Uri): Promise<CustomParquetDocument> {
+    async openCustomDocument(uri: vscode.Uri): Promise<CustomDocument> {
         // console.log(`openCustomDocument(uri: ${uri})`);
-        const document: CustomParquetDocument = await CustomParquetDocument.create(uri);
+        const document: CustomDocument = await CustomDocument.create(uri);
         
         this.listeners.push(vscode.window.onDidChangeActiveColorTheme((e => {
           const cssPathNames = getCssPathNameByVscodeTheme(e.kind);
@@ -580,11 +581,6 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
          // Show an error message to the user
           const errorMessage = 'Value of setting "parquet-visualizer.RunQueryKeyBinding" invalid. The string must start with "Ctrl-" or "Command-".';
           vscode.window.showErrorMessage(`${errorMessage}`);
-          
-          // Optionally, log the error to the output channel for more details
-          const outputChannel = vscode.window.createOutputChannel("Your Extension");
-          outputChannel.appendLine(`Configuration Error: ${errorMessage}`);
-          outputChannel.show();
           throw Error(errorMessage);
       }
     }
@@ -655,12 +651,12 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
      * 
      */
     async resolveCustomEditor(
-        document: CustomParquetDocument,
+        document: CustomDocument,
         webviewPanel: vscode.WebviewPanel,
         _token: vscode.CancellationToken
     ): Promise<void> {
 
-        console.log(`resolveCustomEditor(${document.uri})`);
+        // console.log(`resolveCustomEditor(${document.uri})`);
         this.webviews.add(document.uri, webviewPanel);
 
         // Setup initial content for the webview
@@ -693,12 +689,21 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
               pageSize: pageSize,
             }
           };
-  
-          const {result, headers, rowCount, pageCount } = await document.queryTabWorker.query(queryMessage);
-          queryTabQueryData.result = result;
-          queryTabQueryData.headers = headers;
-          queryTabQueryData.rowCount = rowCount;
-          queryTabQueryData.pageCount = pageCount;
+          
+          try {
+            const {result, headers, rowCount, pageCount } = await document.queryTabWorker.query(queryMessage);
+            queryTabQueryData.result = result;
+            queryTabQueryData.headers = headers;
+            queryTabQueryData.rowCount = rowCount;
+            queryTabQueryData.pageCount = pageCount;
+          }
+          catch (e: unknown) {
+            console.error(e);
+            const error = e as DuckDbError;
+            this.dispose();
+            vscode.window.showErrorMessage(error.message);
+            throw Error(error.message);
+          }
         }
 
         const totalRowCount = document.backend.getRowCount();
@@ -773,14 +778,14 @@ export class ParquetEditorProvider implements vscode.CustomReadonlyEditorProvide
         });
     }
 
-    private readonly _onDidChangeCustomDocument = new vscode.EventEmitter<vscode.CustomDocumentEditEvent<CustomParquetDocument>>();
+    private readonly _onDidChangeCustomDocument = new vscode.EventEmitter<vscode.CustomDocumentEditEvent<CustomDocument>>();
 	  public readonly onDidChangeCustomDocument = this._onDidChangeCustomDocument.event;
 
     private postMessage(panel: vscode.WebviewPanel, type: string, body: any): void {
       panel.webview.postMessage({ type, body });
     }
 
-    private async onMessage(document: CustomParquetDocument, message: any) {
+    private async onMessage(document: CustomDocument, message: any) {
     //   console.log(`onMessage(${message.type})`);
       switch (message.type) {
         case 'nextPage': {

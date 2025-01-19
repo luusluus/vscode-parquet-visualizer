@@ -7,6 +7,7 @@ import * as fs from 'fs';
 const { File } = require('buffer'); 
 
 import { ParquetFile } from 'parquet-wasm';
+import * as vscode from 'vscode';
 
 import { Backend } from './backend';
 import { Table } from 'apache-arrow/table';
@@ -18,19 +19,22 @@ export class ParquetWasmBackend extends Backend {
   
 
   private constructor(
-    filePath: string,
+    uri: vscode.Uri,
     dateTimeFormat: DateTimeFormatSettings,
     parquetFile: ParquetFile, 
     table: Table<any>
   ) {
-    super(filePath, dateTimeFormat);
+    super(uri, dateTimeFormat);
     this.parquetFile = parquetFile;
     this.arrowSchema = table.schema;
     this.metadata = this.getMetaDataImpl();
   }
 
-  public static override async createAsync (path: string, dateTimeFormat: DateTimeFormatSettings) {
-    const buffer = fs.readFileSync(path);
+  public static override async createAsync (
+    uri: vscode.Uri, 
+    dateTimeFormat: DateTimeFormatSettings
+  ) {
+    const buffer = fs.readFileSync(uri.fsPath);
     const file = new File([buffer], "fileName", {
       type: "application/vnd.apache.parquet",
     });
@@ -44,7 +48,7 @@ export class ParquetWasmBackend extends Backend {
     const table = tableFromIPC(stream);
 
     return new ParquetWasmBackend(
-      path, 
+      uri, 
       dateTimeFormat,
       parquetFile, 
       table
@@ -71,7 +75,7 @@ export class ParquetWasmBackend extends Backend {
   getMetaDataImpl(): any {
     const metadata = this.parquetFile.metadata();
     return [{
-      file_name: this.filePath,
+      file_name: this.uri.fsPath,
       created_by: metadata.fileMetadata().createdBy(),
       num_rows: metadata.fileMetadata().numRows(),
       num_row_groups: metadata.numRowGroups(),

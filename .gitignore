@@ -7,14 +7,5 @@ node_modules
 
 data/.vscode
 
-very_large.parquet
-very_large_2.parquet
-binary_string.parquet
-weird_columns.parquet
-issue*.parquet
-number_leading_zeroes.parquet
-date32_date64_data.parquet
-amperstand_string.parquet
-spaced column.parquet
-userdata1.parquet
-empty.parquet
+data/parquet/*.parquet
+data/csv/*.csv

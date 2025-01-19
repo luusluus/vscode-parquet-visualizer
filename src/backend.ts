@@ -1,21 +1,27 @@
+import * as path from 'path';
+
 import { Schema, Field, Type } from "apache-arrow";
+import * as vscode from 'vscode';
 import date from 'date-and-time';
 
 import { DateTimeFormatSettings } from './types';
+import * as constants from './constants';
 
 export abstract class Backend {
-    public filePath: string;
+    public uri: vscode.Uri;
+    public extensionName: string;
     public arrowSchema: Schema;
     protected metadata: any;
 
     private dateTimeFormat: DateTimeFormatSettings;
 
-    public constructor(filePath: string, dateTimeFormat: DateTimeFormatSettings) {
-        this.filePath = filePath;
+    public constructor(uri: vscode.Uri, dateTimeFormat: DateTimeFormatSettings) {
+        this.uri = uri;
+        this.extensionName = path.extname(this.uri.fsPath);
         this.dateTimeFormat = dateTimeFormat;
     }
 
-    static createAsync(filePath: string, dateTimeFormat: DateTimeFormatSettings): Promise<any> {
+    static createAsync(uri: vscode.Uri, dateTimeFormat: DateTimeFormatSettings): Promise<any> {
         throw new Error("Method not implemented");
     };
 
@@ -81,6 +87,10 @@ export abstract class Backend {
     abstract getSchemaImpl(): Promise<any>;
 
     public getMetaData(): any {
+        if (this.extensionName === constants.CSV_NAME_EXTENSION) {
+            return [];
+        }
+        
         return [
             {
                 key: 'file_name',
