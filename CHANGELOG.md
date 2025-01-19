@@ -1,3 +1,10 @@
+# [0.23.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.22.0...v0.23.0) (2025-01-19)
+
+
+### Features
+
+* support for csv ([06f037d](https://github.com/luusluus/vscode-parquet-visualizer/commit/06f037db682673ebf5ed92a1569cb36a4c20bd93))
+
 # [0.22.0](https://github.com/luusluus/vscode-parquet-visualizer/compare/v0.21.3...v0.22.0) (2025-01-11)
 
 
