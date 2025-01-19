@@ -167,7 +167,10 @@ class QueryHelper {
         throw new Error("Query string must contain 'FROM data'");
     }
     
-    return query.replace(pattern, `FROM ${this.backend.getReadFunctionByFileType()}('${this.backend.uri.fsPath}')`);
+    return query.replace(pattern, `
+      FROM ${this.backend.getReadFunctionByFileType()}
+      ('${this.backend.uri.fsPath}')
+    `);
   }
 
   async export(message: any) {

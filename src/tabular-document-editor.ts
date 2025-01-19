@@ -68,7 +68,9 @@ class CustomDocument extends Disposable implements vscode.CustomDocument {
                 return new CustomDocument(uri, backend);
               }
               default:
-                throw Error("Unknown backend. Terminating");
+                const errorMessage = "Unknown backend. Terminating";
+                vscode.window.showErrorMessage(errorMessage);
+                throw Error(errorMessage);
             }
 
         } catch (err: unknown){
@@ -94,7 +96,8 @@ class CustomDocument extends Disposable implements vscode.CustomDocument {
               );
               return new CustomDocument(uri, backend);
             }
-            
+
+            vscode.window.showErrorMessage(error.message);
             throw Error(error.message);
         }
     }
@@ -578,11 +581,6 @@ export class TabularDocumentEditorProvider implements vscode.CustomReadonlyEdito
          // Show an error message to the user
           const errorMessage = 'Value of setting "parquet-visualizer.RunQueryKeyBinding" invalid. The string must start with "Ctrl-" or "Command-".';
           vscode.window.showErrorMessage(`${errorMessage}`);
-          
-          // Optionally, log the error to the output channel for more details
-          const outputChannel = vscode.window.createOutputChannel("Your Extension");
-          outputChannel.appendLine(`Configuration Error: ${errorMessage}`);
-          outputChannel.show();
           throw Error(errorMessage);
       }
     }
@@ -691,12 +689,21 @@ export class TabularDocumentEditorProvider implements vscode.CustomReadonlyEdito
               pageSize: pageSize,
             }
           };
-  
-          const {result, headers, rowCount, pageCount } = await document.queryTabWorker.query(queryMessage);
-          queryTabQueryData.result = result;
-          queryTabQueryData.headers = headers;
-          queryTabQueryData.rowCount = rowCount;
-          queryTabQueryData.pageCount = pageCount;
+          
+          try {
+            const {result, headers, rowCount, pageCount } = await document.queryTabWorker.query(queryMessage);
+            queryTabQueryData.result = result;
+            queryTabQueryData.headers = headers;
+            queryTabQueryData.rowCount = rowCount;
+            queryTabQueryData.pageCount = pageCount;
+          }
+          catch (e: unknown) {
+            console.error(e);
+            const error = e as DuckDbError;
+            this.dispose();
+            vscode.window.showErrorMessage(error.message);
+            throw Error(error.message);
+          }
         }
 
         const totalRowCount = document.backend.getRowCount();
