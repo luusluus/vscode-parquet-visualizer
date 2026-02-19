@@ -12,6 +12,7 @@ class TableWrapper extends EventTarget {
         // Bind the method to the instance
         this.onPopupOpened = this.onPopupOpened.bind(this)
         this.copyPageHandler = this.copyPageHandler.bind(this)
+        this.addContextMenuToCells = this.addContextMenuToCells.bind(this)
 
         this.events = {}
     }
@@ -52,6 +53,15 @@ class TableWrapper extends EventTarget {
 
         this.table.on('tableBuilt', (data) => {
             this.dispatchEvent(new CustomEvent('tableBuilt', { detail: data }))
+            setTimeout(() => {
+                this.addContextMenuToCells()
+            }, 0)
+        })
+
+        this.table.on('dataLoaded', (data) => {
+            setTimeout(() => {
+                this.addContextMenuToCells()
+            }, 0)
         })
     }
 
@@ -141,6 +151,61 @@ class TableWrapper extends EventTarget {
 
     replaceData(/** @type {any}*/ data) {
         this.table.replaceData(data)
+    }
+
+    addContextMenuToCells() {
+        if (!this.table) {
+            return
+        }
+        try {
+            // Get all rows from Tabulator API
+            const rows = this.table.getRows()
+            // Iterate through each row
+            rows.forEach((row) => {
+                try {
+                    // Get all cells in this row
+                    const cells = row.getCells()
+                    
+                    // Iterate through each cell
+                    cells.forEach((cell) => {
+                        try {
+                            // Get the DOM element for this cell
+                            const cellElement = cell.getElement()
+                            if (cellElement) {
+                                // Get the actual cell value
+                                const cellValue = cell.getValue()
+                                
+                                // Set attributes on the cell element
+                                cellElement.setAttribute(
+                                    'data-vscode-context',
+                                    JSON.stringify({ 
+                                        webviewSection: 'table', 
+                                        preventDefaultContextMenuItems: true, 
+                                        cellValue: cellValue
+                                    } )
+                                )
+                                if (this.tab.name === 'dataTab') {
+                                    // debugger;
+                                    // cellElement
+                                }
+                                
+                            }
+                            else {
+                                console.log('cellElement not found')
+                            }
+                        } catch (error) {
+                            // Skip this cell if there's an error
+                            console.log('Failed to set context menu for cell:', error)
+                        }
+                    })
+                } catch (error) {
+                    // Skip this row if there's an error
+                    console.log('Failed to process row:', error)
+                }
+            })
+        } catch (error) {
+            console.log('Failed to add context menu to cells:', error)
+        }
     }
 
     setAlert() {

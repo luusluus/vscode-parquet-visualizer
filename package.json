@@ -115,6 +115,20 @@
                 }
             }
         },
+        "commands": [
+            {
+                "command": "parquet-visualizer.webview.copyCellContent",
+                "title": "Copy Cell Content"
+            }
+        ],
+        "menus": {
+            "webview/context": [
+                {
+                    "command": "parquet-visualizer.webview.copyCellContent",
+                    "when": "webviewSection == 'table'"
+                }
+            ]
+        },
         "customEditors": [
             {
                 "viewType": "parquet-visualizer.parquetVisualizer",
