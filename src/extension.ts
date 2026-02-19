@@ -28,6 +28,23 @@ export function activate(context: vscode.ExtensionContext) {
     // Register our custom editor providers
     context.subscriptions.push(TabularDocumentEditorProvider.register(context))
 
+    // Register webview context menu command
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'parquet-visualizer.webview.copyCellContent',
+            (webviewContext: any) => {
+                // VS Code passes the parsed data-vscode-context JSON directly
+                const cellValue = webviewContext?.cellValue
+                if (cellValue !== undefined && cellValue !== null) {
+                    // Copy the cell value to clipboard
+                    vscode.env.clipboard.writeText(String(cellValue))
+                } else {
+                    vscode.window.showWarningMessage('No cell value found')
+                }
+            }
+        )
+    )
+
     // const accountProvider = new AccountProvider()
     // vscode.window.registerTreeDataProvider('accountView', accountProvider)
 
